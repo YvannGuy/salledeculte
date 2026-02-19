@@ -39,6 +39,27 @@ export async function createSalleFromOnboarding(formData: FormData): Promise<Cre
   const ville = String(formData.get("ville") ?? "").trim();
   const capacite = String(formData.get("capacite") ?? "");
   const adresse = String(formData.get("adresse") ?? "").trim();
+  const telephone = String(formData.get("telephone") ?? "").trim();
+  const latStr = String(formData.get("lat") ?? "").trim();
+  const lngStr = String(formData.get("lng") ?? "").trim();
+  let lat = latStr ? parseFloat(latStr) : null;
+  let lng = lngStr ? parseFloat(lngStr) : null;
+
+  if ((!lat || !lng || isNaN(lat) || isNaN(lng)) && adresse) {
+    try {
+      const res = await fetch(
+        `https://api-adresse.data.gouv.fr/search?q=${encodeURIComponent(adresse)}&limit=1`
+      );
+      const data = await res.json();
+      const coords = data.features?.[0]?.geometry?.coordinates;
+      if (coords && Array.isArray(coords) && coords.length >= 2) {
+        lng = coords[0];
+        lat = coords[1];
+      }
+    } catch {
+      // ignore geocode errors
+    }
+  }
   const description = String(formData.get("description") ?? "").trim();
   const tarifParJour = String(formData.get("tarifParJour") ?? "");
   const inclusions = JSON.parse(String(formData.get("inclusions") ?? "[]")) as string[];
@@ -126,6 +147,9 @@ export async function createSalleFromOnboarding(formData: FormData): Promise<Cre
     name: (mapped.name ?? nom) || "Ma salle",
     city: mapped.city ?? ville,
     address: mapped.address ?? adresse,
+    contact_phone: telephone || null,
+    lat: lat ?? null,
+    lng: lng ?? null,
     capacity: mapped.capacity ?? (parseInt(capacite, 10) || 0),
     price_per_day: mapped.pricePerDay ?? (parseInt(tarifParJour, 10) || 0),
     description: mapped.description ?? "",

@@ -77,6 +77,9 @@ type WizardData = {
   ville: string;
   capacite: string;
   adresse: string;
+  telephone: string;
+  lat?: number;
+  lng?: number;
   description: string;
   tarifParJour: string;
   inclusions: string[];
@@ -98,6 +101,7 @@ const initialData: WizardData = {
   ville: "",
   capacite: "",
   adresse: "",
+  telephone: "",
   description: "",
   tarifParJour: "",
   inclusions: ["location"],
@@ -215,6 +219,9 @@ export default function OnboardingSallePage() {
     formData.set("ville", data.ville);
     formData.set("capacite", data.capacite);
     formData.set("adresse", data.adresse);
+    formData.set("telephone", data.telephone);
+    if (data.lat != null) formData.set("lat", String(data.lat));
+    if (data.lng != null) formData.set("lng", String(data.lng));
     formData.set("description", data.description);
     formData.set("tarifParJour", data.tarifParJour);
     formData.set("inclusions", JSON.stringify(data.inclusions));
@@ -444,6 +451,7 @@ function Step1({
     data.ville.trim() !== "" &&
     data.capacite.trim() !== "" &&
     data.adresse.trim() !== "" &&
+    data.telephone.trim() !== "" &&
     data.description.trim() !== "" &&
     data.tarifParJour.trim() !== "" &&
     Number(data.tarifParJour) > 0;
@@ -486,13 +494,26 @@ function Step1({
           <AdresseAutocomplete
             value={data.adresse}
             onChange={(v) => updateData({ adresse: v })}
-            onSelectAddress={(addr, city) => {
-              updateData({ adresse: addr });
-              if (city) updateData({ ville: city });
+            onSelectAddress={(addr, city, _postcode, coords) => {
+              updateData({
+                adresse: addr,
+                ...(city && { ville: city }),
+                ...(coords && { lat: coords.lat, lng: coords.lng }),
+              });
             }}
             placeholder="Ex: 12 rue de la République, Paris"
           />
           <p className="text-xs text-slate-500">Recherche limitée à l&apos;Île-de-France</p>
+        </div>
+        <div className="space-y-2">
+          <label className="text-sm font-medium text-slate-700">Téléphone *</label>
+          <Input
+            type="tel"
+            placeholder="Ex: 06 12 34 56 78"
+            value={data.telephone}
+            onChange={(e) => updateData({ telephone: e.target.value })}
+            className="h-11 border-slate-200"
+          />
         </div>
         <div className="space-y-2">
           <label className="text-sm font-medium text-slate-700">Description</label>
@@ -946,6 +967,10 @@ function Step5({
             <p className="text-xs font-medium text-slate-500">Capacité</p>
             <p className="mt-1 font-medium text-slate-900">{data.capacite || "—"}</p>
           </div>
+        </div>
+        <div>
+          <p className="text-xs font-medium text-slate-500">Téléphone</p>
+          <p className="mt-1 font-medium text-slate-900">{data.telephone || "—"}</p>
         </div>
         <div>
           <p className="text-xs font-medium text-slate-500">Description</p>

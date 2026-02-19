@@ -23,6 +23,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { SiteFooter } from "@/components/layout/site-footer";
 import { SiteHeader } from "@/components/layout/site-header";
+import { SalleMap } from "@/components/salles/salle-map";
 import { getSalleBySlug, getSallesByCity } from "@/lib/salles";
 
 const iconMap: Record<string, React.ComponentType<{ className?: string }>> = {
@@ -100,7 +101,7 @@ export default async function SalleDetailPage({
                 <div className="mt-2 flex flex-wrap items-center gap-3">
                   <span className="flex items-center gap-1.5 text-sm text-slate-500">
                     <MapPin className="h-4 w-4" />
-                    {salle.address}
+                    {salle.city}
                   </span>
                   <span className="inline-flex items-center gap-1.5 rounded-full bg-sky-100 px-3 py-1 text-[13px] font-medium text-sky-800">
                     <Users className="h-4 w-4" />
@@ -176,15 +177,7 @@ export default async function SalleDetailPage({
 
               <section>
                 <h2 className="mb-3 text-lg font-semibold text-[#304256]">Localisation</h2>
-                <div className="flex aspect-[16/9] items-center justify-center rounded-xl border border-slate-200 bg-slate-100">
-                  <div className="text-center text-slate-500">
-                    <MapPin className="mx-auto h-12 w-12" />
-                    <p className="mt-2 text-sm">Carte à venir</p>
-                    <p className="mt-1 text-xs">
-                      Adresse exacte sera communiquée après validation de votre réservation
-                    </p>
-                  </div>
-                </div>
+                <SalleMap salle={salle} />
               </section>
 
               {nearbySalles.length > 0 && (
@@ -209,7 +202,7 @@ export default async function SalleDetailPage({
                         <div className="p-4">
                           <p className="font-semibold text-[#304256]">{s.name}</p>
                           <p className="mt-1 text-[13px] text-slate-500">
-                            {s.address} • Jusqu&apos;à {s.capacity} personnes
+                            {s.city} • Jusqu&apos;à {s.capacity} personnes
                           </p>
                           <p className="mt-2 text-sm font-medium text-[#2d435a]">
                             À partir de {s.pricePerDay} € / jour
@@ -235,20 +228,22 @@ export default async function SalleDetailPage({
                 </Button>
               </Link>
               <div className="mt-4 flex flex-col gap-2 sm:flex-row sm:gap-4">
-                <a
-                  href="#"
+                <Link
+                  href={`/salles/${salle.slug}/disponibilite`}
                   className="flex items-center gap-2 text-[13px] font-medium text-slate-600 hover:text-slate-900"
                 >
                   <MessageCircle className="h-4 w-4" />
                   Envoyer un message
-                </a>
-                <a
-                  href="#"
-                  className="flex items-center gap-2 text-[13px] font-medium text-slate-600 hover:text-slate-900"
-                >
-                  <Phone className="h-4 w-4" />
-                  Appeler
-                </a>
+                </Link>
+                {salle.contactPhone && (
+                  <a
+                    href={`tel:${salle.contactPhone.replace(/\s/g, "")}`}
+                    className="flex items-center gap-2 text-[13px] font-medium text-slate-600 hover:text-slate-900"
+                  >
+                    <Phone className="h-4 w-4" />
+                    Appeler
+                  </a>
+                )}
               </div>
               <p className="mt-4 flex items-center gap-2 text-[12px] text-slate-400">
                 <Clock className="h-3.5 w-3.5" />

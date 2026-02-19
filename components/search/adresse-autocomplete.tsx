@@ -18,12 +18,18 @@ function isInIdf(postcode: string): boolean {
 
 interface AdresseFeature {
   properties: { label: string; postcode?: string; city?: string };
+  geometry?: { coordinates: [number, number] };
 }
 
 interface AdresseAutocompleteProps {
   value?: string;
   onChange?: (value: string) => void;
-  onSelectAddress?: (address: string, city?: string, postcode?: string) => void;
+  onSelectAddress?: (
+    address: string,
+    city?: string,
+    postcode?: string,
+    coords?: { lat: number; lng: number }
+  ) => void;
   placeholder?: string;
   className?: string;
   inputClassName?: string;
@@ -38,7 +44,7 @@ export function AdresseAutocomplete({
   inputClassName,
 }: AdresseAutocompleteProps) {
   const [inputValue, setInputValue] = useState(value);
-  const [suggestions, setSuggestions] = useState<string[]>([]);
+  const [suggestions, setSuggestions] = useState<AdresseFeature[]>([]);
   const [open, setOpen] = useState(false);
   const [highlightedIndex, setHighlightedIndex] = useState(0);
   const [loading, setLoading] = useState(false);
@@ -57,12 +63,11 @@ export function AdresseAutocomplete({
       );
       const data = await res.json();
       const features = (data.features ?? []) as AdresseFeature[];
-      const idfAddresses = features
+      const idfFeatures = features
         .filter((f) => f.properties?.postcode && isInIdf(String(f.properties.postcode)))
-        .slice(0, MAX_SUGGESTIONS)
-        .map((f) => f.properties.label);
+        .slice(0, MAX_SUGGESTIONS);
 
-      setSuggestions(idfAddresses);
+      setSuggestions(idfFeatures);
       setHighlightedIndex(0);
     } catch {
       setSuggestions([]);
@@ -93,17 +98,22 @@ export function AdresseAutocomplete({
     if (listRef.current && highlightedIndex >= 0 && highlightedIndex < suggestions.length) {
       listRef.current.children[highlightedIndex]?.scrollIntoView({ block: "nearest" });
     }
-  }, [highlightedIndex, suggestions.length]);
+  }, [highlightedIndex, suggestions]);
+
 
   const handleSelect = useCallback(
-    (addr: string) => {
+    (feature: AdresseFeature) => {
+      const addr = feature.properties.label;
       setInputValue(addr);
       onChange?.(addr);
       const match = addr.match(/^(.*?)\s+(\d{5})\s+(.+)$/);
+      const coords = feature.geometry?.coordinates
+        ? { lng: feature.geometry.coordinates[0], lat: feature.geometry.coordinates[1] }
+        : undefined;
       if (onSelectAddress && match) {
-        onSelectAddress(addr, match[3], match[2]);
+        onSelectAddress(addr, match[3], match[2], coords);
       } else if (onSelectAddress) {
-        onSelectAddress(addr);
+        onSelectAddress(addr, undefined, undefined, coords);
       }
       setOpen(false);
     },
@@ -123,7 +133,7 @@ export function AdresseAutocomplete({
         break;
       case "Enter":
         e.preventDefault();
-        if (suggestions[highlightedIndex]) handleSelect(suggestions[highlightedIndex]);
+        if (suggestions[highlightedIndex]) handleSelect(suggestions[highlightedIndex] as AdresseFeature);
         break;
       case "Escape":
         setOpen(false);
@@ -173,9 +183,9 @@ export function AdresseAutocomplete({
               Recherche...
             </li>
           ) : (
-            suggestions.map((addr, i) => (
+            suggestions.map((f, i) => (
               <li
-                key={`${addr}-${i}`}
+                key={`${f.properties.label}-${i}`}
                 role="option"
                 aria-selected={i === highlightedIndex}
                 className={cn(
@@ -184,11 +194,11 @@ export function AdresseAutocomplete({
                 )}
                 onMouseDown={(e) => {
                   e.preventDefault();
-                  handleSelect(addr);
+                  handleSelect(f);
                 }}
                 onMouseEnter={() => setHighlightedIndex(i)}
               >
-                {addr}
+                {f.properties.label}
               </li>
             ))
           )}

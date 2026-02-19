@@ -7,6 +7,7 @@ export type Salle = {
   name: string;
   city: string;
   address: string;
+  contactPhone?: string | null;
   capacity: number;
   pricePerDay: number;
   description: string;
@@ -25,6 +26,7 @@ export type SalleRow = {
   name: string;
   city: string;
   address: string;
+  contact_phone?: string | null;
   capacity: number;
   price_per_day: number;
   description: string | null;
@@ -46,6 +48,7 @@ export function rowToSalle(row: SalleRow): Salle {
     name: row.name,
     city: row.city,
     address: row.address,
+    contactPhone: row.contact_phone ?? null,
     capacity: row.capacity,
     pricePerDay: row.price_per_day,
     description: row.description ?? "",
