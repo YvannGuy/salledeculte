@@ -4,7 +4,7 @@ import { Building2, CalendarDays, CheckCircle2, Facebook, Gift, ImageIcon, Insta
 
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Button } from "@/components/ui/button";
-import { HeaderAuth } from "@/components/layout/header-auth";
+import { SiteHeader } from "@/components/layout/site-header";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -88,30 +88,7 @@ const faqSectionItems = [
 export default function Home() {
   return (
     <main className="bg-[#f3f6fa] text-slate-800">
-      <header className="border-y border-slate-300 bg-[#f1f3f5]">
-        <div className="container flex h-14 max-w-[1120px] items-center justify-between">
-          <Link href="/" className="text-xl font-semibold leading-none text-[#303B4A]">
-            {siteConfig.name}
-          </Link>
-          <nav className="hidden items-center gap-8 text-[14px] font-semibold text-slate-500 md:flex">
-            <a href="#" className="hover:text-slate-800">
-              Rechercher
-            </a>
-            <a href="#comment-ca-marche" className="hover:text-slate-900">
-              Comment ça marche
-            </a>
-            <a href="#tarifs" className="hover:text-slate-900">
-              Tarifs
-            </a>
-            <Link href="/auth?tab=signup" className="hover:text-slate-900">
-              Ajoutez ma salle
-            </Link>
-          </nav>
-          <div className="flex items-center">
-            <HeaderAuth />
-          </div>
-        </div>
-      </header>
+      <SiteHeader />
 
       <section className="container max-w-[1120px] py-8">
         <div className="rounded-xl bg-[#f3f6fa] p-3">
@@ -121,10 +98,6 @@ export default function Home() {
                 <span className="inline-flex items-center gap-2 rounded-full border border-emerald-400 bg-white px-3 py-1.5 text-[12px] font-medium text-emerald-700">
                   <CheckCircle2 className="h-4 w-4" />
                   Annonces vérifiées
-                </span>
-                <span className="inline-flex items-center gap-2 rounded-full border border-sky-300 bg-white px-3 py-1.5 text-[12px] font-medium text-sky-600">
-                  <Users className="h-4 w-4" />
-                  +2 000 utilisateurs
                 </span>
                 <span className="inline-flex items-center gap-2 rounded-full border border-violet-300 bg-white px-3 py-1.5 text-[12px] font-medium text-violet-600">
                   <Star className="h-4 w-4" />
@@ -181,13 +154,13 @@ export default function Home() {
                       </div>
                     </div>
                   </div>
-                  <Button className="mt-5 h-12 w-full rounded-lg bg-sky-500 text-[15px] font-medium hover:bg-sky-600">Voir les salles</Button>
+                  <Link href="/rechercher">
+                    <Button className="mt-5 h-12 w-full rounded-lg bg-sky-500 text-[15px] font-medium hover:bg-sky-600">
+                      Voir les salles
+                    </Button>
+                  </Link>
                 </CardContent>
               </Card>
-
-              <Link href="#" className="inline-block text-[13px] font-medium text-sky-600 hover:text-sky-700">
-                Ou explorer toutes les salles →
-              </Link>
 
               <div className="flex flex-wrap items-center gap-3 text-[13px] text-slate-600">
                 <span className="inline-flex items-center gap-1.5">
@@ -416,7 +389,7 @@ export default function Home() {
             <div>
               <p className="text-[24px] font-semibold text-white [zoom:0.5]">Plateforme</p>
               <ul className="mt-3 space-y-2 text-[13px] text-slate-300">
-                <li>Rechercher une salle</li>
+                <li><Link href="/rechercher" className="hover:text-white">Rechercher une salle</Link></li>
                 <li><Link href="/auth?tab=signup" className="hover:text-white">Ajoutez ma salle</Link></li>
                 <li>Comment ça marche</li>
                 <li>Tarifs</li>
@@ -444,7 +417,7 @@ export default function Home() {
           <div className="mt-8 h-px w-full bg-white/15" />
 
           <div className="mt-6 flex flex-col items-center justify-between gap-4 md:flex-row">
-            <p className="text-[13px] text-slate-300">© 2024 salledeculte.com. Tous droits réservés.</p>
+            <p className="text-[13px] text-slate-300">© 2025 salledeculte.com. Tous droits réservés.</p>
             <div className="flex items-center gap-3">
               {[Facebook, Instagram].map((Icon, index) => (
                 <a key={index} href="#" className="flex h-8 w-8 items-center justify-center rounded-full bg-white/10 text-slate-200 hover:bg-white/20">
