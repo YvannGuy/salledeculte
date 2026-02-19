@@ -16,7 +16,7 @@ export async function loginAction(_: AuthFormState, formData: FormData): Promise
   const email = String(formData.get("email") ?? "");
   const password = String(formData.get("password") ?? "");
 
-  const supabase = createClient();
+  const supabase = await createClient();
   const { error } = await supabase.auth.signInWithPassword({ email, password });
 
   if (error) {
@@ -33,7 +33,7 @@ export async function signupAction(_: AuthFormState, formData: FormData): Promis
   const fullName = String(formData.get("fullName") ?? "");
   const userType = String(formData.get("userType") ?? "seeker");
 
-  const supabase = createClient();
+  const supabase = await createClient();
   const { error } = await supabase.auth.signUp({
     email,
     password,
@@ -57,7 +57,7 @@ export async function signupAction(_: AuthFormState, formData: FormData): Promis
 }
 
 export async function signOutAction() {
-  const supabase = createClient();
+  const supabase = await createClient();
   await supabase.auth.signOut();
   revalidatePath("/", "layout");
   redirect("/auth");
