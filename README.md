@@ -26,6 +26,16 @@ Exécutez le script `config/supabase.sql` dans l'éditeur SQL Supabase pour :
 - activer les policies RLS
 - créer un trigger qui crée automatiquement le profil à l'inscription
 
+## Déploiement Vercel
+
+**Important** : configurez les variables d'environnement dans Vercel (Settings → Environment Variables) :
+
+- `NEXT_PUBLIC_SUPABASE_URL` – URL de votre projet Supabase
+- `NEXT_PUBLIC_SUPABASE_ANON_KEY` – Clé anonyme Supabase
+- Optionnel : `NEXT_PUBLIC_SITE_URL` (ex: `https://votredomaine.com`)
+
+Sans ces variables, le site renvoie une erreur 500 (le proxy Supabase ne peut pas s'initialiser).
+
 ## Routes principales
 
 - `/` landing page
