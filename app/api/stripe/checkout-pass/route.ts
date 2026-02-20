@@ -1,0 +1,88 @@
+import { NextResponse } from "next/server";
+import { z } from "zod";
+
+import { getPlatformSettings } from "@/app/actions/admin-settings";
+import { siteConfig } from "@/config/site";
+import { getStripe } from "@/lib/stripe";
+import { createClient } from "@/lib/supabase/server";
+
+const checkoutPassSchema = z.object({
+  passType: z.enum(["pass_24h", "pass_48h", "abonnement"]),
+});
+
+export async function POST(request: Request) {
+  try {
+    const supabase = await createClient();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
+    if (!user) {
+      return NextResponse.json({ error: "Connectez-vous pour acheter un Pass." }, { status: 401 });
+    }
+
+    const body = await request.json();
+    const { passType } = checkoutPassSchema.parse(body);
+
+    const settings = await getPlatformSettings();
+    const pass = settings.pass;
+
+    const config: Record<string, { price: number; enabled: boolean; name: string; description: string }> = {
+      pass_24h: {
+        price: pass.price_24h,
+        enabled: pass.pass_24h_enabled,
+        name: "Pass 24h",
+        description: "Demandes illimitées pendant 24 heures",
+      },
+      pass_48h: {
+        price: pass.price_48h,
+        enabled: pass.pass_48h_enabled,
+        name: "Pass 48h",
+        description: "Demandes illimitées pendant 48 heures",
+      },
+      abonnement: {
+        price: pass.price_abonnement,
+        enabled: pass.abonnement_enabled,
+        name: "Abonnement",
+        description: "Accès prioritaire illimité",
+      },
+    };
+
+    const plan = config[passType];
+    if (!plan?.enabled) {
+      return NextResponse.json({ error: "Ce Pass n'est pas disponible." }, { status: 400 });
+    }
+
+    const stripe = getStripe();
+    const session = await stripe.checkout.sessions.create({
+      mode: "payment",
+      line_items: [
+        {
+          price_data: {
+            currency: "eur",
+            product_data: {
+              name: plan.name,
+              description: plan.description,
+            },
+            unit_amount: plan.price,
+          },
+          quantity: 1,
+        },
+      ],
+      success_url: `${siteConfig.url}/dashboard?checkout=success`,
+      cancel_url: `${siteConfig.url}/pricing?checkout=cancel`,
+      metadata: {
+        user_id: user.id,
+        product_type: passType,
+      },
+      customer_email: user.email ?? undefined,
+    });
+
+    return NextResponse.json({ sessionId: session.id, url: session.url });
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      return NextResponse.json({ error: "Payload invalide." }, { status: 400 });
+    }
+    return NextResponse.json({ error: "Erreur lors de la création de la session Stripe." }, { status: 500 });
+  }
+}

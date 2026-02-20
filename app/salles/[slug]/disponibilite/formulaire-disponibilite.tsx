@@ -114,7 +114,15 @@ export function FormulaireDisponibilite({ salle }: { salle: Salle }) {
       <form onSubmit={handleSubmit} className="mt-6 space-y-5">
         {error && (
           <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
-            {error}
+            <p>{error}</p>
+            {error.includes("Pass") && (
+              <Link
+                href="/pricing"
+                className="mt-2 inline-block font-medium text-blue-600 underline hover:text-blue-700"
+              >
+                Voir les tarifs →
+              </Link>
+            )}
           </div>
         )}
 

@@ -1,7 +1,12 @@
 import { createAdminClient } from "@/lib/supabase/admin";
 import { UtilisateursClient } from "./utilisateurs-client";
 
-export default async function AdminUtilisateursPage() {
+export default async function AdminUtilisateursPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ userId?: string }>;
+}) {
+  const { userId } = await searchParams;
   const supabase = createAdminClient();
 
   const [{ data: profiles }, { data: sallesByOwner }, { data: demandesBySeeker }] =
@@ -53,7 +58,7 @@ export default async function AdminUtilisateursPage() {
 
   return (
     <div className="p-6 md:p-8">
-      <UtilisateursClient users={profilesList} stats={stats} />
+      <UtilisateursClient users={profilesList} stats={stats} highlightUserId={userId} />
     </div>
   );
 }

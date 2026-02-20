@@ -119,6 +119,7 @@ export default function OnboardingSallePage() {
   const [data, setData] = useState<WizardData>(initialData);
   const [submitted, setSubmitted] = useState(false);
   const [createdSlug, setCreatedSlug] = useState<string | null>(null);
+  const [createdStatus, setCreatedStatus] = useState<"approved" | "pending">("pending");
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
@@ -237,6 +238,7 @@ export default function OnboardingSallePage() {
 
     if (result.success) {
       setCreatedSlug(result.slug ?? null);
+      setCreatedStatus(result.status ?? "pending");
       setSubmitted(true);
     } else {
       setSubmitError(result.error);
@@ -256,35 +258,52 @@ export default function OnboardingSallePage() {
         </header>
         <main className="container mx-auto max-w-2xl px-4 py-12">
           <div className="flex flex-col items-center text-center">
-            <div className="flex h-24 w-24 items-center justify-center rounded-full bg-amber-100">
-              <Clock className="h-12 w-12 text-amber-600" />
-            </div>
-            <span className="mt-5 inline-flex items-center gap-1.5 rounded-full bg-amber-50 px-4 py-1.5 text-sm font-medium text-amber-800">
-              <span className="h-2 w-2 animate-pulse rounded-full bg-amber-500" />
-              Validation en cours
-            </span>
-            <h1 className="mt-6 text-3xl font-bold text-slate-900">
-              Annonce en cours de validation
-            </h1>
-            <p className="mt-4 max-w-md text-slate-600">
-              Merci pour votre soumission. Notre équipe vérifie actuellement les informations et les
-              photos de votre salle.
-            </p>
-            <div className="mt-5 flex items-center gap-2 rounded-lg bg-slate-50 px-4 py-3 text-sm text-slate-600">
-              <Clock className="h-4 w-4 text-slate-400" />
-              Délai moyen de validation : 24 à 48 heures
-            </div>
-            <div className="mt-6 flex w-full flex-col gap-3 rounded-xl border border-sky-100 bg-sky-50 p-5 text-left">
-              <div className="flex gap-4">
-                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-sky-100">
-                  <Bell className="h-5 w-5 text-sky-600" />
+            {createdStatus === "approved" ? (
+              <>
+                <div className="flex h-24 w-24 items-center justify-center rounded-full bg-emerald-100">
+                  <CheckCircle className="h-12 w-12 text-emerald-600" />
                 </div>
-                <p className="text-sm leading-relaxed text-sky-900">
-                  Vous serez notifié dès que votre annonce sera validée. Un email de confirmation
-                  vous sera envoyé avec toutes les informations nécessaires.
+                <span className="mt-5 inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-4 py-1.5 text-sm font-medium text-emerald-800">
+                  Publiée
+                </span>
+                <h1 className="mt-6 text-3xl font-bold text-slate-900">
+                  Annonce publiée !
+                </h1>
+                <p className="mt-4 max-w-md text-slate-600">
+                  Votre annonce est en ligne et visible par les organisateurs. Vous pouvez la modifier depuis votre tableau de bord.
                 </p>
-              </div>
-            </div>
+              </>
+            ) : (
+              <>
+                <div className="flex h-24 w-24 items-center justify-center rounded-full bg-amber-100">
+                  <Clock className="h-12 w-12 text-amber-600" />
+                </div>
+                <span className="mt-5 inline-flex items-center gap-1.5 rounded-full bg-amber-50 px-4 py-1.5 text-sm font-medium text-amber-800">
+                  <span className="h-2 w-2 animate-pulse rounded-full bg-amber-500" />
+                  Validation en cours
+                </span>
+                <h1 className="mt-6 text-3xl font-bold text-slate-900">
+                  Annonce en cours de validation
+                </h1>
+                <p className="mt-4 max-w-md text-slate-600">
+                  Merci pour votre soumission. Notre équipe vérifie actuellement les informations et les photos de votre salle.
+                </p>
+                <div className="mt-5 flex items-center gap-2 rounded-lg bg-slate-50 px-4 py-3 text-sm text-slate-600">
+                  <Clock className="h-4 w-4 text-slate-400" />
+                  Délai moyen de validation : 24 à 48 heures
+                </div>
+                <div className="mt-6 flex w-full flex-col gap-3 rounded-xl border border-sky-100 bg-sky-50 p-5 text-left">
+                  <div className="flex gap-4">
+                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-sky-100">
+                      <Bell className="h-5 w-5 text-sky-600" />
+                    </div>
+                    <p className="text-sm leading-relaxed text-sky-900">
+                      Vous serez notifié dès que votre annonce sera validée.
+                    </p>
+                  </div>
+                </div>
+              </>
+            )}
             <div className="mt-8 flex w-full flex-col gap-3">
               <Link
                 href="/proprietaire"
@@ -301,9 +320,12 @@ export default function OnboardingSallePage() {
                 Voir mon annonce
               </Link>
             </div>
+            {createdStatus === "pending" && (
             <h2 className="mt-14 w-full text-left text-lg font-semibold text-slate-900">
               Pendant la validation
             </h2>
+            )}
+            {createdStatus === "pending" && (
             <div className="mt-6 grid w-full gap-6 sm:grid-cols-3">
               <div className="flex flex-col items-center text-center">
                 <div className="flex h-14 w-14 items-center justify-center rounded-full bg-slate-100">
@@ -327,6 +349,8 @@ export default function OnboardingSallePage() {
                 <p className="mt-1 text-xs text-slate-500">Respect des standards</p>
               </div>
             </div>
+            )}
+            {createdStatus === "pending" && (
             <div className="mt-10 flex w-full gap-3 rounded-lg bg-slate-50 p-5 text-left">
               <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-slate-200">
                 <span className="text-sm font-semibold text-slate-600">i</span>
@@ -340,6 +364,7 @@ export default function OnboardingSallePage() {
                 </p>
               </div>
             </div>
+            )}
           </div>
         </main>
       </div>

@@ -1,7 +1,8 @@
 "use server";
 
-import { createClient } from "@/lib/supabase/server";
+import { getPlatformSettings } from "@/app/actions/admin-settings";
 import { mapOnboardingToSalle } from "@/lib/onboarding-to-salle";
+import { createClient } from "@/lib/supabase/server";
 
 const BUCKET_NAME = "salle-photos";
 const MAX_FILE_SIZE = 5 * 1024 * 1024;
@@ -22,7 +23,7 @@ function generateSlug(nom: string): string {
 }
 
 export type CreateSalleResult =
-  | { success: true; slug?: string }
+  | { success: true; slug?: string; status: "approved" | "pending" }
   | { success: false; error: string };
 
 export async function createSalleFromOnboarding(formData: FormData): Promise<CreateSalleResult> {
@@ -141,6 +142,11 @@ export async function createSalleFromOnboarding(formData: FormData): Promise<Cre
   const slug = generateSlug(nom);
   const mapped = mapOnboardingToSalle(onboardingData, slug, imageUrls);
 
+  const settings = await getPlatformSettings();
+  const { validation_manuelle, mode_publication } = settings.validation;
+  const status =
+    !validation_manuelle || mode_publication === "auto" ? "approved" : "pending";
+
   const { error } = await supabase.from("salles").insert({
     owner_id: user.id,
     slug,
@@ -171,7 +177,7 @@ export async function createSalleFromOnboarding(formData: FormData): Promise<Cre
     jours_ouverture: joursOuverture.length > 0 ? joursOuverture : [],
     evenements_acceptes: evenementsAcceptes.length > 0 ? evenementsAcceptes : [],
     places_parking: placesParking ? parseInt(placesParking, 10) || null : null,
-    status: "pending",
+    status,
   });
 
   if (error) {
@@ -179,5 +185,5 @@ export async function createSalleFromOnboarding(formData: FormData): Promise<Cre
     return { success: false, error: error.message };
   }
 
-  return { success: true, slug };
+  return { success: true, slug, status };
 }

@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
   Building2,
@@ -46,6 +46,7 @@ type UserRow = {
 
 type Props = {
   users: UserRow[];
+  highlightUserId?: string | null;
   stats: {
     total: number;
     actifs: number;
@@ -128,7 +129,7 @@ function getTypeBadge(type: string) {
 
 const shortId = (id: string) => `#${id.slice(0, 5)}`;
 
-export function UtilisateursClient({ users, stats }: Props) {
+export function UtilisateursClient({ users, stats, highlightUserId }: Props) {
   const router = useRouter();
   const [search, setSearch] = useState("");
   const [typeFilter, setTypeFilter] = useState("all");
@@ -141,6 +142,17 @@ export function UtilisateursClient({ users, stats }: Props) {
     type: "suspendre" | "reactiver" | "supprimer";
     user: UserRow;
   } | null>(null);
+
+  useEffect(() => {
+    if (highlightUserId && users.length > 0) {
+      const user = users.find((u) => u.id === highlightUserId);
+      if (user) {
+        setViewUser(user);
+        setViewOpen(true);
+      }
+    }
+  }, [highlightUserId, users]);
+
   const [actionPending, setActionPending] = useState(false);
 
   const filtered = useMemo(() => {
