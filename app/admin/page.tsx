@@ -9,7 +9,7 @@ import {
   TrendingUp,
 } from "lucide-react";
 
-import { validateSalleAction } from "@/app/actions/admin";
+import { validateSalleFormAction } from "@/app/actions/admin";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -234,7 +234,7 @@ export default async function AdminDashboardPage() {
                       <p className="font-medium text-slate-900">{s.name}</p>
                       <p className="text-xs text-slate-500">{s.city} • {formatAgo(s.created_at)}</p>
                     </div>
-                    <form action={validateSalleAction} className="shrink-0">
+                    <form action={validateSalleFormAction} className="shrink-0">
                       <input type="hidden" name="salleId" value={s.id} />
                       <input type="hidden" name="status" value="approved" />
                       <Button type="submit" size="sm" className="bg-amber-500 hover:bg-amber-600">

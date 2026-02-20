@@ -110,7 +110,7 @@ export function AnnoncesClient({ salles, stats }: Props) {
       fd.append("salleId", confirmAction.salle.id);
       fd.append("status", status);
       const res = await validateSalleAction(fd);
-      if (res.success) {
+      if (res?.success) {
         setConfirmAction(null);
         router.refresh();
       }

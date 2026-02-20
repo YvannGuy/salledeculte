@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
 
 import type { Salle } from "@/lib/types/salle";
 import { rowToSalle } from "@/lib/types/salle";
@@ -27,6 +28,13 @@ export async function validateSalleAction(formData: FormData) {
   revalidatePath("/admin/annonces-a-valider");
   revalidatePath("/admin/annonces");
   return { success: true };
+}
+
+/** Wrapper pour form action (redirect au lieu de return). */
+export async function validateSalleFormAction(formData: FormData): Promise<void> {
+  const res = await validateSalleAction(formData);
+  if (res.success) redirect("/admin");
+  redirect(`/admin?error=${encodeURIComponent(res.error ?? "Erreur")}`);
 }
 
 export async function getSalleForAdminAction(id: string): Promise<{ error?: string; salle?: Salle }> {

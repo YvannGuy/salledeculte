@@ -2,7 +2,8 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
+import { useMemo, useState, useTransition } from "react";
 import {
   Check,
   Clock,
@@ -48,6 +49,8 @@ function formatDateShort(createdAt: string) {
 
 
 export function AnnoncesAValiderClient({ salles }: Props) {
+  const router = useRouter();
+  const [isPending, startTransition] = useTransition();
   const [search, setSearch] = useState("");
   const [villeFilter, setVilleFilter] = useState("all");
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -123,18 +126,24 @@ export function AnnoncesAValiderClient({ salles }: Props) {
             <Clock className="h-4 w-4" />
             {filtered.length} annonce(s) en attente de validation
           </span>
-          <form action={validateSalleAction}>
-            <input type="hidden" name="status" value="approved" />
-            {filtered.map((s) => (
-              <input key={s.id} type="hidden" name="salleIds" value={s.id} />
-            ))}
+          <form
+            onSubmit={(e) => {
+              e.preventDefault();
+              const fd = new FormData();
+              fd.append("status", "approved");
+              filtered.forEach((s) => fd.append("salleIds", s.id));
+              startTransition(() =>
+                validateSalleAction(fd).then(() => router.refresh())
+              );
+            }}
+          >
             <Button
               type="submit"
               size="sm"
               className="bg-amber-500 hover:bg-amber-600"
-              disabled={filtered.length === 0}
+              disabled={filtered.length === 0 || isPending}
             >
-              Tout valider
+              {isPending ? "En cours..." : "Tout valider"}
             </Button>
           </form>
         </div>
@@ -219,28 +228,38 @@ export function AnnoncesAValiderClient({ salles }: Props) {
                         >
                           <Eye className="h-4 w-4" />
                         </button>
-                        <form action={validateSalleAction} className="inline">
-                          <input type="hidden" name="salleId" value={s.id} />
-                          <input type="hidden" name="status" value="approved" />
-                          <button
-                            type="submit"
-                            className="rounded p-1.5 text-slate-500 hover:bg-emerald-100 hover:text-emerald-600"
-                            title="Valider"
-                          >
-                            <Check className="h-4 w-4" />
-                          </button>
-                        </form>
-                        <form action={validateSalleAction} className="inline">
-                          <input type="hidden" name="salleId" value={s.id} />
-                          <input type="hidden" name="status" value="rejected" />
-                          <button
-                            type="submit"
-                            className="rounded p-1.5 text-slate-500 hover:bg-red-100 hover:text-red-600"
-                            title="Refuser"
-                          >
-                            <X className="h-4 w-4" />
-                          </button>
-                        </form>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const fd = new FormData();
+                            fd.append("salleId", s.id);
+                            fd.append("status", "approved");
+                            startTransition(() =>
+                              validateSalleAction(fd).then(() => router.refresh())
+                            );
+                          }}
+                          className="rounded p-1.5 text-slate-500 hover:bg-emerald-100 hover:text-emerald-600"
+                          title="Valider"
+                          disabled={isPending}
+                        >
+                          <Check className="h-4 w-4" />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const fd = new FormData();
+                            fd.append("salleId", s.id);
+                            fd.append("status", "rejected");
+                            startTransition(() =>
+                              validateSalleAction(fd).then(() => router.refresh())
+                            );
+                          }}
+                          className="rounded p-1.5 text-slate-500 hover:bg-red-100 hover:text-red-600"
+                          title="Refuser"
+                          disabled={isPending}
+                        >
+                          <X className="h-4 w-4" />
+                        </button>
                       </div>
                     </td>
                   </tr>
@@ -322,22 +341,37 @@ export function AnnoncesAValiderClient({ salles }: Props) {
                 </div>
               )}
               <div className="mt-6 flex gap-3">
-                <form action={validateSalleAction} className="flex-1">
-                  <input type="hidden" name="salleId" value={selected.id} />
-                  <input type="hidden" name="status" value="approved" />
-                  <Button type="submit" className="w-full bg-emerald-600 hover:bg-emerald-700">
-                    <Check className="mr-2 h-4 w-4" />
-                    Valider l&apos;annonce
-                  </Button>
-                </form>
-                <form action={validateSalleAction} className="flex-1">
-                  <input type="hidden" name="salleId" value={selected.id} />
-                  <input type="hidden" name="status" value="rejected" />
-                  <Button type="submit" variant="outline" className="w-full border-red-200 text-red-600 hover:bg-red-50">
-                    <X className="mr-2 h-4 w-4" />
-                    Refuser
-                  </Button>
-                </form>
+                <Button
+                  onClick={() => {
+                    const fd = new FormData();
+                    fd.append("salleId", selected.id);
+                    fd.append("status", "approved");
+                    startTransition(() =>
+                      validateSalleAction(fd).then(() => router.refresh())
+                    );
+                  }}
+                  className="w-full bg-emerald-600 hover:bg-emerald-700"
+                  disabled={isPending}
+                >
+                  <Check className="mr-2 h-4 w-4" />
+                  Valider l&apos;annonce
+                </Button>
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    const fd = new FormData();
+                    fd.append("salleId", selected.id);
+                    fd.append("status", "rejected");
+                    startTransition(() =>
+                      validateSalleAction(fd).then(() => router.refresh())
+                    );
+                  }}
+                  className="w-full border-red-200 text-red-600 hover:bg-red-50"
+                  disabled={isPending}
+                >
+                  <X className="mr-2 h-4 w-4" />
+                  Refuser
+                </Button>
               </div>
               <Link
                 href={`/salles/${selected.slug}`}
@@ -382,16 +416,35 @@ export function AnnoncesAValiderClient({ salles }: Props) {
               </p>
               <p className="mt-4 text-sm text-slate-600">{selected.description || "Aucune description."}</p>
               <div className="mt-6 flex gap-3">
-                <form action={validateSalleAction} className="flex-1">
-                  <input type="hidden" name="salleId" value={selected.id} />
-                  <input type="hidden" name="status" value="approved" />
-                  <Button type="submit" className="w-full bg-emerald-600">Valider</Button>
-                </form>
-                <form action={validateSalleAction} className="flex-1">
-                  <input type="hidden" name="salleId" value={selected.id} />
-                  <input type="hidden" name="status" value="rejected" />
-                  <Button type="submit" variant="outline" className="border-red-200 text-red-600">Refuser</Button>
-                </form>
+                <Button
+                  onClick={() => {
+                    const fd = new FormData();
+                    fd.append("salleId", selected.id);
+                    fd.append("status", "approved");
+                    startTransition(() =>
+                      validateSalleAction(fd).then(() => router.refresh())
+                    );
+                  }}
+                  className="w-full bg-emerald-600"
+                  disabled={isPending}
+                >
+                  Valider
+                </Button>
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    const fd = new FormData();
+                    fd.append("salleId", selected.id);
+                    fd.append("status", "rejected");
+                    startTransition(() =>
+                      validateSalleAction(fd).then(() => router.refresh())
+                    );
+                  }}
+                  className="border-red-200 text-red-600"
+                  disabled={isPending}
+                >
+                  Refuser
+                </Button>
               </div>
             </div>
           </div>

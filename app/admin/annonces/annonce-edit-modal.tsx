@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
+import type { Resolver } from "react-hook-form";
 import { useRouter } from "next/navigation";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -21,8 +22,8 @@ const schema = z.object({
   name: z.string().min(2, "Nom trop court"),
   city: z.string().min(2, "Ville requise"),
   address: z.string().min(5, "Adresse requise"),
-  capacity: z.coerce.number().min(1, "Capacité invalide"),
-  price_per_day: z.coerce.number().min(1, "Prix invalide"),
+  capacity: z.number().min(1, "Capacité invalide"),
+  price_per_day: z.number().min(1, "Prix invalide"),
   description: z.string(),
   contact_phone: z.string(),
 });
@@ -41,7 +42,7 @@ export function AnnonceEditModal({ salle, open, onOpenChange }: Props) {
   const [isPending, setIsPending] = useState(false);
 
   const form = useForm<FormValues>({
-    resolver: zodResolver(schema),
+    resolver: zodResolver(schema) as Resolver<FormValues>,
     defaultValues: {
       name: "",
       city: "",
@@ -149,7 +150,7 @@ export function AnnonceEditModal({ salle, open, onOpenChange }: Props) {
               </label>
               <Input
                 type="number"
-                {...form.register("capacity")}
+                {...form.register("capacity", { valueAsNumber: true })}
                 className="border-slate-200"
                 placeholder="50"
               />
@@ -165,7 +166,7 @@ export function AnnonceEditModal({ salle, open, onOpenChange }: Props) {
               </label>
               <Input
                 type="number"
-                {...form.register("price_per_day")}
+                {...form.register("price_per_day", { valueAsNumber: true })}
                 className="border-slate-200"
                 placeholder="150"
               />
