@@ -30,13 +30,8 @@ export function SiteFooter() {
                 </Link>
               </li>
               <li>
-                <a href="/#comment-ca-marche" className="hover:text-white">
-                  Comment ça marche
-                </a>
-              </li>
-              <li>
-                <Link href="/pricing" className="hover:text-white">
-                  Tarifs
+                <Link href="/blog" className="hover:text-white">
+                  Blog
                 </Link>
               </li>
             </ul>

@@ -13,7 +13,12 @@ export async function createClient() {
           return cookieStore.getAll();
         },
         setAll(cookiesToSet) {
-          cookiesToSet.forEach(({ name, value, options }) => cookieStore.set(name, value, options));
+          try {
+            cookiesToSet.forEach(({ name, value, options }) => cookieStore.set(name, value, options));
+          } catch {
+            // Cookies cannot be modified in Server Components (only in Server Actions or Route Handlers).
+            // Session refresh is skipped; it will happen on the next Server Action or Route Handler.
+          }
         },
       },
     },

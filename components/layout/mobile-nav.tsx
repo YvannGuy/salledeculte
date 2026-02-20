@@ -11,7 +11,7 @@ interface MobileNavProps {
 
 const navLinks = [
   { href: "/#categories-evenement", label: "Catégories" },
-  { href: "/#comment-ca-marche", label: "Comment ça marche" },
+  { href: "/blog", label: "Blog" },
   { href: "/#tarifs", label: "Tarifs" },
   { href: "/auth?tab=signup", label: "Ajoutez ma salle" },
 ];

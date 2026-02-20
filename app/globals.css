@@ -50,17 +50,28 @@ body {
   position: relative;
 }
 
-/* Miniature agrandie */
+/* Miniature agrandie - correction du glitch d'affichage */
 .map-marker-popup-large .leaflet-popup-content-wrapper {
   padding: 0;
   border-radius: 0.75rem;
   box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
+  transform: translateZ(0);
+  backface-visibility: hidden;
+  isolation: isolate;
 }
 .map-marker-popup-large .leaflet-popup-content {
   margin: 0;
   min-width: 0;
   width: 100% !important;
+  overflow: hidden;
 }
 .map-marker-popup-large .leaflet-popup-tip {
   background: var(--primary);
+}
+/* Z-index popup au-dessus du marqueur */
+.leaflet-pane.leaflet-popup-pane {
+  z-index: 1000;
+}
+.map-popup-content {
+  transform: translateZ(0);
 }

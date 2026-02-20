@@ -35,9 +35,9 @@ export async function SiteHeader() {
           <Link href="/#categories-evenement" className="hover:text-black">
             Catégories
           </Link>
-          <a href="/#comment-ca-marche" className="hover:text-black">
-            Comment ça marche
-          </a>
+          <Link href="/blog" className="hover:text-black">
+            Blog
+          </Link>
           <a href="/#tarifs" className="hover:text-black">
             Tarifs
           </a>

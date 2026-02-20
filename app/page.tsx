@@ -105,7 +105,7 @@ export default async function Home() {
 
       <SectionReveal className="container max-w-[1120px] px-4 py-6 sm:py-8">
         <div className="rounded-xl bg-[#f3f6fa] p-3 sm:p-4">
-          <div className="grid items-center gap-6 rounded-xl px-4 pb-6 pt-5 sm:gap-8 sm:px-5 sm:pb-8 sm:pt-6 lg:grid-cols-[1fr_1fr] lg:px-10">
+          <div className="grid items-stretch gap-6 rounded-xl px-4 pb-6 pt-5 sm:gap-8 sm:px-5 sm:pb-8 sm:pt-6 lg:grid-cols-[1fr_1fr] lg:px-10">
             <div className="space-y-6">
               <div className="flex flex-wrap gap-3">
                 <span className="inline-flex items-center gap-2 rounded-full border border-emerald-400 bg-white px-3 py-1.5 text-[12px] font-medium text-emerald-700">
@@ -118,8 +118,8 @@ export default async function Home() {
                 </span>
               </div>
               <HeroRotatingTitle />
-              <p className="max-w-[430px] text-[14px] leading-relaxed text-slate-500">
-                Une sélection de salles présentées avec clarté et précision.
+              <p className="max-w-[430px] text-[14px] font-bold leading-relaxed text-slate-500">
+                Des espaces pensés pour la foi, la célébration et le partage
               </p>
 
               <SearchForm />
@@ -142,16 +142,17 @@ export default async function Home() {
               </div>
             </div>
 
-            <div className="relative overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-[0_12px_22px_rgba(15,23,42,0.14)]">
+            <div className="relative min-h-[320px] overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-[0_8px_24px_rgba(15,23,42,0.08)] lg:min-h-[520px]">
               <Image
                 src="/img.png"
-                alt="Salle de culte"
+                alt="Intérieur d'une salle de culte"
                 width={1200}
-                height={700}
-                className="h-[380px] w-full object-cover object-right-top"
+                height={800}
+                className="h-full w-full object-cover object-center"
                 priority
+                sizes="(max-width: 1023px) 100vw, 50vw"
               />
-              <div className="absolute bottom-4 right-4 flex items-center gap-2 rounded-lg bg-white px-3 py-2 shadow-md">
+              <div className="absolute bottom-4 right-4 flex items-center gap-2 rounded-lg bg-white/95 px-4 py-2.5 shadow-lg backdrop-blur-sm">
                 <Star className="h-4 w-4 fill-emerald-500 text-emerald-500" />
                 <span className="text-[13px] font-semibold text-slate-700">Satisfaction 4.8/5 étoiles</span>
               </div>
@@ -391,8 +392,7 @@ export default async function Home() {
               <ul className="mt-3 space-y-2 text-[13px] text-slate-300">
                 <li><Link href="/rechercher" className="hover:text-white">Rechercher une salle</Link></li>
                 <li><Link href="/auth?tab=signup" className="hover:text-white">Ajoutez ma salle</Link></li>
-                <li>Comment ça marche</li>
-                <li>Tarifs</li>
+                <li><Link href="/blog" className="hover:text-white">Blog</Link></li>
               </ul>
             </div>
             <div>

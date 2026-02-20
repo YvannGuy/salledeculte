@@ -3,14 +3,14 @@
 import { useEffect, useState } from "react";
 import { cn } from "@/lib/utils";
 
-const ITEMS: { word: string; determiner: "votre" | "vos" }[] = [
-  { word: "événement cultuel", determiner: "votre" },
-  { word: "culte", determiner: "votre" },
-  { word: "baptême", determiner: "votre" },
-  { word: "conférence", determiner: "votre" },
-  { word: "célébrations", determiner: "vos" },
-  { word: "retraites", determiner: "vos" },
-  { word: "concert", determiner: "votre" },
+const WORDS = [
+  "événements cultuels",
+  "cultes",
+  "baptêmes",
+  "conférences",
+  "célébrations",
+  "retraites",
+  "concerts",
 ];
 
 const INTERVAL_MS = 3000;
@@ -20,12 +20,12 @@ export function HeroRotatingTitle({ className }: { className?: string }) {
 
   useEffect(() => {
     const id = setInterval(() => {
-      setIndex((i) => (i + 1) % ITEMS.length);
+      setIndex((i) => (i + 1) % WORDS.length);
     }, INTERVAL_MS);
     return () => clearInterval(id);
   }, []);
 
-  const { word, determiner } = ITEMS[index];
+  const word = WORDS[index];
 
   return (
     <h1
@@ -34,7 +34,7 @@ export function HeroRotatingTitle({ className }: { className?: string }) {
         className
       )}
     >
-      Trouvez une salle adaptée à {determiner}{" "}
+      Trouvez une salle adaptée pour vos{" "}
       <span
         key={index}
         className="inline-block animate-fade-in"

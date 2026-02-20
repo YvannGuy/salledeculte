@@ -36,7 +36,7 @@ function createPriceMarkerIcon(pricePerDay: number) {
     className: "price-marker",
     iconSize: [80, 36],
     iconAnchor: [40, 36],
-    popupAnchor: [0, 10],
+    popupAnchor: [0, -48],
   });
 }
 
@@ -133,7 +133,7 @@ function MapPanController({
     try {
       const zoom = map.getZoom();
       const safeZoom = Number.isFinite(zoom) ? Math.min(zoom, 15) : 12;
-      map.flyTo([coords.lat, coords.lng], safeZoom, { duration: 0.5 });
+      map.flyTo([coords.lat, coords.lng], safeZoom, { duration: 0.4 });
     } catch {
       // Ignore flyTo errors
     }
@@ -158,6 +158,7 @@ function ViewportFilter({
 }) {
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const onVisibleChangeRef = useRef(onVisibleChange);
+  const lastVisibleIdsRef = useRef<string>("");
   onVisibleChangeRef.current = onVisibleChange;
 
   const map = useMapEvents({
@@ -177,11 +178,20 @@ function ViewportFilter({
               return false;
             }
           });
-          onVisibleChangeRef.current(visible.length > 0 ? visible : salles);
+          const next = visible.length > 0 ? visible : salles;
+          const nextIds = next.map((s) => s.id).sort().join(",");
+          if (lastVisibleIdsRef.current !== nextIds) {
+            lastVisibleIdsRef.current = nextIds;
+            onVisibleChangeRef.current(next);
+          }
         } catch {
-          onVisibleChangeRef.current(salles);
+          const nextIds = salles.map((s) => s.id).sort().join(",");
+          if (lastVisibleIdsRef.current !== nextIds) {
+            lastVisibleIdsRef.current = nextIds;
+            onVisibleChangeRef.current(salles);
+          }
         }
-      }, 100);
+      }, 250);
     },
   });
 
@@ -198,8 +208,11 @@ function ViewportFilter({
           return false;
         }
       });
-      onVisibleChangeRef.current(visible.length > 0 ? visible : salles);
+      const next = visible.length > 0 ? visible : salles;
+      lastVisibleIdsRef.current = next.map((s) => s.id).sort().join(",");
+      onVisibleChangeRef.current(next);
     } catch {
+      lastVisibleIdsRef.current = salles.map((s) => s.id).sort().join(",");
       onVisibleChangeRef.current(salles);
     }
     return () => {
@@ -301,10 +314,7 @@ function MapInnerComponent({
                 maxWidth={320}
                 minWidth={280}
                 className="map-marker-popup map-marker-popup-large"
-                autoPan={true}
-                autoPanPadding={[20, 20]}
-                autoPanPaddingTopLeft={[20, 20]}
-                autoPanPaddingBottomRight={[20, 20]}
+                autoPan={false}
               >
                 <div className="map-popup-content">
                   <Link
