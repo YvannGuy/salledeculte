@@ -133,7 +133,7 @@ export function CategoryCarousel() {
       )}
       <div
         ref={scrollRef}
-        className="flex gap-6 overflow-x-auto overflow-y-hidden pb-2 scroll-smooth scrollbar-none"
+        className="flex items-stretch gap-6 overflow-x-auto overflow-y-hidden pb-2 scroll-smooth scrollbar-none"
       >
         {CATEGORIES.map((cat) => {
           const [bg, text] = COLOR_CLASSES[cat.color].split(" ");
@@ -143,25 +143,25 @@ export function CategoryCarousel() {
               key={cat.type}
               href={`/rechercher?type=${cat.type}`}
               data-card
-              className="group min-w-[280px] max-w-[320px] shrink-0 overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm transition hover:shadow-md"
+              className="group flex w-[280px] shrink-0 flex-col overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm transition hover:shadow-md"
             >
-              <div className={`relative aspect-[4/3] ${bg}`}>
+              <div className={`relative aspect-[4/3] w-full shrink-0 ${bg}`}>
                 <Image
                   src={cat.image}
                   alt={cat.label}
                   fill
                   className="object-cover opacity-60 mix-blend-multiply transition group-hover:scale-[1.03]"
-                  sizes="320px"
+                  sizes="280px"
                 />
                 <div className="absolute inset-0 flex flex-col items-center justify-center gap-3">
-                  <div className="flex h-14 w-14 items-center justify-center rounded-xl bg-white/90 shadow-md">
-                    <Icon className={`h-7 w-7 ${text}`} />
+                  <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-xl bg-white/90 shadow-md">
+                    <Icon className={`h-7 w-7 shrink-0 ${text}`} />
                   </div>
-                  <p className="font-semibold text-white drop-shadow-md">{cat.label}</p>
+                  <p className="text-center font-semibold text-white drop-shadow-md">{cat.label}</p>
                 </div>
               </div>
-              <div className="p-4">
-                <p className="text-sm text-slate-600">{cat.desc}</p>
+              <div className="flex min-h-[88px] flex-1 flex-col p-4">
+                <p className="flex-1 text-sm leading-snug text-slate-600">{cat.desc}</p>
                 <span className={`mt-3 inline-flex items-center gap-1 text-sm font-medium ${text} group-hover:underline`}>
                   Découvrir <span className="inline-block">→</span>
                 </span>

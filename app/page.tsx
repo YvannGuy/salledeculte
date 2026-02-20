@@ -400,7 +400,9 @@ export default async function Home() {
               <p className="text-[24px] font-semibold text-white [zoom:0.5]">Entreprise</p>
               <ul className="mt-3 space-y-2 text-[13px] text-slate-300">
                 <li>À propos</li>
-                <li>Contact</li>
+                <li>
+                  <a href="mailto:contact@salledeculte.com" className="hover:text-white">Contact</a>
+                </li>
                 <li><Link href="/#categories-evenement" className="hover:text-white">Catégories</Link></li>
               </ul>
             </div>
