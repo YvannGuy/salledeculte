@@ -1,8 +1,7 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { Plus } from "lucide-react";
 
-import { Button } from "@/components/ui/button";
+import { AddSalleButton } from "@/components/proprietaire/add-salle-modal";
 import { createClient } from "@/lib/supabase/server";
 import { AnnoncesClient } from "./annonces-client";
 
@@ -101,12 +100,9 @@ export default async function AnnoncesPage({
           <h1 className="text-2xl font-bold text-slate-900">Mes annonces</h1>
           <p className="mt-1 text-slate-500">Gérez et modifiez vos salles</p>
         </div>
-        <Link href="/onboarding/salle">
-          <Button className="bg-[#6366f1] hover:bg-[#4f46e5]">
-            <Plus className="mr-2 h-4 w-4" />
-            Ajouter une salle
-          </Button>
-        </Link>
+        <AddSalleButton className="bg-[#6366f1] hover:bg-[#4f46e5]">
+          Ajouter une salle
+        </AddSalleButton>
       </div>
 
       <div className="mb-6 flex flex-wrap gap-2 border-b border-slate-200 pb-4">
@@ -146,12 +142,9 @@ export default async function AnnoncesPage({
               : `Aucune annonce ${STATUT_SALLE_LABEL[statusFilter] ?? statusFilter.toLowerCase()}`}
           </p>
           {statusFilter === "all" && (
-            <Link href="/onboarding/salle">
-              <Button className="mt-4 bg-[#6366f1] hover:bg-[#4f46e5]">
-                <Plus className="mr-2 h-4 w-4" />
-                Ajouter une salle
-              </Button>
-            </Link>
+            <AddSalleButton className="mt-4 bg-[#6366f1] hover:bg-[#4f46e5]">
+              Ajouter une salle
+            </AddSalleButton>
           )}
         </div>
       ) : (
@@ -212,13 +205,6 @@ export default async function AnnoncesPage({
         </>
       )}
 
-      <Link
-        href="/onboarding/salle"
-        className="fixed bottom-8 right-8 flex h-14 w-14 items-center justify-center rounded-full bg-[#6366f1] text-white shadow-lg hover:bg-[#4f46e5]"
-        title="Nouvelle annonce"
-      >
-        <Plus className="h-7 w-7" />
-      </Link>
     </div>
   );
 }

@@ -1,8 +1,9 @@
 import Image from "next/image";
 import Link from "next/link";
+import { AddSalleButton } from "@/components/proprietaire/add-salle-modal";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
-import { CheckCircle, Clock, FolderOpen, Inbox, Plus, Star } from "lucide-react";
+import { CheckCircle, Clock, FolderOpen, Inbox, Star } from "lucide-react";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -133,11 +134,9 @@ export default async function ProprietaireDashboardPage() {
             <div className="flex flex-col items-center justify-center rounded-xl border border-dashed border-slate-200 py-12 text-center">
               <Inbox className="mb-3 h-12 w-12 text-slate-300" />
               <p className="text-slate-500">Aucune annonce pour le moment</p>
-              <Link href="/onboarding/salle">
-                <Button size="sm" className="mt-3 bg-[#6366f1] hover:bg-[#4f46e5]">
-                  Créer une annonce
-                </Button>
-              </Link>
+              <AddSalleButton size="sm" className="mt-3 bg-[#6366f1] hover:bg-[#4f46e5]">
+                Créer une annonce
+              </AddSalleButton>
             </div>
           ) : (
             <div className="grid gap-4 sm:grid-cols-3">
@@ -244,14 +243,6 @@ export default async function ProprietaireDashboardPage() {
           )}
         </CardContent>
       </Card>
-
-      <Link
-        href="/onboarding/salle"
-        className="fixed bottom-8 right-8 flex h-14 w-14 items-center justify-center rounded-full bg-[#6366f1] text-white shadow-lg hover:bg-[#4f46e5]"
-        title="Nouvelle annonce"
-      >
-        <Plus className="h-7 w-7" />
-      </Link>
     </div>
   );
 }
