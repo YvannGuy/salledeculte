@@ -3,6 +3,7 @@ import Link from "next/link";
 import { CheckCircle2, Facebook, Gift, Instagram, Star } from "lucide-react";
 
 import { getTrialActivated } from "@/app/actions/trial";
+import { getEffectiveUserType } from "@/lib/auth-utils";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { ActiverEssaiButton } from "@/components/home/activer-essai-button";
 import { Button } from "@/components/ui/button";
@@ -107,7 +108,15 @@ export default async function Home() {
   const {
     data: { user },
   } = await supabase.auth.getUser();
-  const trialActivated = await getTrialActivated(user?.id ?? null);
+  const getProfile = async (uid: string) => {
+    const { data } = await supabase.from("profiles").select("user_type").eq("id", uid).maybeSingle();
+    return data;
+  };
+  const [trialActivated, userType] = await Promise.all([
+    getTrialActivated(user?.id ?? null),
+    user ? getEffectiveUserType(user, getProfile) : Promise.resolve(null),
+  ]);
+  const paiementTrialUrl = userType === "owner" ? "/proprietaire/paiement?trial=1" : "/dashboard/paiement?trial=1";
 
   return (
     <main className="bg-[#f3f6fa] text-black">
@@ -267,7 +276,7 @@ export default async function Home() {
                 3 demandes offertes pour découvrir la plateforme
               </h3>
               <p className="text-[24px] text-slate-500 [zoom:0.5]">Testez notre service sans engagement et trouvez la salle idéale</p>
-              <ActiverEssaiButton isLoggedIn={!!user} trialActivated={trialActivated} />
+              <ActiverEssaiButton isLoggedIn={!!user} trialActivated={trialActivated} paiementTrialUrl={paiementTrialUrl} />
               <p className="text-[11px] text-slate-400">Valable une seule fois</p>
             </CardContent>
           </Card>

@@ -3,6 +3,7 @@ import { format } from "date-fns";
 import { fr } from "date-fns/locale";
 import { AlertTriangle, CreditCard, Infinity, Lock, Zap } from "lucide-react";
 
+import { activateTrialAction, getTrialActivated } from "@/app/actions/trial";
 import { getPaymentMethods } from "@/app/actions/stripe-portal";
 import { getPlatformSettings } from "@/app/actions/admin-settings";
 import { PassCheckoutButton } from "@/components/pass-checkout-button";
@@ -10,7 +11,8 @@ import { PortalButton } from "@/components/paiement/portal-button";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { createClient } from "@/lib/supabase/server";
-import { hasAccessToBrowseOthers } from "@/lib/pass-utils";
+import { getOwnerBrowseAccess } from "@/lib/pass-utils";
+import { Gift } from "lucide-react";
 
 const PRODUCT_LABEL: Record<string, string> = {
   pass_24h: "Pass 24h",
@@ -43,14 +45,23 @@ const CARD_BRAND_LABEL: Record<string, string> = {
   unionpay: "UnionPay",
 };
 
-export default async function ProprietairePaiementPage() {
+export default async function ProprietairePaiementPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
+}) {
   const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) return null;
 
-  const [settings, { data: payments }, { data: profile }, paymentMethods, canBrowse] =
+  const params = await searchParams;
+  if (params.trial === "1") {
+    await activateTrialAction();
+  }
+
+  const [settings, { data: payments }, { data: profile }, paymentMethods, browse, trialActivated] =
     await Promise.all([
       getPlatformSettings(),
       supabase
@@ -60,11 +71,14 @@ export default async function ProprietairePaiementPage() {
         .order("created_at", { ascending: false }),
       supabase.from("profiles").select("stripe_customer_id").eq("id", user.id).single(),
       getPaymentMethods(user.id),
-      hasAccessToBrowseOthers(user.id),
+      getOwnerBrowseAccess(user.id),
+      getTrialActivated(user.id),
     ]);
 
   const pass = settings.pass;
   const paidList = (payments ?? []).filter((p) => p.status === "paid");
+  const isTrialActive = browse.freeUsed < browse.freeTotal && !browse.hasPaidPass;
+  const trialJustActivated = params.trial === "1";
 
   const plans = [
     {
@@ -105,6 +119,19 @@ export default async function ProprietairePaiementPage() {
       <h1 className="text-2xl font-bold text-black">Paiement</h1>
       <p className="mt-2 text-slate-500">Gérez votre accès pour consulter les annonces des autres propriétaires</p>
 
+      {trialJustActivated && isTrialActive && (
+        <div className="mt-6 flex items-start gap-3 rounded-xl border border-emerald-200 bg-emerald-50/80 p-5">
+          <Gift className="h-8 w-8 shrink-0 text-emerald-600" />
+          <div>
+            <p className="font-semibold text-emerald-800">Votre essai est activé !</p>
+            <p className="mt-1 text-sm text-emerald-700">
+              Vous disposez de {browse.freeTotal - browse.freeUsed} consultation{browse.freeTotal - browse.freeUsed > 1 ? "s" : ""} gratuite
+              {browse.freeTotal - browse.freeUsed > 1 ? "s" : ""} pour découvrir les annonces des autres propriétaires.
+            </p>
+          </div>
+        </div>
+      )}
+
       {/* Mon accès */}
       <Card className="mt-8 border-0 shadow-sm">
         <CardHeader>
@@ -114,7 +141,26 @@ export default async function ProprietairePaiementPage() {
           </CardTitle>
         </CardHeader>
         <CardContent>
-          {canBrowse ? (
+          {isTrialActive ? (
+            <div className="space-y-3">
+              <div className="flex items-center gap-3 rounded-lg border border-emerald-200 bg-emerald-50/80 p-4">
+                <Gift className="h-6 w-6 shrink-0 text-emerald-600" />
+                <div className="flex-1">
+                  <span className="font-semibold text-emerald-800">Essai actif</span>
+                  <p className="mt-0.5 text-sm text-emerald-700">
+                    {browse.freeTotal - browse.freeUsed} consultation{browse.freeTotal - browse.freeUsed > 1 ? "s" : ""} gratuite
+                    {browse.freeTotal - browse.freeUsed > 1 ? "s" : ""} restante{browse.freeTotal - browse.freeUsed > 1 ? "s" : ""}
+                  </p>
+                </div>
+                <span className="rounded-full bg-emerald-200 px-2.5 py-1 text-xs font-medium text-emerald-800">
+                  Essai
+                </span>
+              </div>
+              <p className="text-xs text-slate-500">
+                Une fois vos consultations offertes épuisées, choisissez un Pass pour continuer.
+              </p>
+            </div>
+          ) : browse.hasPaidPass ? (
             <div className="flex items-center gap-3 rounded-lg bg-emerald-50 p-4">
               <Zap className="h-6 w-6 shrink-0 text-emerald-600" />
               <div>
@@ -132,7 +178,7 @@ export default async function ProprietairePaiementPage() {
                 <div>
                   <span className="font-semibold text-slate-700">Accès limité</span>
                   <p className="mt-0.5 text-sm text-slate-600">
-                    Activez un Pass pour consulter les annonces des autres propriétaires
+                    {trialActivated ? `Vos ${browse.freeTotal} consultations offertes sont épuisées` : "Activez votre essai ou un Pass"}
                   </p>
                 </div>
                 <span className="rounded-full bg-slate-300 px-2.5 py-1 text-xs font-medium text-slate-600">
@@ -143,16 +189,24 @@ export default async function ProprietairePaiementPage() {
                 <AlertTriangle className="h-5 w-5 shrink-0 text-amber-600" />
                 <div>
                   <p className="text-sm font-medium text-amber-800">
-                    Sans Pass, vous ne pouvez consulter que vos propres annonces. Activez un Pass pour découvrir les salles des autres propriétaires.
+                    Sans accès, vous ne pouvez consulter que vos propres annonces.
                   </p>
                   <p className="mt-1 text-sm text-amber-700">
-                    Pass 24h, 48h ou abonnement selon vos besoins
+                    {trialActivated ? "Choisissez un Pass pour continuer." : "Activez votre essai (3 consultations gratuites) ou un Pass."}
                   </p>
                 </div>
               </div>
-              <PassCheckoutButton passType="pass_24h" returnBase="/proprietaire/paiement" className="mt-4 bg-[#213398] hover:bg-[#1a2980]">
-                Choisir un Pass
-              </PassCheckoutButton>
+              <div className="mt-4">
+                {trialActivated ? (
+                  <PassCheckoutButton passType="pass_24h" returnBase="/proprietaire/paiement" className="bg-[#213398] hover:bg-[#1a2980]">
+                    Choisir un Pass
+                  </PassCheckoutButton>
+                ) : (
+                  <Link href="/proprietaire/paiement?trial=1">
+                    <Button className="bg-[#213398] hover:bg-[#1a2980]">Activer mon essai</Button>
+                  </Link>
+                )}
+              </div>
             </>
           )}
         </CardContent>

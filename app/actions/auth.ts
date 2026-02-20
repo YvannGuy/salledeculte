@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
+import type { EffectiveUserType } from "@/lib/auth-utils";
 import { getDashboardHref, getEffectiveUserType } from "@/lib/auth-utils";
 import { createClient } from "@/lib/supabase/server";
 
@@ -33,10 +34,6 @@ export async function loginAction(_: AuthFormState, formData: FormData): Promise
 
   revalidatePath("/", "layout");
 
-  if (redirectedFrom && redirectedFrom.startsWith("/")) {
-    redirect(redirectedFrom);
-  }
-
   const getProfile = async (userId: string) => {
     const { data } = await supabase
       .from("profiles")
@@ -46,7 +43,20 @@ export async function loginAction(_: AuthFormState, formData: FormData): Promise
     return data;
   };
   const userType = await getEffectiveUserType(user, getProfile);
-  redirect(getDashboardHref(userType ?? "seeker"));
+  const target =
+    redirectedFrom && redirectedFrom.startsWith("/")
+      ? resolveRedirectForUser(redirectedFrom, userType)
+      : getDashboardHref(userType ?? "seeker");
+  redirect(target);
+}
+
+/** Redirige les owners de /dashboard/paiement vers /proprietaire/paiement */
+function resolveRedirectForUser(path: string, userType: EffectiveUserType | null): string {
+  if (userType !== "owner") return path;
+  const [base, query] = path.split("?");
+  if (base === "/dashboard/paiement" || base.endsWith("/dashboard/paiement"))
+    return "/proprietaire/paiement" + (query ? `?${query}` : "");
+  return path;
 }
 
 export async function signupAction(_: AuthFormState, formData: FormData): Promise<AuthFormState> {
@@ -86,7 +96,10 @@ export async function signupAction(_: AuthFormState, formData: FormData): Promis
   }
 
   if (hasSession && userType === "owner" && redirectedFrom) {
-    return { success: "Compte créé.", redirectTo: redirectedFrom };
+    return {
+      success: "Compte créé.",
+      redirectTo: resolveRedirectForUser(redirectedFrom, "owner"),
+    };
   }
 
   // Confirmation email requise : pas de redirection (l'utilisateur n'a pas encore de session)

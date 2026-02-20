@@ -28,7 +28,7 @@ export default async function RechercherPage({
     return data;
   };
   const userType = user ? await getEffectiveUserType(user, getProfile) : null;
-  const canBrowseOthers = user?.id ? await hasAccessToBrowseOthers(user.id) : false;
+  const canBrowseOthers = user?.id ? await hasAccessToBrowseOthers(user.id, { forOwner: userType === "owner" }) : false;
 
   let salles = await searchSalles({ ville, date, personnes, type });
   if (userType === "owner" && !canBrowseOthers) {

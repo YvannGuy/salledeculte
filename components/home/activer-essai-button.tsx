@@ -12,19 +12,20 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 
-const PAIEMENT_TRIAL_URL = "/dashboard/paiement?trial=1";
-
-function authUrl(tab: "login" | "signup") {
-  return `/auth?tab=${tab}&redirectedFrom=${encodeURIComponent(PAIEMENT_TRIAL_URL)}`;
-}
-
 type ActiverEssaiButtonProps = {
   isLoggedIn: boolean;
   trialActivated: boolean;
+  paiementTrialUrl?: string;
 };
 
-export function ActiverEssaiButton({ isLoggedIn, trialActivated }: ActiverEssaiButtonProps) {
+export function ActiverEssaiButton({
+  isLoggedIn,
+  trialActivated,
+  paiementTrialUrl = "/dashboard/paiement?trial=1",
+}: ActiverEssaiButtonProps) {
   const [modalOpen, setModalOpen] = useState(false);
+  const authUrl = (tab: "login" | "signup") =>
+    `/auth?tab=${tab}&redirectedFrom=${encodeURIComponent(paiementTrialUrl)}`;
 
   if (trialActivated) {
     return (
@@ -39,7 +40,7 @@ export function ActiverEssaiButton({ isLoggedIn, trialActivated }: ActiverEssaiB
 
   if (isLoggedIn) {
     return (
-      <Link href={PAIEMENT_TRIAL_URL}>
+      <Link href={paiementTrialUrl}>
         <Button className="h-10 rounded-md bg-[#213398] px-7 text-[14px] hover:bg-[#1a2980]">
           Activer mon essai
         </Button>

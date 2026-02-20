@@ -30,6 +30,7 @@ import { SalleMap } from "@/components/salles/salle-map";
 import { isFavori } from "@/app/actions/favoris";
 import { getSalleRecentViewerCount, recordSalleView } from "@/app/actions/salle-views";
 import { getSalleRatingStats } from "@/app/actions/salle-ratings";
+import { getEffectiveUserType } from "@/lib/auth-utils";
 import { hasAccessToBrowseOthers, hasAccessToContact } from "@/lib/pass-utils";
 import { createClient } from "@/lib/supabase/server";
 import { getSalleBySlug, getSallesByCity } from "@/lib/salles";
@@ -66,12 +67,17 @@ export default async function SalleDetailPage({
 
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
+  const getProfile = async (uid: string) => {
+    const { data } = await supabase.from("profiles").select("user_type").eq("id", uid).maybeSingle();
+    return data;
+  };
+  const userType = user ? await getEffectiveUserType(user, getProfile) : null;
   const [settings, favori, ratingStats, recentViewerCount, canBrowseOthers] = await Promise.all([
     getPlatformSettings(),
     isFavori(user?.id ?? null, salle.id),
     getSalleRatingStats(salle.id),
     getSalleRecentViewerCount(salle.id),
-    user?.id ? hasAccessToBrowseOthers(user.id) : Promise.resolve(false),
+    user?.id ? hasAccessToBrowseOthers(user.id, { forOwner: userType === "owner" }) : Promise.resolve(false),
   ]);
   const isOwnSalle = salle.ownerId === user?.id;
   const canViewFullPage = isOwnSalle || canBrowseOthers;
@@ -81,7 +87,7 @@ export default async function SalleDetailPage({
 
   const nearbySalles = canViewFullPage ? await getSallesByCity(salle.city, slug) : [];
 
-  if (user && !isOwnSalle && !canBrowseOthers) {
+  if (user && userType === "owner" && !isOwnSalle && !canBrowseOthers) {
     return (
       <div className="min-h-screen bg-white">
         <SiteHeader />

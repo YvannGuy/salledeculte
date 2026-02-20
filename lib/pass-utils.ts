@@ -1,18 +1,8 @@
 import { createAdminClient } from "@/lib/supabase/admin";
 import type { PlatformSettings } from "@/app/actions/admin-settings";
+import { getOwnerOtherSallesViewCount } from "@/app/actions/salle-views";
 
-/** Retourne true si l'utilisateur a un pass actif (24h, 48h ou abonnement) */
-export async function hasAccessToBrowseOthers(userId: string | null): Promise<boolean> {
-  if (!userId) return false;
-  const supabase = createAdminClient();
-  const { data: payments } = await supabase
-    .from("payments")
-    .select("product_type, created_at")
-    .eq("user_id", userId)
-    .eq("status", "paid")
-    .in("product_type", ["pass_24h", "pass_48h", "abonnement"])
-    .order("created_at", { ascending: false });
-
+function hasValidPaidPass(payments: { product_type: string; created_at: string }[]): boolean {
   const now = new Date();
   return (payments ?? []).some((p) => {
     if (p.product_type === "abonnement") return true;
@@ -22,6 +12,91 @@ export async function hasAccessToBrowseOthers(userId: string | null): Promise<bo
     if (p.product_type === "pass_48h") return hoursAgo < 48;
     return false;
   });
+}
+
+/** Infos d'accès pour propriétaire (consultation des autres annonces) */
+export type OwnerBrowseResult = {
+  allowed: boolean;
+  freeUsed: number;
+  freeTotal: number;
+  hasPaidPass: boolean;
+  activePass: { product_type: string; created_at: string } | null;
+};
+
+/** Retourne true si l'utilisateur peut consulter les annonces des autres (pass actif ou 3 consultations gratuites pour owners) */
+export async function hasAccessToBrowseOthers(
+  userId: string | null,
+  options?: { forOwner?: boolean; settings?: PlatformSettings }
+): Promise<boolean> {
+  if (!userId) return false;
+  const supabase = createAdminClient();
+  const settings = options?.settings ?? (await import("@/app/actions/admin-settings").then((m) => m.getPlatformSettings()));
+  const freeTotal = settings?.pass?.demandes_gratuites ?? 3;
+
+  if (options?.forOwner) {
+    const [otherViewsCount, { data: payments }] = await Promise.all([
+      getOwnerOtherSallesViewCount(userId),
+      supabase
+        .from("payments")
+        .select("product_type, created_at")
+        .eq("user_id", userId)
+        .eq("status", "paid")
+        .in("product_type", ["pass_24h", "pass_48h", "abonnement"])
+        .order("created_at", { ascending: false }),
+    ]);
+    if (otherViewsCount < freeTotal) return true;
+    return hasValidPaidPass(payments ?? []);
+  }
+
+  const { data: payments } = await supabase
+    .from("payments")
+    .select("product_type, created_at")
+    .eq("user_id", userId)
+    .eq("status", "paid")
+    .in("product_type", ["pass_24h", "pass_48h", "abonnement"])
+    .order("created_at", { ascending: false });
+
+  return hasValidPaidPass(payments ?? []);
+}
+
+/** Détails pour l'affichage propriétaire (essai, pass) */
+export async function getOwnerBrowseAccess(userId: string): Promise<OwnerBrowseResult> {
+  const supabase = createAdminClient();
+  const settings = await import("@/app/actions/admin-settings").then((m) => m.getPlatformSettings());
+  const freeTotal = settings.pass.demandes_gratuites;
+
+  const [freeUsed, { data: payments }] = await Promise.all([
+    getOwnerOtherSallesViewCount(userId),
+    supabase
+      .from("payments")
+      .select("product_type, created_at")
+      .eq("user_id", userId)
+      .eq("status", "paid")
+      .in("product_type", ["pass_24h", "pass_48h", "abonnement"])
+      .order("created_at", { ascending: false }),
+  ]);
+
+  const paidList = payments ?? [];
+  const hasPaid = hasValidPaidPass(paidList);
+  const allowed = freeUsed < freeTotal || hasPaid;
+
+  const now = new Date();
+  const activePass = (paidList ?? []).find((p) => {
+    if (p.product_type === "abonnement") return true;
+    const created = new Date(p.created_at);
+    const hoursAgo = (now.getTime() - created.getTime()) / (1000 * 60 * 60);
+    if (p.product_type === "pass_24h") return hoursAgo < 24;
+    if (p.product_type === "pass_48h") return hoursAgo < 48;
+    return false;
+  }) ?? null;
+
+  return {
+    allowed,
+    freeUsed,
+    freeTotal,
+    hasPaidPass: hasPaid,
+    activePass,
+  };
 }
 
 /** Retourne true si l'utilisateur peut contacter les propriétaires (pass actif ou demandes gratuites restantes) */
