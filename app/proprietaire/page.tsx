@@ -1,30 +1,100 @@
 import Image from "next/image";
 import Link from "next/link";
-import { CheckCircle, Clock, FolderOpen, Plus, Star } from "lucide-react";
+import { format } from "date-fns";
+import { fr } from "date-fns/locale";
+import { CheckCircle, Clock, FolderOpen, Inbox, Plus, Star } from "lucide-react";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { createClient } from "@/lib/supabase/server";
 
-const metrics = [
-  { label: "Demandes reçues", value: "8", icon: FolderOpen, color: "text-[#6366f1]", bgColor: "bg-[#6366f1]/10" },
-  { label: "Annonces actives", value: "5", icon: CheckCircle, color: "text-emerald-600", bgColor: "bg-emerald-100" },
-  { label: "En validation", value: "2", icon: Clock, color: "text-amber-600", bgColor: "bg-amber-100" },
-  { label: "Taux de réponse", value: "94%", icon: Star, color: "text-sky-500", bgColor: "bg-sky-100" },
-];
+const STATUT_SALLE_LABEL: Record<string, string> = {
+  approved: "Active",
+  pending: "En validation",
+  rejected: "Refusée",
+};
 
-const annonces = [
-  { name: "Église Saint-Martin", location: "Paris 15ème", status: "Active", statusColor: "text-emerald-600", image: "/img.png" },
-  { name: "Salle paroissiale Notre-Dame", location: "Lyon 3ème", status: "En validation", statusColor: "text-amber-600", image: "/img2.png" },
-  { name: "Chapelle Sainte-Anne", location: "Marseille 8ème", status: "Active", statusColor: "text-emerald-600", image: "/img.png" },
-];
+const STATUT_SALLE_COLOR: Record<string, string> = {
+  approved: "text-emerald-600",
+  pending: "text-amber-600",
+  rejected: "text-red-600",
+};
 
-const demandes = [
-  { name: "Marie Leclerc", email: "marie@example.com", type: "Concert de musique classique", date: "15 Mars 2024", status: "Nouvelle", statusColor: "text-emerald-600" },
-  { name: "Pierre Martin", email: "pierre@example.com", type: "Exposition d'art contemporain", date: "22 Mars 2024", status: "En attente", statusColor: "text-amber-600" },
-  { name: "Sophie Bernard", email: "sophie@example.com", type: "Conférence spirituelle", date: "10 Avril 2024", status: "Répondue", statusColor: "text-sky-600" },
-];
+const STATUT_DEMANDE_LABEL: Record<string, string> = {
+  sent: "Nouvelle",
+  viewed: "Vue",
+  replied: "Répondue",
+  accepted: "Acceptée",
+  rejected: "Refusée",
+};
 
-export default function ProprietaireDashboardPage() {
+const STATUT_DEMANDE_COLOR: Record<string, string> = {
+  sent: "text-emerald-600",
+  viewed: "text-sky-600",
+  replied: "text-sky-600",
+  accepted: "text-emerald-600",
+  rejected: "text-red-600",
+};
+
+export default async function ProprietaireDashboardPage() {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return null;
+
+  const { data: sallesData } = await supabase
+    .from("salles")
+    .select("id, slug, name, city, images, status")
+    .eq("owner_id", user.id)
+    .order("created_at", { ascending: false });
+
+  const salles = sallesData ?? [];
+  const salleIds = salles.map((s) => s.id);
+
+  const { data: demandesData } =
+    salleIds.length > 0
+      ? await supabase
+          .from("demandes")
+          .select("id, seeker_id, salle_id, type_evenement, date_debut, status, created_at")
+          .in("salle_id", salleIds)
+          .order("created_at", { ascending: false })
+          .limit(20)
+      : { data: [] };
+
+  const demandes = demandesData ?? [];
+
+  const seekerIds = [...new Set(demandes.map((d) => d.seeker_id).filter(Boolean))];
+  const { data: profiles } =
+    seekerIds.length > 0
+      ? await supabase.from("profiles").select("id, full_name, email").in("id", seekerIds)
+      : { data: [] };
+  const profileMap = new Map((profiles ?? []).map((p) => [p.id, p]));
+  const salleMap = new Map(salles.map((s) => [s.id, s]));
+
+  const demandesAvecProfil = demandes
+    .map((d) => ({
+      ...d,
+      seeker: d.seeker_id ? profileMap.get(d.seeker_id) : undefined,
+      salle: salleMap.get(d.salle_id),
+    }))
+    .slice(0, 10);
+
+  const annoncesActives = salles.filter((s) => s.status === "approved").length;
+  const enValidation = salles.filter((s) => s.status === "pending").length;
+  const demandesRecues = demandes.length;
+  const repondues = demandes.filter(
+    (d) => d.status === "replied" || d.status === "accepted" || d.status === "rejected"
+  ).length;
+  const tauxReponse = demandesRecues > 0 ? Math.round((repondues / demandesRecues) * 100) : 0;
+
+  const metrics = [
+    { label: "Demandes reçues", value: String(demandesRecues), icon: FolderOpen, color: "text-[#6366f1]", bgColor: "bg-[#6366f1]/10" },
+    { label: "Annonces actives", value: String(annoncesActives), icon: CheckCircle, color: "text-emerald-600", bgColor: "bg-emerald-100" },
+    { label: "En validation", value: String(enValidation), icon: Clock, color: "text-amber-600", bgColor: "bg-amber-100" },
+    { label: "Taux de réponse", value: `${tauxReponse}%`, icon: Star, color: "text-sky-500", bgColor: "bg-sky-100" },
+  ];
+
   return (
     <div className="p-8">
       <div className="mb-8">
@@ -59,33 +129,54 @@ export default function ProprietaireDashboardPage() {
           </Link>
         </CardHeader>
         <CardContent>
-          <div className="grid gap-4 sm:grid-cols-3">
-            {annonces.map((a) => (
-              <div
-                key={a.name}
-                className="overflow-hidden rounded-xl border border-slate-200 bg-white"
-              >
-                <div className="relative h-40">
-                  <Image src={a.image} alt="" fill className="object-cover" />
-                </div>
-                <div className="p-4">
-                  <p className="font-semibold text-slate-900">{a.name}</p>
-                  <p className="text-sm text-slate-500">{a.location}</p>
-                  <span className={`mt-2 inline-block text-sm font-medium ${a.statusColor}`}>
-                    • {a.status}
-                  </span>
-                  <div className="mt-3 flex gap-2">
-                    <Button variant="outline" size="sm" className="flex-1 border-slate-300">
-                      Voir
-                    </Button>
-                    <Button size="sm" className="flex-1 bg-[#6366f1] hover:bg-[#4f46e5]">
-                      Modifier
-                    </Button>
+          {salles.length === 0 ? (
+            <div className="flex flex-col items-center justify-center rounded-xl border border-dashed border-slate-200 py-12 text-center">
+              <Inbox className="mb-3 h-12 w-12 text-slate-300" />
+              <p className="text-slate-500">Aucune annonce pour le moment</p>
+              <Link href="/onboarding/salle">
+                <Button size="sm" className="mt-3 bg-[#6366f1] hover:bg-[#4f46e5]">
+                  Créer une annonce
+                </Button>
+              </Link>
+            </div>
+          ) : (
+            <div className="grid gap-4 sm:grid-cols-3">
+              {salles.slice(0, 6).map((s) => (
+                <div
+                  key={s.id}
+                  className="overflow-hidden rounded-xl border border-slate-200 bg-white"
+                >
+                  <div className="relative h-40">
+                    <Image
+                      src={Array.isArray(s.images) && s.images[0] ? String(s.images[0]) : "/img.png"}
+                      alt=""
+                      fill
+                      className="object-cover"
+                    />
+                  </div>
+                  <div className="p-4">
+                    <p className="font-semibold text-slate-900">{s.name}</p>
+                    <p className="text-sm text-slate-500">{s.city}</p>
+                    <span className={`mt-2 inline-block text-sm font-medium ${STATUT_SALLE_COLOR[s.status] ?? "text-slate-600"}`}>
+                      • {STATUT_SALLE_LABEL[s.status] ?? s.status}
+                    </span>
+                    <div className="mt-3 flex gap-2">
+                      <Link href={`/salles/${s.slug}`}>
+                        <Button variant="outline" size="sm" className="flex-1 border-slate-300">
+                          Voir
+                        </Button>
+                      </Link>
+                      <Link href={`/proprietaire/annonces?edit=${s.id}`}>
+                        <Button size="sm" className="flex-1 bg-[#6366f1] hover:bg-[#4f46e5]">
+                          Modifier
+                        </Button>
+                      </Link>
+                    </div>
                   </div>
                 </div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          )}
         </CardContent>
       </Card>
 
@@ -97,46 +188,60 @@ export default function ProprietaireDashboardPage() {
           </Link>
         </CardHeader>
         <CardContent>
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead>
-                <tr className="border-b border-slate-200 text-left text-xs font-medium uppercase tracking-wider text-slate-500">
-                  <th className="pb-3 pr-4">Organisateur</th>
-                  <th className="pb-3 pr-4">Type d&apos;événement</th>
-                  <th className="pb-3 pr-4">Date</th>
-                  <th className="pb-3 pr-4">Statut</th>
-                  <th className="pb-3">Action</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100">
-                {demandes.map((d) => (
-                  <tr key={d.name + d.date} className="group">
-                    <td className="py-4 pr-4">
-                      <div className="flex items-center gap-3">
-                        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-slate-200 text-sm font-medium text-slate-600">
-                          {d.name.charAt(0)}
-                        </div>
-                        <div>
-                          <p className="font-medium text-slate-900">{d.name}</p>
-                          <p className="text-sm text-slate-500">{d.email}</p>
-                        </div>
-                      </div>
-                    </td>
-                    <td className="py-4 pr-4 text-sm text-slate-600">{d.type}</td>
-                    <td className="py-4 pr-4 text-sm text-slate-600">{d.date}</td>
-                    <td className="py-4 pr-4">
-                      <span className={`text-sm font-medium ${d.statusColor}`}>• {d.status}</span>
-                    </td>
-                    <td className="py-4">
-                      <Link href="#" className="text-sm font-medium text-[#6366f1] hover:underline">
-                        Voir la demande
-                      </Link>
-                    </td>
+          {demandesAvecProfil.length === 0 ? (
+            <div className="flex flex-col items-center justify-center rounded-xl border border-dashed border-slate-200 py-12 text-center">
+              <Inbox className="mb-3 h-12 w-12 text-slate-300" />
+              <p className="text-slate-500">Aucune demande pour le moment</p>
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead>
+                  <tr className="border-b border-slate-200 text-left text-xs font-medium uppercase tracking-wider text-slate-500">
+                    <th className="pb-3 pr-4">Organisateur</th>
+                    <th className="pb-3 pr-4">Type d&apos;événement</th>
+                    <th className="pb-3 pr-4">Date</th>
+                    <th className="pb-3 pr-4">Statut</th>
+                    <th className="pb-3">Action</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                </thead>
+                <tbody className="divide-y divide-slate-100">
+                  {demandesAvecProfil.map((d) => (
+                    <tr key={d.id} className="group">
+                      <td className="py-4 pr-4">
+                        <div className="flex items-center gap-3">
+                          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-slate-200 text-sm font-medium text-slate-600">
+                            {(d.seeker?.full_name ?? d.seeker?.email ?? "?").charAt(0).toUpperCase()}
+                          </div>
+                          <div>
+                            <p className="font-medium text-slate-900">{d.seeker?.full_name ?? "—"}</p>
+                            <p className="text-sm text-slate-500">{d.seeker?.email ?? "—"}</p>
+                          </div>
+                        </div>
+                      </td>
+                      <td className="py-4 pr-4 text-sm text-slate-600">{d.type_evenement ?? "—"}</td>
+                      <td className="py-4 pr-4 text-sm text-slate-600">
+                        {d.date_debut ? format(new Date(d.date_debut), "d MMMM yyyy", { locale: fr }) : "—"}
+                      </td>
+                      <td className="py-4 pr-4">
+                        <span className={`text-sm font-medium ${STATUT_DEMANDE_COLOR[d.status] ?? "text-slate-600"}`}>
+                          • {STATUT_DEMANDE_LABEL[d.status] ?? d.status}
+                        </span>
+                      </td>
+                      <td className="py-4">
+                        <Link
+                          href={`/proprietaire/demandes?id=${d.id}`}
+                          className="text-sm font-medium text-[#6366f1] hover:underline"
+                        >
+                          Voir la demande
+                        </Link>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
         </CardContent>
       </Card>
 

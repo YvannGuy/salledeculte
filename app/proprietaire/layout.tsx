@@ -38,9 +38,22 @@ export default async function ProprietaireLayout({
 
   const displayName = profile?.full_name ?? user.user_metadata?.full_name ?? "Utilisateur";
 
+  const { data: mySalles } = await supabase
+    .from("salles")
+    .select("id")
+    .eq("owner_id", user.id);
+  const salleIds = (mySalles ?? []).map((s) => s.id);
+  const { count: demandeCount } =
+    salleIds.length > 0
+      ? await supabase
+          .from("demandes")
+          .select("id", { count: "exact", head: true })
+          .in("salle_id", salleIds)
+      : { count: 0 };
+
   return (
     <div className="flex min-h-screen bg-slate-50">
-      <OwnerSidebar user={{ ...user, displayName }} />
+      <OwnerSidebar user={{ ...user, displayName }} demandeCount={demandeCount ?? 0} />
       <main className="flex-1 overflow-auto">{children}</main>
     </div>
   );

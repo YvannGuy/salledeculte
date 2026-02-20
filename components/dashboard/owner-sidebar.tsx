@@ -11,15 +11,17 @@ import { cn } from "@/lib/utils";
 const navItems = [
   { href: "/proprietaire", label: "Tableau de bord", icon: Home },
   { href: "/proprietaire/annonces", label: "Mes annonces", icon: Building2 },
-  { href: "/proprietaire/demandes", label: "Demandes reçues", icon: FolderOpen, badge: 3 },
+  { href: "/proprietaire/demandes", label: "Demandes reçues", icon: FolderOpen, badgeKey: "demandes" },
   { href: "/proprietaire/messagerie", label: "Messagerie", icon: MessageCircle },
   { href: "/proprietaire/parametres", label: "Paramètres", icon: Settings },
 ];
 
 export function OwnerSidebar({
   user,
+  demandeCount = 0,
 }: {
   user: { email?: string | null; displayName?: string };
+  demandeCount?: number;
 }) {
   const pathname = usePathname();
   const displayName = user.displayName ?? "Utilisateur";
@@ -48,14 +50,14 @@ export function OwnerSidebar({
             >
               <Icon className="h-5 w-5 shrink-0" />
               <span className="flex-1">{item.label}</span>
-              {item.badge != null && (
+              {item.badgeKey === "demandes" && demandeCount > 0 && (
                 <span
                   className={cn(
                     "flex h-5 min-w-[20px] items-center justify-center rounded-full px-1.5 text-xs font-semibold",
                     isActive ? "bg-white/20 text-white" : "bg-emerald-100 text-emerald-700"
                   )}
                 >
-                  {item.badge}
+                  {demandeCount}
                 </span>
               )}
             </Link>
