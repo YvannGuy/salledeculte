@@ -75,7 +75,15 @@ export async function searchSalles(filters: SearchFilters): Promise<Salle[]> {
     return [];
   }
 
-  let salles = (data ?? []).map((row) =>
+  const dbType = filters.type?.trim() ? (TYPE_TO_DB[filters.type] ?? filters.type) : null;
+  const rawRows = (data ?? []).filter((row) => {
+    if (!dbType) return true;
+    const evts = (row as { evenements_acceptes?: string[] | null }).evenements_acceptes;
+    if (!evts || !Array.isArray(evts)) return false;
+    return evts.includes(dbType);
+  });
+
+  let salles = rawRows.map((row) =>
     rowToSalle(row as Parameters<typeof rowToSalle>[0])
   );
 

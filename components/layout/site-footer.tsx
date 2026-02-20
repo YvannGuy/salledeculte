@@ -44,7 +44,11 @@ export function SiteFooter() {
             <ul className="mt-3 space-y-2 text-[13px] text-slate-300">
               <li>À propos</li>
               <li>Contact</li>
-              <li>Blog</li>
+              <li>
+                <Link href="/#categories-evenement" className="hover:text-white">
+                  Catégories
+                </Link>
+              </li>
             </ul>
           </div>
           <div>

@@ -1,6 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
-import { CheckCircle2, Facebook, Gift, Instagram, Star } from "lucide-react";
+import { ArrowRight, CheckCircle2, Church, Droplets, Facebook, Gift, Instagram, Presentation, Star } from "lucide-react";
 
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Button } from "@/components/ui/button";
@@ -219,6 +219,97 @@ export default async function Home() {
         </div>
       </section>
 
+      <section id="categories-evenement" className="bg-slate-50 py-12">
+        <div className="container max-w-[1120px]">
+          <h2 className="text-center text-[46px] font-semibold tracking-[-0.02em] text-[#304256] [zoom:0.5]">
+            Catégories d&apos;événement
+          </h2>
+          <p className="mt-2 text-center text-[25px] text-slate-500 [zoom:0.5]">
+            Découvrez des espaces exceptionnels adaptés à chaque type d&apos;événement
+          </p>
+          <div className="mx-auto mt-10 grid max-w-5xl gap-6 sm:grid-cols-3">
+            <Link
+              href="/rechercher?type=culte-regulier"
+              className="group overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm transition hover:shadow-md"
+            >
+              <div className="relative aspect-[4/3] bg-indigo-600">
+                <Image
+                  src="https://images.unsplash.com/photo-1519167758481-83f550bb49b3?w=800&q=80"
+                  alt="Cultes"
+                  fill
+                  className="object-cover opacity-60 mix-blend-multiply transition group-hover:scale-[1.03]"
+                  sizes="33vw"
+                />
+                <div className="absolute inset-0 flex flex-col items-center justify-center gap-3">
+                  <div className="flex h-14 w-14 items-center justify-center rounded-xl bg-white/90 shadow-md">
+                    <Church className="h-7 w-7 text-indigo-600" />
+                  </div>
+                  <p className="font-semibold text-white drop-shadow-md">Cultes</p>
+                </div>
+              </div>
+              <div className="p-4">
+                <p className="text-sm text-slate-600">Des espaces pour vos rassemblements hebdomadaires</p>
+                <span className="mt-3 inline-flex items-center gap-1 text-sm font-medium text-indigo-600 group-hover:underline">
+                  Découvrir <ArrowRight className="h-4 w-4" />
+                </span>
+              </div>
+            </Link>
+            <Link
+              href="/rechercher?type=conference"
+              className="group overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm transition hover:shadow-md"
+            >
+              <div className="relative aspect-[4/3] bg-sky-600">
+                <Image
+                  src="https://images.unsplash.com/photo-1540575467063-178a50c2df87?w=800&q=80"
+                  alt="Conférences"
+                  fill
+                  className="object-cover opacity-60 mix-blend-multiply transition group-hover:scale-[1.03]"
+                  sizes="33vw"
+                />
+                <div className="absolute inset-0 flex flex-col items-center justify-center gap-3">
+                  <div className="flex h-14 w-14 items-center justify-center rounded-xl bg-white/90 shadow-md">
+                    <Presentation className="h-7 w-7 text-sky-600" />
+                  </div>
+                  <p className="font-semibold text-white drop-shadow-md">Conférences</p>
+                </div>
+              </div>
+              <div className="p-4">
+                <p className="text-sm text-slate-600">Espaces pour vos événements professionnels</p>
+                <span className="mt-3 inline-flex items-center gap-1 text-sm font-medium text-sky-600 group-hover:underline">
+                  Découvrir <ArrowRight className="h-4 w-4" />
+                </span>
+              </div>
+            </Link>
+            <Link
+              href="/rechercher?type=bapteme"
+              className="group overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm transition hover:shadow-md"
+            >
+              <div className="relative aspect-[4/3] bg-teal-600">
+                <Image
+                  src="https://images.unsplash.com/photo-1519167758481-83f550bb49b3?w=800&q=80"
+                  alt="Baptêmes"
+                  fill
+                  className="object-cover opacity-60 mix-blend-multiply transition group-hover:scale-[1.03]"
+                  sizes="33vw"
+                />
+                <div className="absolute inset-0 flex flex-col items-center justify-center gap-3">
+                  <div className="flex h-14 w-14 items-center justify-center rounded-xl bg-white/90 shadow-md">
+                    <Droplets className="h-7 w-7 text-teal-600" />
+                  </div>
+                  <p className="font-semibold text-white drop-shadow-md">Baptêmes</p>
+                </div>
+              </div>
+              <div className="p-4">
+                <p className="text-sm text-slate-600">Lieux sacrés pour célébrer la vie</p>
+                <span className="mt-3 inline-flex items-center gap-1 text-sm font-medium text-teal-600 group-hover:underline">
+                  Découvrir <ArrowRight className="h-4 w-4" />
+                </span>
+              </div>
+            </Link>
+          </div>
+        </div>
+      </section>
+
       <section id="comment-ca-marche" className="py-12">
         <div className="container max-w-[1120px]">
           <h2 className="text-center text-[50px] font-semibold tracking-[-0.02em] text-[#304256] [zoom:0.5]">Comment ça marche</h2>
@@ -398,7 +489,7 @@ export default async function Home() {
               <ul className="mt-3 space-y-2 text-[13px] text-slate-300">
                 <li>À propos</li>
                 <li>Contact</li>
-                <li>Blog</li>
+                <li><Link href="/#categories-evenement" className="hover:text-white">Catégories</Link></li>
               </ul>
             </div>
             <div>

@@ -32,8 +32,8 @@ export async function SiteHeader() {
           {siteConfig.name}
         </Link>
         <nav className="hidden items-center gap-8 text-[14px] font-semibold text-slate-500 md:flex">
-          <Link href="/blog" className="hover:text-slate-800">
-            Blog
+          <Link href="/#categories-evenement" className="hover:text-slate-800">
+            Catégories
           </Link>
           <a href="/#comment-ca-marche" className="hover:text-slate-900">
             Comment ça marche
