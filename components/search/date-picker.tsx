@@ -47,9 +47,10 @@ interface DatePickerProps {
   onChange?: (date: Date | undefined) => void;
   placeholder?: string;
   className?: string;
+  inputClassName?: string;
 }
 
-export function DatePicker({ value, onChange, placeholder = "jj/mm/aaaa", className }: DatePickerProps) {
+export function DatePicker({ value, onChange, placeholder = "jj/mm/aaaa", className, inputClassName }: DatePickerProps) {
   const [open, setOpen] = useState(false);
   const [date, setDate] = useState<Date | undefined>(value);
   const [inputValue, setInputValue] = useState(value ? format(value, DATE_FORMAT) : "");
@@ -143,7 +144,8 @@ export function DatePicker({ value, onChange, placeholder = "jj/mm/aaaa", classN
             className={cn(
               "h-11 rounded-lg border-slate-200 pl-10 pr-20 text-[14px]",
               "focus-visible:border-[#213398] focus-visible:ring-[#213398]/20",
-              validationState === "invalid" && "border-rose-300 bg-rose-50/30"
+              validationState === "invalid" && "border-rose-300 bg-rose-50/30",
+              inputClassName
             )}
           />
           <div className="absolute right-1 top-1/2 flex -translate-y-1/2 items-center gap-0.5">

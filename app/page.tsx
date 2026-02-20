@@ -1,6 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
-import { CheckCircle2, Facebook, Gift, Instagram, Star } from "lucide-react";
+import { CheckCircle2, Facebook, Gift, Instagram, Shield, Star, Zap } from "lucide-react";
 
 import { getTrialActivated } from "@/app/actions/trial";
 import { getEffectiveUserType } from "@/lib/auth-utils";
@@ -10,9 +10,8 @@ import { Button } from "@/components/ui/button";
 import { SiteHeader } from "@/components/layout/site-header";
 import { Card, CardContent } from "@/components/ui/card";
 import { CategoryCarousel } from "@/components/home/category-carousel";
-import { HeroRotatingTitle } from "@/components/home/hero-rotating-title";
+import { HeroSearchBar } from "@/components/home/hero-search-bar";
 import { SectionReveal } from "@/components/ui/section-reveal";
-import { SearchForm } from "@/components/search/search-form";
 import { siteConfig } from "@/config/site";
 import { getVilleImage } from "@/config/ville-images";
 import { getFeaturedCities } from "@/lib/salles";
@@ -122,60 +121,44 @@ export default async function Home() {
     <main className="bg-[#f3f6fa] text-black">
       <SiteHeader />
 
-      <SectionReveal className="container max-w-[1120px] px-4 py-6 sm:py-8">
-        <div className="rounded-xl bg-[#f3f6fa] p-3 sm:p-4">
-          <div className="grid items-stretch gap-6 rounded-xl px-4 pb-6 pt-5 sm:gap-8 sm:px-5 sm:pb-8 sm:pt-6 lg:grid-cols-[1fr_1fr] lg:px-10">
-            <div className="space-y-6">
-              <div className="flex flex-wrap gap-3">
-                <span className="inline-flex items-center gap-2 rounded-full border border-emerald-400 bg-white px-3 py-1.5 text-[12px] font-medium text-emerald-700">
-                  <CheckCircle2 className="h-4 w-4" />
-                  Annonces vérifiées
-                </span>
-                <span className="inline-flex items-center gap-2 rounded-full border border-violet-300 bg-white px-3 py-1.5 text-[12px] font-medium text-violet-600">
-                  <Star className="h-4 w-4" />
-                  Espaces adaptés
-                </span>
-              </div>
-              <HeroRotatingTitle />
-              <p className="max-w-[430px] text-[14px] font-bold leading-relaxed text-slate-500">
-                Des espaces pensés pour la foi, la célébration et le partage
-              </p>
-
-              <SearchForm />
-
-              <div className="flex flex-wrap items-center gap-x-3 gap-y-2 text-[13px] text-slate-600">
-                <span className="inline-flex items-center gap-1.5">
-                  <CheckCircle2 className="h-4 w-4 shrink-0 text-emerald-500" />
-                  Consultation gratuite
-                </span>
-                <span className="hidden text-slate-300 sm:inline">•</span>
-                <span className="inline-flex items-center gap-1.5">
-                  <CheckCircle2 className="h-4 w-4 shrink-0 text-emerald-500" />
-                  Informations claires
-                </span>
-                <span className="hidden text-slate-300 sm:inline">•</span>
-                <span className="inline-flex items-center gap-1.5">
-                  <CheckCircle2 className="h-4 w-4 shrink-0 text-emerald-500" />
-                  Demandes rapides
-                </span>
-              </div>
-            </div>
-
-            <div className="relative min-h-[320px] overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-[0_8px_24px_rgba(15,23,42,0.08)] lg:min-h-[520px]">
-              <Image
-                src="/img.png"
-                alt="Intérieur d'une salle de culte"
-                width={1200}
-                height={800}
-                className="h-full w-full object-cover object-center"
-                priority
-                sizes="(max-width: 1023px) 100vw, 50vw"
-              />
-              <div className="absolute bottom-4 right-4 flex items-center gap-2 rounded-lg bg-white/95 px-4 py-2.5 shadow-lg backdrop-blur-sm">
-                <Star className="h-4 w-4 fill-emerald-500 text-emerald-500" />
-                <span className="text-[13px] font-semibold text-slate-700">Satisfaction 4.8/5 étoiles</span>
-              </div>
-            </div>
+      <SectionReveal className="relative min-h-[480px] overflow-hidden md:min-h-[560px]">
+        <div className="absolute inset-0">
+          <Image
+            src="/img.png"
+            alt="Intérieur d'une salle de culte"
+            fill
+            className="object-cover object-center"
+            priority
+            sizes="100vw"
+          />
+          <div
+            className="absolute inset-0 bg-gradient-to-b from-black/50 via-black/30 to-black/60"
+            aria-hidden
+          />
+        </div>
+        <div className="container relative z-10 flex flex-col items-center px-4 py-12 md:py-16">
+          <h1 className="max-w-3xl text-center text-[28px] font-bold leading-tight text-white sm:text-[38px] md:text-[44px] lg:text-[52px]">
+            Trouvez le lieu idéal pour votre événement spirituel
+          </h1>
+          <p className="mt-4 max-w-2xl text-center text-[14px] leading-relaxed text-white/95 sm:text-[16px]">
+            Découvrez des espaces vérifiés pour cultes, baptêmes, mariages et événements communautaires.
+          </p>
+          <div className="mt-8 w-full max-w-4xl">
+            <HeroSearchBar />
+          </div>
+          <div className="mt-6 flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-[13px] text-white/90">
+            <span className="inline-flex items-center gap-2">
+              <CheckCircle2 className="h-4 w-4 shrink-0 text-emerald-400" />
+              Consultation gratuite
+            </span>
+            <span className="inline-flex items-center gap-2">
+              <Shield className="h-4 w-4 shrink-0 text-blue-400" />
+              Lieux vérifiés
+            </span>
+            <span className="inline-flex items-center gap-2">
+              <Zap className="h-4 w-4 shrink-0 text-amber-400" />
+              Demandes rapides
+            </span>
           </div>
         </div>
       </SectionReveal>
