@@ -1,5 +1,6 @@
 import { Suspense } from "react";
 
+import { getBulkRatingStats } from "@/app/actions/salle-ratings";
 import { RechercherContent } from "@/components/rechercher/rechercher-content";
 import { searchSalles } from "@/lib/salles";
 
@@ -17,6 +18,9 @@ export default async function RechercherPage({
   const type = typeof params.type === "string" ? params.type : undefined;
 
   const salles = await searchSalles({ ville, date, personnes, type });
+  const ratingStats = salles.length > 0
+    ? await getBulkRatingStats(salles.map((s) => s.id))
+    : {};
 
   return (
     <Suspense
@@ -26,7 +30,7 @@ export default async function RechercherPage({
         </main>
       }
     >
-      <RechercherContent salles={salles} />
+      <RechercherContent salles={salles} ratingStats={ratingStats} />
     </Suspense>
   );
 }

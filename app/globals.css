@@ -28,3 +28,29 @@ body {
     @apply mx-auto w-full max-w-6xl px-4 sm:px-6;
   }
 }
+
+/* Badge maison + prix : pas de fond Leaflet par défaut */
+.map-wrapper .price-marker.leaflet-div-icon {
+  background: none !important;
+  border: none !important;
+}
+
+/* Map wrapper */
+.map-wrapper {
+  position: relative;
+}
+
+/* Miniature agrandie */
+.map-marker-popup-large .leaflet-popup-content-wrapper {
+  padding: 0;
+  border-radius: 0.75rem;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
+}
+.map-marker-popup-large .leaflet-popup-content {
+  margin: 0;
+  min-width: 0;
+  width: 100% !important;
+}
+.map-marker-popup-large .leaflet-popup-tip {
+  background: #2d435a;
+}

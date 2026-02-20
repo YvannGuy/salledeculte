@@ -4,10 +4,8 @@ import { notFound } from "next/navigation";
 import {
   CheckCircle2,
   Clock,
-  Heart,
   ListChecks,
   MapPin,
-  Share2,
   Phone,
   MessageCircle,
   Car,
@@ -23,8 +21,12 @@ import {
 import { Button } from "@/components/ui/button";
 import { SiteFooter } from "@/components/layout/site-footer";
 import { SiteHeader } from "@/components/layout/site-header";
+import { SalleActionsBar } from "@/components/salles/salle-actions-bar";
 import { SalleGallery } from "@/components/salles/salle-gallery";
 import { SalleMap } from "@/components/salles/salle-map";
+import { isFavori } from "@/app/actions/favoris";
+import { getSalleRatingStats } from "@/app/actions/salle-ratings";
+import { createClient } from "@/lib/supabase/server";
 import { getSalleBySlug, getSallesByCity } from "@/lib/salles";
 
 const iconMap: Record<string, React.ComponentType<{ className?: string }>> = {
@@ -57,6 +59,13 @@ export default async function SalleDetailPage({
   const salle = await getSalleBySlug(slug);
   if (!salle) notFound();
 
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  const [favori, ratingStats] = await Promise.all([
+    isFavori(user?.id ?? null, salle.id),
+    getSalleRatingStats(salle.id),
+  ]);
+
   const nearbySalles = await getSallesByCity(salle.city, slug);
 
   return (
@@ -67,16 +76,14 @@ export default async function SalleDetailPage({
         <div className="grid gap-8 lg:grid-cols-[1fr_340px]">
           <div>
             <SalleGallery images={salle.images} name={salle.name} />
-            <div className="mb-6 flex gap-4">
-              <button className="flex items-center gap-2 text-sm text-slate-600 hover:text-slate-900">
-                <Share2 className="h-4 w-4" />
-                Partager
-              </button>
-              <button className="flex items-center gap-2 text-sm text-slate-600 hover:text-slate-900">
-                <Heart className="h-4 w-4" />
-                Sauvegarder
-              </button>
-            </div>
+            <SalleActionsBar
+              salleId={salle.id}
+              salleName={salle.name}
+              slug={slug}
+              isLoggedIn={!!user}
+              initialIsFavori={favori}
+              initialRating={ratingStats}
+            />
 
             <div className="space-y-8">
               <div>

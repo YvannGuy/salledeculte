@@ -9,6 +9,7 @@ import {
   ChevronLeft,
   ChevronRight,
   CreditCard,
+  Flag,
   Home,
   Menu,
   Settings,
@@ -22,23 +23,29 @@ import { cn } from "@/lib/utils";
 
 type AdminSidebarProps = {
   pendingCount: number;
+  reportsCount?: number;
   userEmail?: string | null;
 };
 
-const navItems = [
+const navItems = (
+  pendingCount: number,
+  reportsCount: number
+) => [
   { href: "/admin", label: "Dashboard", icon: Home },
-  { href: "/admin/annonces-a-valider", label: "Annonces à valider", icon: Bell, badge: true },
+  { href: "/admin/annonces-a-valider", label: "Annonces à valider", icon: Bell, badge: pendingCount },
   { href: "/admin/annonces", label: "Annonces", icon: Building2 },
+  { href: "/admin/signalements", label: "Signalements", icon: Flag, badge: reportsCount },
   { href: "/admin/utilisateurs", label: "Utilisateurs", icon: Users },
   { href: "/admin/paiements", label: "Paiements", icon: CreditCard },
   { href: "/admin/parametres", label: "Paramètres", icon: Settings },
 ];
 
-export function AdminSidebar({ pendingCount, userEmail }: AdminSidebarProps) {
+export function AdminSidebar({ pendingCount, reportsCount = 0, userEmail }: AdminSidebarProps) {
   const pathname = usePathname();
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   const initial = (userEmail ?? "A")[0].toUpperCase();
+  const items = navItems(pendingCount, reportsCount);
 
   const sidebarContent = (
     <>
@@ -68,10 +75,10 @@ export function AdminSidebar({ pendingCount, userEmail }: AdminSidebarProps) {
         </button>
       </div>
       <nav className="flex-1 space-y-0.5 px-3 py-5">
-        {navItems.map((item) => {
+        {items.map((item) => {
           const isActive = pathname === item.href;
           const Icon = item.icon;
-          const badge = item.badge ? pendingCount : null;
+          const badge = item.badge ?? null;
           return (
             <Link
               key={item.href}
@@ -184,10 +191,10 @@ export function AdminSidebar({ pendingCount, userEmail }: AdminSidebarProps) {
           </button>
         </div>
         <nav className="flex-1 space-y-0.5 overflow-y-auto px-3 py-5">
-          {navItems.map((item) => {
+          {items.map((item) => {
             const isActive = pathname === item.href;
             const Icon = item.icon;
-            const badge = item.badge ? pendingCount : null;
+            const badge = item.badge ?? null;
             return (
               <Link
                 key={item.href}

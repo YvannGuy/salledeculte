@@ -3,11 +3,22 @@
 import { useEffect, useState } from "react";
 import type { Salle } from "@/lib/types/salle";
 
-// Coords Paris centre pour les salles sans lat/lng
-const PARIS_CENTER = { lat: 48.8566, lng: 2.3522 };
+type RatingStats = Record<string, { avg: number; count: number }>;
 
-export function SearchMap({ salles }: { salles: Salle[] }) {
-  const [MapComponent, setMapComponent] = useState<React.ComponentType<{ salles: Salle[] }> | null>(null);
+type SearchMapProps = {
+  salles: Salle[];
+  highlightedSalleId?: string | null;
+  ratingStats?: RatingStats;
+};
+
+export function SearchMap({ salles, highlightedSalleId = null, ratingStats = {} }: SearchMapProps) {
+  const [MapComponent, setMapComponent] = useState<
+    React.ComponentType<{
+      salles: Salle[];
+      highlightedSalleId?: string | null;
+      ratingStats?: RatingStats;
+    }> | null
+  >(null);
 
   useEffect(() => {
     import("./map-inner").then((mod) => setMapComponent(() => mod.MapInner));
@@ -21,5 +32,11 @@ export function SearchMap({ salles }: { salles: Salle[] }) {
     );
   }
 
-  return <MapComponent salles={salles} />;
+  return (
+    <MapComponent
+      salles={salles}
+      highlightedSalleId={highlightedSalleId}
+      ratingStats={ratingStats}
+    />
+  );
 }

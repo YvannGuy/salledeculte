@@ -38,6 +38,7 @@ export default async function AdminLayout({
   }
 
   let pendingCount = 0;
+  let reportsCount = 0;
   const notifications: { id: string; type: "user" | "annonce" | "paiement"; label: string; href: string; date: string }[] = [];
 
   try {
@@ -64,6 +65,13 @@ export default async function AdminLayout({
       ]);
 
     pendingCount = count ?? 0;
+
+    try {
+      const { count: rc } = await admin.from("salles_reports").select("*", { count: "exact", head: true }).eq("status", "pending");
+      reportsCount = rc ?? 0;
+    } catch {
+      // Table salles_reports peut ne pas exister
+    }
 
     (recentProfiles ?? []).forEach((p) => {
       notifications.push({
@@ -109,7 +117,7 @@ export default async function AdminLayout({
 
   return (
     <div className="flex min-h-screen bg-slate-100">
-      <AdminSidebar pendingCount={pendingCount} userEmail={user.email} />
+      <AdminSidebar pendingCount={pendingCount} reportsCount={reportsCount} userEmail={user.email} />
       <div className="flex flex-1 flex-col overflow-auto">
         <AdminHeader pendingCount={pendingCount} notifications={notifications} />
         <main className="flex-1 pl-14 lg:pl-0">{children}</main>
