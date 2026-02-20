@@ -36,6 +36,11 @@ export function SiteFooter() {
                   Blog
                 </Link>
               </li>
+              <li>
+                <Link href="/centre-aide" className="hover:text-white">
+                  Centre d&apos;aide
+                </Link>
+              </li>
             </ul>
           </div>
           <div>

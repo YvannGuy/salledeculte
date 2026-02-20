@@ -11,6 +11,7 @@ import { SiteHeader } from "@/components/layout/site-header";
 import { Card, CardContent } from "@/components/ui/card";
 import { CategoryCarousel } from "@/components/home/category-carousel";
 import { HeroSearchBar } from "@/components/home/hero-search-bar";
+import { PourquoiReserverCarousel } from "@/components/home/pourquoi-reserver-carousel";
 import { SectionReveal } from "@/components/ui/section-reveal";
 import { siteConfig } from "@/config/site";
 import { getVilleImage } from "@/config/ville-images";
@@ -162,6 +163,8 @@ export default async function Home() {
           </div>
         </div>
       </SectionReveal>
+
+      <PourquoiReserverCarousel />
 
       <SectionReveal className="bg-white py-12">
         <div className="container max-w-[1120px]">
@@ -398,6 +401,7 @@ export default async function Home() {
                 <li><Link href="/rechercher" className="hover:text-white">Rechercher une salle</Link></li>
                 <li><Link href="/auth?tab=signup" className="hover:text-white">Ajoutez ma salle</Link></li>
                 <li><Link href="/blog" className="hover:text-white">Blog</Link></li>
+                <li><Link href="/centre-aide" className="hover:text-white">Centre d&apos;aide</Link></li>
               </ul>
             </div>
             <div>
