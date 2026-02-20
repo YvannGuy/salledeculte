@@ -69,6 +69,12 @@ Les salles créées via l'onboarding ont le statut `pending`. Pour les afficher 
 
 Sans ces variables, le site renvoie une erreur 500 (le proxy Supabase ne peut pas s'initialiser).
 
+## Admin Dashboard
+
+1. Ajoutez `ADMIN_EMAILS` dans `.env.local` : liste d'emails séparés par des virgules (ex: `admin@example.com,autre@example.com`)
+2. Accédez à `/auth/admin` pour vous connecter
+3. Les utilisateurs dont l'email figure dans `ADMIN_EMAILS` peuvent valider les annonces depuis `/admin`
+
 ## Routes principales
 
 - `/` landing page

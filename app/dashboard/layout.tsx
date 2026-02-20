@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 
 import { DashboardSidebar } from "@/components/dashboard/dashboard-sidebar";
+import { getEffectiveUserType } from "@/lib/auth-utils";
 import { createClient } from "@/lib/supabase/server";
 
 export default async function DashboardLayout({
@@ -16,6 +17,18 @@ export default async function DashboardLayout({
   if (!user) {
     redirect("/auth");
   }
+
+  const getProfile = async (userId: string) => {
+    const { data } = await supabase
+      .from("profiles")
+      .select("user_type")
+      .eq("id", userId)
+      .maybeSingle();
+    return data;
+  };
+  const userType = await getEffectiveUserType(user, getProfile);
+  if (userType === "admin") redirect("/admin");
+  if (userType === "owner") redirect("/proprietaire");
 
   const { data: profile } = await supabase
     .from("profiles")

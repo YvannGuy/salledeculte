@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
+import { getDashboardHref, getEffectiveUserType } from "@/lib/auth-utils";
 import { createClient } from "@/lib/supabase/server";
 
 export type AuthFormState = {
@@ -24,14 +25,23 @@ export async function loginAction(_: AuthFormState, formData: FormData): Promise
     return { error: error.message || defaultError };
   }
 
-  const userType = data.user?.user_metadata?.user_type ?? "seeker";
-  revalidatePath("/", "layout");
-
-  if (userType === "owner") {
-    redirect("/proprietaire");
+  const user = data.user;
+  if (!user) {
+    redirect("/auth");
   }
 
-  redirect("/dashboard");
+  const getProfile = async (userId: string) => {
+    const { data } = await supabase
+      .from("profiles")
+      .select("user_type")
+      .eq("id", userId)
+      .maybeSingle();
+    return data;
+  };
+  const userType = await getEffectiveUserType(user, getProfile);
+  revalidatePath("/", "layout");
+
+  redirect(getDashboardHref(userType ?? "seeker"));
 }
 
 export async function signupAction(_: AuthFormState, formData: FormData): Promise<AuthFormState> {

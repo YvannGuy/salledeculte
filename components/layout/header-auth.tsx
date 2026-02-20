@@ -1,5 +1,6 @@
 import Link from "next/link";
 
+import { getDashboardHref, getEffectiveUserType } from "@/lib/auth-utils";
 import { createClient } from "@/lib/supabase/server";
 
 export async function HeaderAuth() {
@@ -9,8 +10,16 @@ export async function HeaderAuth() {
   } = await supabase.auth.getUser();
 
   if (user) {
-    const userType = user.user_metadata?.user_type ?? "seeker";
-    const dashboardHref = userType === "owner" ? "/proprietaire" : "/dashboard";
+    const getProfile = async (userId: string) => {
+      const { data } = await supabase
+        .from("profiles")
+        .select("user_type")
+        .eq("id", userId)
+        .maybeSingle();
+      return data;
+    };
+    const userType = await getEffectiveUserType(user, getProfile);
+    const dashboardHref = getDashboardHref(userType ?? "seeker");
     return (
       <Link
         href={dashboardHref}

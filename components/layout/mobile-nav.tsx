@@ -6,7 +6,7 @@ import { Menu, X } from "lucide-react";
 
 interface MobileNavProps {
   isLoggedIn: boolean;
-  userType?: "seeker" | "owner";
+  userType?: "seeker" | "owner" | "admin" | null;
 }
 
 const navLinks = [
@@ -58,7 +58,13 @@ export function MobileNav({ isLoggedIn, userType }: MobileNavProps) {
               <div className="mt-2 border-t border-slate-200 px-6 py-4">
                 {isLoggedIn ? (
                   <Link
-                    href={userType === "owner" ? "/proprietaire" : "/dashboard"}
+                    href={
+                      userType === "admin"
+                        ? "/admin"
+                        : userType === "owner"
+                          ? "/proprietaire"
+                          : "/dashboard"
+                    }
                     onClick={handleClose}
                     className="flex w-full items-center justify-center rounded-md bg-[#263e55] py-3 text-[14px] font-medium text-white hover:bg-[#213449]"
                   >

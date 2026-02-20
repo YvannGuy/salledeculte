@@ -3,6 +3,8 @@ import Link from "next/link";
 import { HeaderAuth } from "@/components/layout/header-auth";
 import { MobileNav } from "@/components/layout/mobile-nav";
 import { siteConfig } from "@/config/site";
+import type { EffectiveUserType } from "@/lib/auth-utils";
+import { getEffectiveUserType } from "@/lib/auth-utils";
 import { createClient } from "@/lib/supabase/server";
 
 export async function SiteHeader() {
@@ -11,7 +13,17 @@ export async function SiteHeader() {
     data: { user },
   } = await supabase.auth.getUser();
   const isLoggedIn = !!user;
-  const userType = (user?.user_metadata?.user_type ?? "seeker") as "seeker" | "owner";
+  const getProfile = async (userId: string) => {
+    const { data } = await supabase
+      .from("profiles")
+      .select("user_type")
+      .eq("id", userId)
+      .maybeSingle();
+    return data;
+  };
+  const userType = (user
+    ? await getEffectiveUserType(user, getProfile)
+    : null) as EffectiveUserType | null;
 
   return (
     <header className="border-y border-slate-300 bg-[#f1f3f5]">

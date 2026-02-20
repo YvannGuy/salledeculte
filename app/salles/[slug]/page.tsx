@@ -23,6 +23,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { SiteFooter } from "@/components/layout/site-footer";
 import { SiteHeader } from "@/components/layout/site-header";
+import { SalleGallery } from "@/components/salles/salle-gallery";
 import { SalleMap } from "@/components/salles/salle-map";
 import { getSalleBySlug, getSallesByCity } from "@/lib/salles";
 
@@ -65,25 +66,7 @@ export default async function SalleDetailPage({
       <main className="container max-w-[1120px] py-8">
         <div className="grid gap-8 lg:grid-cols-[1fr_340px]">
           <div>
-            <div className="mb-8 grid gap-3 md:grid-cols-[1fr_120px]">
-              <div className="relative aspect-[16/10] overflow-hidden rounded-xl bg-slate-100">
-                <Image
-                  src={salle.images[0] ?? "/img.png"}
-                  alt={salle.name}
-                  fill
-                  className="object-cover"
-                  priority
-                  sizes="(max-width: 768px) 100vw, 65vw"
-                />
-              </div>
-              <div className="hidden flex-col gap-3 md:flex">
-                {salle.images.slice(1, 4).map((img, i) => (
-                  <div key={i} className="relative aspect-square overflow-hidden rounded-lg bg-slate-100">
-                    <Image src={img} alt="" fill className="object-cover" sizes="120px" />
-                  </div>
-                ))}
-              </div>
-            </div>
+            <SalleGallery images={salle.images} name={salle.name} />
             <div className="mb-6 flex gap-4">
               <button className="flex items-center gap-2 text-sm text-slate-600 hover:text-slate-900">
                 <Share2 className="h-4 w-4" />
