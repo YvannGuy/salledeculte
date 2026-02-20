@@ -1,6 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
-import { CheckCircle2, Facebook, Gift, ImageIcon, Instagram, ListChecks, Shield, Star } from "lucide-react";
+import { CheckCircle2, Facebook, Gift, Instagram, Star } from "lucide-react";
 
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Button } from "@/components/ui/button";
@@ -8,6 +8,8 @@ import { SiteHeader } from "@/components/layout/site-header";
 import { Card, CardContent } from "@/components/ui/card";
 import { SearchForm } from "@/components/search/search-form";
 import { siteConfig } from "@/config/site";
+import { getVilleImage } from "@/config/ville-images";
+import { createClient } from "@/lib/supabase/server";
 
 const plans = [
   {
@@ -30,24 +32,6 @@ const plans = [
     period: "/mois",
     features: ["Demandes illimitées", "Accès complet aux annonces", "Support prioritaire 7j/7", "Gestion multi-événements", "Notifications personnalisées"],
     cta: "Choisir ce pass",
-  },
-];
-
-const topFeatures = [
-  {
-    title: "Des annonces structurées",
-    desc: "Capacité, équipements, horaires et contraintes clairement indiqués",
-    icon: ListChecks,
-  },
-  {
-    title: "Des photos représentatives",
-    desc: "Visualisez réellement les lieux avant de contacter",
-    icon: ImageIcon,
-  },
-  {
-    title: "Des lieux compatibles",
-    desc: "Conditions d'accueil et usage cultuel précisés à l'avance",
-    icon: Shield,
   },
 ];
 
@@ -109,7 +93,22 @@ const faqSectionItems = [
   },
 ];
 
-export default function Home() {
+export default async function Home() {
+  const supabase = await createClient();
+  const { data: sallesRows } = await supabase
+    .from("salles")
+    .select("city")
+    .eq("status", "approved");
+  const byCity = new Map<string, number>();
+  (sallesRows ?? []).forEach((r) => {
+    const city = r.city ?? "";
+    byCity.set(city, (byCity.get(city) ?? 0) + 1);
+  });
+  const cityCards = Array.from(byCity.entries())
+    .map(([city, count]) => ({ city, count, image: getVilleImage(city) }))
+    .sort((a, b) => b.count - a.count)
+    .slice(0, 6);
+
   return (
     <main className="bg-[#f3f6fa] text-slate-800">
       <SiteHeader />
@@ -175,17 +174,46 @@ export default function Home() {
 
       <section className="bg-white py-12">
         <div className="container max-w-[1120px]">
-          <h2 className="text-center text-[46px] font-semibold tracking-[-0.02em] text-[#304256] [zoom:0.5]">Une plateforme pensée pour vous</h2>
-          <p className="mt-2 text-center text-[25px] text-slate-500 [zoom:0.5]">Des informations claires pour des décisions éclairées</p>
-          <div className="mx-auto mt-10 grid max-w-5xl gap-6 md:grid-cols-3">
-            {topFeatures.map((item) => (
-              <div key={item.title} className="px-4 text-center">
-                <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-xl bg-sky-100/70">
-                  <item.icon className="h-5 w-5 text-sky-500" />
+          <h2 className="text-center text-[46px] font-semibold tracking-[-0.02em] text-[#304256] [zoom:0.5]">
+            Découvrir les lieux en Île-de-France
+          </h2>
+          <p className="mt-2 text-center text-[25px] text-slate-500 [zoom:0.5]">
+            Explorez les espaces disponibles dans votre région
+          </p>
+          <div className="mx-auto mt-10 grid max-w-5xl gap-6 sm:grid-cols-2 md:grid-cols-3">
+            {(cityCards.length > 0 ? cityCards : [
+              { city: "Paris", count: 24, image: getVilleImage("Paris") },
+              { city: "Versailles", count: 8, image: getVilleImage("Versailles") },
+              { city: "Saint-Denis", count: 6, image: getVilleImage("Saint-Denis") },
+              { city: "Créteil", count: 9, image: getVilleImage("Créteil") },
+              { city: "Nanterre", count: 11, image: getVilleImage("Nanterre") },
+              { city: "Boulogne-Billancourt", count: 5, image: getVilleImage("Boulogne-Billancourt") },
+            ]).map((item) => (
+              <Link
+                key={item.city}
+                href={`/rechercher?ville=${encodeURIComponent(item.city)}`}
+                className="group relative block overflow-hidden rounded-xl border border-slate-200 transition hover:border-slate-300 hover:shadow-lg"
+              >
+                <div className="relative aspect-[4/3] bg-slate-100">
+                  <Image
+                    src={item.image}
+                    alt={item.city}
+                    fill
+                    className="object-cover transition duration-300 group-hover:scale-[1.05]"
+                    sizes="(max-width: 640px) 100vw, 33vw"
+                  />
+                  <div
+                    className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent"
+                    aria-hidden
+                  />
+                  <div className="absolute bottom-0 left-0 right-0 p-4">
+                    <p className="font-semibold text-white drop-shadow-sm">{item.city}</p>
+                    <p className="mt-0.5 text-sm text-white/90">
+                      {item.count} lieu{item.count > 1 ? "x" : ""}
+                    </p>
+                  </div>
                 </div>
-                <h3 className="mt-4 text-[28px] font-semibold text-[#34485c] [zoom:0.5]">{item.title}</h3>
-                <p className="mx-auto mt-2 max-w-[220px] text-[22px] leading-[1.45] text-slate-500 [zoom:0.5]">{item.desc}</p>
-              </div>
+              </Link>
             ))}
           </div>
         </div>
