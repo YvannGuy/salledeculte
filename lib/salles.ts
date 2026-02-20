@@ -31,6 +31,7 @@ const TYPE_TO_DB: Record<string, string> = {
   bapteme: "bapteme",
   conference: "conference",
   retraite: "retraite",
+  concert: "concert",
 };
 
 export async function searchSalles(filters: SearchFilters): Promise<Salle[]> {
@@ -117,6 +118,59 @@ export async function getSalleBySlug(slug: string): Promise<Salle | null> {
 
   if (error || !data) return null;
   return rowToSalle(data as Parameters<typeof rowToSalle>[0]);
+}
+
+/** Période en ms pour la rotation des villes à la une (4 jours) */
+const FEATURED_CITIES_PERIOD_MS = 4 * 24 * 60 * 60 * 1000;
+
+/** Max 6 villes affichées dans "Découvrir les lieux en Île-de-France" */
+const FEATURED_CITIES_MAX = 6;
+
+/**
+ * Retourne les 6 villes à mettre en avant sur la homepage.
+ * Priorise les villes avec des salles ajoutées dans les 4 derniers jours.
+ * Les villes changent automatiquement en fonction de ce qui est ajouté.
+ */
+export async function getFeaturedCities(
+  getVilleImage: (city: string) => string
+): Promise<{ city: string; count: number; image: string }[]> {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("salles")
+    .select("city, created_at")
+    .eq("status", "approved");
+
+  if (error) {
+    console.error("getFeaturedCities error:", error);
+    return [];
+  }
+
+  const cutoff = new Date(Date.now() - FEATURED_CITIES_PERIOD_MS);
+  const byCity = new Map<
+    string,
+    { total: number; recent: number }
+  >();
+
+  (data ?? []).forEach((r) => {
+    const city = r.city ?? "";
+    if (!city) return;
+    const prev = byCity.get(city) ?? { total: 0, recent: 0 };
+    prev.total += 1;
+    const created = r.created_at ? new Date(r.created_at) : null;
+    if (created && created >= cutoff) prev.recent += 1;
+    byCity.set(city, prev);
+  });
+
+  const sorted = Array.from(byCity.entries())
+    .map(([city, stats]) => ({ city, count: stats.total, recent: stats.recent }))
+    .sort((a, b) => {
+      if (a.recent !== b.recent) return b.recent - a.recent;
+      return b.count - a.count;
+    })
+    .slice(0, FEATURED_CITIES_MAX)
+    .map(({ city, count }) => ({ city, count, image: getVilleImage(city) }));
+
+  return sorted;
 }
 
 export async function getSallesByCity(

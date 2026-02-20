@@ -1,15 +1,17 @@
 import Image from "next/image";
 import Link from "next/link";
-import { ArrowRight, CheckCircle2, Church, Droplets, Facebook, Gift, Instagram, Presentation, Star } from "lucide-react";
+import { CheckCircle2, Facebook, Gift, Instagram, Star } from "lucide-react";
 
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Button } from "@/components/ui/button";
 import { SiteHeader } from "@/components/layout/site-header";
 import { Card, CardContent } from "@/components/ui/card";
+import { CategoryCarousel } from "@/components/home/category-carousel";
+import { SectionReveal } from "@/components/ui/section-reveal";
 import { SearchForm } from "@/components/search/search-form";
 import { siteConfig } from "@/config/site";
 import { getVilleImage } from "@/config/ville-images";
-import { createClient } from "@/lib/supabase/server";
+import { getFeaturedCities } from "@/lib/salles";
 
 const plans = [
   {
@@ -94,26 +96,13 @@ const faqSectionItems = [
 ];
 
 export default async function Home() {
-  const supabase = await createClient();
-  const { data: sallesRows } = await supabase
-    .from("salles")
-    .select("city")
-    .eq("status", "approved");
-  const byCity = new Map<string, number>();
-  (sallesRows ?? []).forEach((r) => {
-    const city = r.city ?? "";
-    byCity.set(city, (byCity.get(city) ?? 0) + 1);
-  });
-  const cityCards = Array.from(byCity.entries())
-    .map(([city, count]) => ({ city, count, image: getVilleImage(city) }))
-    .sort((a, b) => b.count - a.count)
-    .slice(0, 6);
+  const cityCards = await getFeaturedCities(getVilleImage);
 
   return (
     <main className="bg-[#f3f6fa] text-slate-800">
       <SiteHeader />
 
-      <section className="container max-w-[1120px] px-4 py-6 sm:py-8">
+      <SectionReveal className="container max-w-[1120px] px-4 py-6 sm:py-8">
         <div className="rounded-xl bg-[#f3f6fa] p-3 sm:p-4">
           <div className="grid items-center gap-6 rounded-xl px-4 pb-6 pt-5 sm:gap-8 sm:px-5 sm:pb-8 sm:pt-6 lg:grid-cols-[1fr_1fr] lg:px-10">
             <div className="space-y-6">
@@ -170,9 +159,9 @@ export default async function Home() {
             </div>
           </div>
         </div>
-      </section>
+      </SectionReveal>
 
-      <section className="bg-white py-12">
+      <SectionReveal className="bg-white py-12">
         <div className="container max-w-[1120px]">
           <h2 className="text-center text-[46px] font-semibold tracking-[-0.02em] text-[#304256] [zoom:0.5]">
             Découvrir les lieux en Île-de-France
@@ -217,9 +206,9 @@ export default async function Home() {
             ))}
           </div>
         </div>
-      </section>
+      </SectionReveal>
 
-      <section id="categories-evenement" className="bg-slate-50 py-12">
+      <SectionReveal id="categories-evenement" className="bg-slate-50 py-12">
         <div className="container max-w-[1120px]">
           <h2 className="text-center text-[46px] font-semibold tracking-[-0.02em] text-[#304256] [zoom:0.5]">
             Catégories d&apos;événement
@@ -227,90 +216,13 @@ export default async function Home() {
           <p className="mt-2 text-center text-[25px] text-slate-500 [zoom:0.5]">
             Découvrez des espaces exceptionnels adaptés à chaque type d&apos;événement
           </p>
-          <div className="mx-auto mt-10 grid max-w-5xl gap-6 sm:grid-cols-3">
-            <Link
-              href="/rechercher?type=culte-regulier"
-              className="group overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm transition hover:shadow-md"
-            >
-              <div className="relative aspect-[4/3] bg-indigo-600">
-                <Image
-                  src="https://images.unsplash.com/photo-1519167758481-83f550bb49b3?w=800&q=80"
-                  alt="Cultes"
-                  fill
-                  className="object-cover opacity-60 mix-blend-multiply transition group-hover:scale-[1.03]"
-                  sizes="33vw"
-                />
-                <div className="absolute inset-0 flex flex-col items-center justify-center gap-3">
-                  <div className="flex h-14 w-14 items-center justify-center rounded-xl bg-white/90 shadow-md">
-                    <Church className="h-7 w-7 text-indigo-600" />
-                  </div>
-                  <p className="font-semibold text-white drop-shadow-md">Cultes</p>
-                </div>
-              </div>
-              <div className="p-4">
-                <p className="text-sm text-slate-600">Des espaces pour vos rassemblements hebdomadaires</p>
-                <span className="mt-3 inline-flex items-center gap-1 text-sm font-medium text-indigo-600 group-hover:underline">
-                  Découvrir <ArrowRight className="h-4 w-4" />
-                </span>
-              </div>
-            </Link>
-            <Link
-              href="/rechercher?type=conference"
-              className="group overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm transition hover:shadow-md"
-            >
-              <div className="relative aspect-[4/3] bg-sky-600">
-                <Image
-                  src="https://images.unsplash.com/photo-1540575467063-178a50c2df87?w=800&q=80"
-                  alt="Conférences"
-                  fill
-                  className="object-cover opacity-60 mix-blend-multiply transition group-hover:scale-[1.03]"
-                  sizes="33vw"
-                />
-                <div className="absolute inset-0 flex flex-col items-center justify-center gap-3">
-                  <div className="flex h-14 w-14 items-center justify-center rounded-xl bg-white/90 shadow-md">
-                    <Presentation className="h-7 w-7 text-sky-600" />
-                  </div>
-                  <p className="font-semibold text-white drop-shadow-md">Conférences</p>
-                </div>
-              </div>
-              <div className="p-4">
-                <p className="text-sm text-slate-600">Espaces pour vos événements professionnels</p>
-                <span className="mt-3 inline-flex items-center gap-1 text-sm font-medium text-sky-600 group-hover:underline">
-                  Découvrir <ArrowRight className="h-4 w-4" />
-                </span>
-              </div>
-            </Link>
-            <Link
-              href="/rechercher?type=bapteme"
-              className="group overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm transition hover:shadow-md"
-            >
-              <div className="relative aspect-[4/3] bg-teal-600">
-                <Image
-                  src="https://images.unsplash.com/photo-1519167758481-83f550bb49b3?w=800&q=80"
-                  alt="Baptêmes"
-                  fill
-                  className="object-cover opacity-60 mix-blend-multiply transition group-hover:scale-[1.03]"
-                  sizes="33vw"
-                />
-                <div className="absolute inset-0 flex flex-col items-center justify-center gap-3">
-                  <div className="flex h-14 w-14 items-center justify-center rounded-xl bg-white/90 shadow-md">
-                    <Droplets className="h-7 w-7 text-teal-600" />
-                  </div>
-                  <p className="font-semibold text-white drop-shadow-md">Baptêmes</p>
-                </div>
-              </div>
-              <div className="p-4">
-                <p className="text-sm text-slate-600">Lieux sacrés pour célébrer la vie</p>
-                <span className="mt-3 inline-flex items-center gap-1 text-sm font-medium text-teal-600 group-hover:underline">
-                  Découvrir <ArrowRight className="h-4 w-4" />
-                </span>
-              </div>
-            </Link>
+          <div className="mt-10 px-4 sm:px-8">
+            <CategoryCarousel />
           </div>
         </div>
-      </section>
+      </SectionReveal>
 
-      <section id="comment-ca-marche" className="py-12">
+      <SectionReveal id="comment-ca-marche" className="py-12">
         <div className="container max-w-[1120px]">
           <h2 className="text-center text-[50px] font-semibold tracking-[-0.02em] text-[#304256] [zoom:0.5]">Comment ça marche</h2>
           <p className="mt-2 text-center text-[25px] text-slate-500 [zoom:0.5]">Trois étapes simples pour trouver votre salle</p>
@@ -332,9 +244,9 @@ export default async function Home() {
             </div>
           </div>
         </div>
-      </section>
+      </SectionReveal>
 
-      <section className="bg-[#edf2f7] py-12">
+      <SectionReveal className="bg-[#edf2f7] py-12">
         <div className="container max-w-[1120px]">
           <Card className="mx-auto max-w-3xl rounded-2xl border-slate-200 bg-white shadow-[0_10px_28px_rgba(15,23,42,0.09)]">
             <CardContent className="space-y-4 p-10 text-center">
@@ -350,9 +262,9 @@ export default async function Home() {
             </CardContent>
           </Card>
         </div>
-      </section>
+      </SectionReveal>
 
-      <section id="tarifs" className="bg-[#f3f6fa] py-12">
+      <SectionReveal id="tarifs" className="bg-[#f3f6fa] py-12">
         <div className="container max-w-[1120px]">
           <h2 className="text-center text-[52px] font-semibold tracking-[-0.02em] text-[#304256] [zoom:0.5]">Tarifs transparents</h2>
           <p className="mt-1 text-center text-[24px] text-slate-500 [zoom:0.5]">Choisissez la formule adaptée à vos besoins</p>
@@ -418,9 +330,9 @@ export default async function Home() {
             ))}
           </div>
         </div>
-      </section>
+      </SectionReveal>
 
-      <section className="py-12">
+      <SectionReveal className="py-12">
         <div className="container max-w-[1120px]">
           <Card className="mx-auto max-w-5xl rounded-2xl border-slate-200 bg-white shadow-[0_10px_24px_rgba(15,23,42,0.08)]">
             <CardContent className="grid items-center gap-8 p-8 md:grid-cols-2 md:p-10">
@@ -447,9 +359,9 @@ export default async function Home() {
             </CardContent>
           </Card>
         </div>
-      </section>
+      </SectionReveal>
 
-      <section id="faq" className="pb-12">
+      <SectionReveal id="faq" className="pb-12">
         <div className="container max-w-[1120px]">
           <h2 className="text-center text-[52px] font-semibold tracking-[-0.02em] text-[#304256] [zoom:0.5]">Questions fréquentes</h2>
           <p className="mt-1 text-center text-[24px] text-slate-500 [zoom:0.5]">Tout ce que vous devez savoir</p>
@@ -464,7 +376,7 @@ export default async function Home() {
             </Accordion>
           </div>
         </div>
-      </section>
+      </SectionReveal>
 
       <footer className="bg-[#2d435a] py-12 text-slate-300">
         <div className="container max-w-[1120px]">
