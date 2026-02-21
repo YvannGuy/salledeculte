@@ -24,7 +24,7 @@ import { createClient } from "@/lib/supabase/server";
 const plans = [
   {
     name: "Pass 24h",
-    price: "9,99€",
+    price: "4,99€",
     features: ["Demandes illimitées pendant 24h", "Accès complet aux annonces", "Support prioritaire"],
     cta: "Choisir ce pass",
   },

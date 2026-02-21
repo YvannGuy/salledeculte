@@ -6,7 +6,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 
 const DEFAULT_SETTINGS = {
   pass: {
-    price_24h: 999,
+    price_24h: 499,
     price_48h: 999,
     price_abonnement: 1999,
     demandes_gratuites: 3,
@@ -47,7 +47,7 @@ export async function savePlatformSettingsAction(formData: FormData) {
   const supabase = createAdminClient();
 
   const pass = {
-    price_24h: Math.round(parseFloat(String(formData.get("pass_price_24h") ?? 9.99)) * 100),
+    price_24h: Math.round(parseFloat(String(formData.get("pass_price_24h") ?? 4.99)) * 100),
     price_48h: Math.round(parseFloat(String(formData.get("pass_price_48h") ?? 9.99)) * 100),
     price_abonnement: Math.round(parseFloat(String(formData.get("pass_price_abonnement") ?? 19.99)) * 100),
     demandes_gratuites: parseInt(String(formData.get("pass_demandes_gratuites") ?? "3"), 10),

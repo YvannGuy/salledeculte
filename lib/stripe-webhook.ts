@@ -61,14 +61,16 @@ export async function handleStripeWebhook(event: Stripe.Event) {
       return { type: event.type, subscriptionId: subscription.id, status: subscription.status };
     }
     case "invoice.paid": {
-      const invoice = event.data.object as Stripe.Invoice;
-      const subscriptionId = invoice.subscription as string | null;
+      const invoice = event.data.object as Stripe.Invoice & { subscription?: string };
+      const subRaw = invoice.subscription ?? invoice.parent?.subscription_details?.subscription;
+      const subscriptionId = typeof subRaw === "string" ? subRaw : subRaw?.id ?? null;
       if (subscriptionId && invoice.billing_reason === "subscription_cycle") {
         const supabase = createAdminClient();
+        const customerId = typeof invoice.customer === "string" ? invoice.customer : invoice.customer?.id;
         const { data: profile } = await supabase
           .from("profiles")
           .select("id")
-          .eq("stripe_customer_id", invoice.customer)
+          .eq("stripe_customer_id", customerId)
           .single();
         if (profile?.id) {
           await supabase.from("payments").insert({
