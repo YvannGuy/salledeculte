@@ -35,6 +35,7 @@ import { hasAccessToBrowseOthers, hasAccessToContact } from "@/lib/pass-utils";
 import { createClient } from "@/lib/supabase/server";
 import { buildCanonical, defaultMetadata } from "@/lib/seo";
 import { getSalleBySlug, getSallesByCity } from "@/lib/salles";
+import { formatSalleTarifs, getSallePriceFrom } from "@/lib/types/salle";
 import { siteConfig } from "@/config/site";
 
 const iconMap: Record<string, React.ComponentType<{ className?: string }>> = {
@@ -68,9 +69,10 @@ export async function generateMetadata({
   if (!salle) return { title: "Salle introuvable" };
 
   const title = `${salle.name} - ${salle.city} | ${siteConfig.name}`;
+  const priceFrom = getSallePriceFrom(salle);
   const description =
     salle.description?.slice(0, 155) + (salle.description?.length > 155 ? "…" : "") ||
-    `Salle ${salle.name} à ${salle.city}. Capacité ${salle.capacity} personnes. À partir de ${salle.pricePerDay}€/jour.`;
+    `Salle ${salle.name} à ${salle.city}. Capacité ${salle.capacity} personnes.${priceFrom ? ` À partir de ${priceFrom.value} € ${priceFrom.label}` : ""}`;
   const canonical = buildCanonical(`/salles/${slug}`);
   const ogImage = salle.images?.[0] || `${siteConfig.url}/og-image.png`;
 
@@ -233,7 +235,7 @@ export default async function SalleDetailPage({
               <section>
                 <h2 className="mb-3 text-lg font-semibold text-black">Tarification</h2>
                 <div className="rounded-xl border border-violet-200 bg-violet-50/60 p-5">
-                  <p className="text-xl font-bold text-black">{salle.pricePerDay} € / jour</p>
+                  <p className="text-xl font-bold text-black">{formatSalleTarifs(salle)}</p>
                   {salle.pricingInclusions.length > 0 && (
                     <>
                       <p className="mt-4 text-[13px] font-medium text-slate-700">Ce tarif comprend :</p>
@@ -280,7 +282,10 @@ export default async function SalleDetailPage({
                             {s.city} • Jusqu&apos;à {s.capacity} personnes
                           </p>
                           <p className="mt-2 text-sm font-medium text-black">
-                            À partir de {s.pricePerDay} € / jour
+                            {(() => {
+                              const pf = getSallePriceFrom(s);
+                              return pf ? `À partir de ${pf.value} € ${pf.label}` : "Tarifs sur demande";
+                            })()}
                           </p>
                         </div>
                       </Link>

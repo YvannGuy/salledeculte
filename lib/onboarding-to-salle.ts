@@ -15,6 +15,8 @@ type OnboardingWizardData = {
   adresse: string;
   description: string;
   tarifParJour: string;
+  tarifMensuel?: string;
+  tarifHoraire?: string;
   inclusions: string[];
   placesParking: string;
   features: string[];
@@ -64,6 +66,8 @@ export function mapOnboardingToSalle(
 ): Partial<Salle> {
   const capacity = parseInt(data.capacite, 10) || 0;
   const pricePerDay = parseInt(data.tarifParJour, 10) || 0;
+  const pricePerMonth = data.tarifMensuel?.trim() ? parseInt(data.tarifMensuel, 10) || null : null;
+  const pricePerHour = data.tarifHoraire?.trim() ? parseInt(data.tarifHoraire, 10) || null : null;
 
   const features = data.features
     .map((id) => {
@@ -116,6 +120,8 @@ export function mapOnboardingToSalle(
     address: data.adresse ? `${data.adresse}, ${data.ville}` : data.ville,
     capacity,
     pricePerDay,
+    pricePerMonth: pricePerMonth ?? undefined,
+    pricePerHour: pricePerHour ?? undefined,
     description: data.description || "",
     images,
     features,

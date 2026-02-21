@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
 
+import Link from "next/link";
+
 import { siteConfig } from "@/config/site";
 import { legalConfig } from "@/config/legal";
 import { buildCanonical } from "@/lib/seo";
@@ -118,7 +120,39 @@ export default function CookiesPage() {
       </section>
 
       <section className="mt-10">
-        <h2 className="text-xl font-semibold text-black">4. Gestion des cookies</h2>
+        <h2 className="text-xl font-semibold text-black">4. Cookies essentiels (toujours actifs)</h2>
+        <p className="mt-3 text-slate-600">
+          Ces cookies sont indispensables et ne peuvent pas être désactivés :
+        </p>
+        <ul className="mt-3 list-disc space-y-1 pl-6 text-slate-600">
+          <li>
+            <strong className="text-black">sb-*-auth-token</strong> : authentification Supabase (connexion)
+          </li>
+          <li>
+            <strong className="text-black">site_consent</strong> : enregistrement de vos choix de cookies (6 mois)
+          </li>
+          <li>
+            <strong className="text-black">Stripe (_stripe_*)</strong> : uniquement sur les pages de paiement (sécurité)
+          </li>
+        </ul>
+      </section>
+
+      <section className="mt-10">
+        <h2 className="text-xl font-semibold text-black">5. Modifier votre choix</h2>
+        <p className="mt-3 text-slate-600">
+          Vous pouvez modifier vos préférences à tout moment en cliquant sur{" "}
+          <strong className="text-black">« Gérer mes cookies »</strong> dans le pied de page du site.
+          Une bannière s&apos;affiche lors de votre première visite ; vous pouvez accepter tout, refuser tout, ou
+          personnaliser par catégorie (statistiques, marketing).
+        </p>
+        <p className="mt-3 text-slate-600">
+          Votre choix est stocké dans le cookie <code className="rounded bg-slate-100 px-1">site_consent</code> pour une
+          durée de 6 mois.
+        </p>
+      </section>
+
+      <section className="mt-10">
+        <h2 className="text-xl font-semibold text-black">6. Gestion des cookies</h2>
         <p className="mt-3 text-slate-600">
           Vous pouvez gérer vos préférences de cookies de plusieurs façons :
         </p>
@@ -129,8 +163,8 @@ export default function CookiesPage() {
             Edge…) pour plus d&apos;informations.
           </li>
           <li>
-            <strong className="text-black">Via les paramètres du site</strong> : si un bandeau de consentement est
-            affiché, vous pouvez accepter ou refuser les cookies non essentiels.
+            <strong className="text-black">Via les paramètres du site</strong> : utilisez « Gérer mes cookies » dans le
+            footer pour personnaliser vos préférences.
           </li>
         </ul>
         <p className="mt-3 text-slate-600">
@@ -140,7 +174,7 @@ export default function CookiesPage() {
       </section>
 
       <section className="mt-10">
-        <h2 className="text-xl font-semibold text-black">5. Vos droits</h2>
+        <h2 className="text-xl font-semibold text-black">7. Vos droits</h2>
         <p className="mt-3 text-slate-600">
           Conformément au RGPD, vous disposez d&apos;un droit d&apos;accès, de rectification et d&apos;effacement des
           données collectées via les cookies. Pour exercer ces droits ou poser des questions :{" "}
@@ -163,7 +197,7 @@ export default function CookiesPage() {
       </section>
 
       <section className="mt-10">
-        <h2 className="text-xl font-semibold text-black">6. Modifications</h2>
+        <h2 className="text-xl font-semibold text-black">8. Modifications</h2>
         <p className="mt-3 text-slate-600">
           Cette politique peut être mise à jour pour refléter l&apos;ajout de nouveaux cookies ou des changements
           réglementaires. La date de dernière mise à jour figure en bas de page.
@@ -171,12 +205,17 @@ export default function CookiesPage() {
       </section>
 
       <section className="mt-10">
-        <h2 className="text-xl font-semibold text-black">7. Contact</h2>
+        <h2 className="text-xl font-semibold text-black">9. Contact et politique de confidentialité</h2>
         <p className="mt-3 text-slate-600">
           Pour toute question :{" "}
           <a href={`mailto:${editeur.email}`} className="text-[#213398] hover:underline">
             {editeur.email}
           </a>
+          . Consultez notre{" "}
+          <Link href="/confidentialite" className="text-[#213398] hover:underline">
+            politique de confidentialité
+          </Link>
+          .
         </p>
       </section>
 

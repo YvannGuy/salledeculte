@@ -83,6 +83,8 @@ type WizardData = {
   postalCode?: string;
   description: string;
   tarifParJour: string;
+  tarifMensuel: string;
+  tarifHoraire: string;
   inclusions: string[];
   placesParking: string;
   features: string[];
@@ -105,6 +107,8 @@ const initialData: WizardData = {
   telephone: "",
   description: "",
   tarifParJour: "",
+  tarifMensuel: "",
+  tarifHoraire: "",
   inclusions: ["location"],
   placesParking: "",
   features: [],
@@ -233,6 +237,8 @@ export function SalleWizard({ embedded, onSuccess, onClose }: SalleWizardProps =
     if (data.lng != null) formData.set("lng", String(data.lng));
     formData.set("description", data.description);
     formData.set("tarifParJour", data.tarifParJour);
+    formData.set("tarifMensuel", data.tarifMensuel);
+    formData.set("tarifHoraire", data.tarifHoraire);
     formData.set("inclusions", JSON.stringify(data.inclusions));
     formData.set("placesParking", data.placesParking);
     formData.set("features", JSON.stringify(data.features));
@@ -525,6 +531,10 @@ function Step1({
   updateData: (u: Partial<WizardData>) => void;
   onNext: () => void;
 }) {
+  const hasAtLeastOneTarif =
+    (data.tarifParJour.trim() !== "" && Number(data.tarifParJour) > 0) ||
+    (data.tarifMensuel.trim() !== "" && Number(data.tarifMensuel) > 0) ||
+    (data.tarifHoraire.trim() !== "" && Number(data.tarifHoraire) > 0);
   const isComplete =
     data.nom.trim() !== "" &&
     data.ville.trim() !== "" &&
@@ -532,8 +542,7 @@ function Step1({
     data.adresse.trim() !== "" &&
     data.telephone.trim() !== "" &&
     data.description.trim() !== "" &&
-    data.tarifParJour.trim() !== "" &&
-    Number(data.tarifParJour) > 0;
+    hasAtLeastOneTarif;
 
   return (
     <>
@@ -606,15 +615,43 @@ function Step1({
           />
         </div>
         <div className="space-y-2">
-          <label className="text-sm font-medium text-slate-700">Tarif indicatif (€ / jour)</label>
-          <Input
-            type="number"
-            placeholder="Ex: 800"
-            value={data.tarifParJour}
-            onChange={(e) => updateData({ tarifParJour: e.target.value })}
-            min={0}
-            className="h-11 border-slate-200"
-          />
+          <label className="text-sm font-medium text-slate-700">Tarifs indicatifs</label>
+          <div className="grid gap-4 sm:grid-cols-3">
+            <div>
+              <p className="mb-1.5 text-xs text-slate-600">€ / jour</p>
+              <Input
+                type="number"
+                placeholder="Ex: 800"
+                value={data.tarifParJour}
+                onChange={(e) => updateData({ tarifParJour: e.target.value })}
+                min={0}
+                className="h-11 border-slate-200"
+              />
+            </div>
+            <div>
+              <p className="mb-1.5 text-xs text-slate-600">€ / mois</p>
+              <Input
+                type="number"
+                placeholder="Ex: 1500"
+                value={data.tarifMensuel}
+                onChange={(e) => updateData({ tarifMensuel: e.target.value })}
+                min={0}
+                className="h-11 border-slate-200"
+              />
+            </div>
+            <div>
+              <p className="mb-1.5 text-xs text-slate-600">€ / heure</p>
+              <Input
+                type="number"
+                placeholder="Ex: 50"
+                value={data.tarifHoraire}
+                onChange={(e) => updateData({ tarifHoraire: e.target.value })}
+                min={0}
+                className="h-11 border-slate-200"
+              />
+            </div>
+          </div>
+          <p className="text-xs text-slate-400">Vous pouvez choisir les 3 ou un des 3</p>
         </div>
       </div>
       <Button
@@ -1057,8 +1094,12 @@ function Step5({
           <p className="mt-1 text-sm text-black">{data.description || "—"}</p>
         </div>
         <div>
-          <p className="text-xs font-medium text-slate-500">Tarif indicatif</p>
-          <p className="mt-1 font-medium text-black">{data.tarifParJour ? `${data.tarifParJour} € / jour` : "—"}</p>
+          <p className="text-xs font-medium text-slate-500">Tarifs indicatifs</p>
+          <p className="mt-1 font-medium text-black">
+            {[data.tarifParJour && `${data.tarifParJour} € / jour`, data.tarifMensuel && `${data.tarifMensuel} € / mois`, data.tarifHoraire && `${data.tarifHoraire} € / heure`]
+              .filter(Boolean)
+              .join(" · ") || "—"}
+          </p>
         </div>
         <div>
           <p className="text-xs font-medium text-slate-500">Ce tarif comprend</p>

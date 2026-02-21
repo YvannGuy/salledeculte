@@ -1,6 +1,15 @@
 import { createServerClient } from "@supabase/ssr";
 import { type NextRequest, NextResponse } from "next/server";
 
+function hasSupabaseAuthCookies(req: NextRequest) {
+  return req.cookies.getAll().some(
+    (c) =>
+      c.name.includes("auth-token") ||
+      c.name === "sb-access-token" ||
+      c.name === "sb-refresh-token"
+  );
+}
+
 function clearSupabaseCookies(req: NextRequest, res: NextResponse) {
   for (const c of req.cookies.getAll()) {
     if (c.name.startsWith("sb-") || c.name === "sb-access-token" || c.name === "sb-refresh-token") {
@@ -22,6 +31,10 @@ export async function updateSession(request: NextRequest) {
   let supabaseResponse = NextResponse.next({
     request,
   });
+
+  if (!hasSupabaseAuthCookies(request)) {
+    return supabaseResponse;
+  }
 
   const supabase = createServerClient(
     supabaseUrl,

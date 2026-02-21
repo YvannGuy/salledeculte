@@ -1,9 +1,10 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { X } from "lucide-react";
 
 import { siteConfig } from "@/config/site";
+import { hasRecordedChoice } from "@/lib/consent";
 
 const STORAGE_KEY = "salledeculte-install-dismissed";
 const DELAY_MS = 7000;
@@ -16,6 +17,7 @@ function isMobile() {
 export function InstallAppPopup() {
   const [open, setOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     setMounted(true);
@@ -27,11 +29,28 @@ export function InstallAppPopup() {
     if (typeof localStorage === "undefined") return;
     if (localStorage.getItem(STORAGE_KEY)) return;
 
-    const timer = setTimeout(() => {
-      setOpen(true);
-    }, DELAY_MS);
+    const startTimer = () => {
+      if (!hasRecordedChoice()) return;
+      timerRef.current = setTimeout(() => setOpen(true), DELAY_MS);
+    };
 
-    return () => clearTimeout(timer);
+    const clearTimer = () => {
+      if (timerRef.current) {
+        clearTimeout(timerRef.current);
+        timerRef.current = null;
+      }
+    };
+
+    startTimer();
+    const handler = () => {
+      clearTimer();
+      startTimer();
+    };
+    window.addEventListener("consent:updated", handler);
+    return () => {
+      window.removeEventListener("consent:updated", handler);
+      clearTimer();
+    };
   }, [mounted]);
 
   const handleClose = () => {

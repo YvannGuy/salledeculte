@@ -2,6 +2,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { Facebook, Instagram } from "lucide-react";
 
+import { CookiePreferencesLink } from "@/components/cookies/CookiePreferencesLink";
 import { siteConfig } from "@/config/site";
 
 export function SiteFooter() {
@@ -81,6 +82,11 @@ export function SiteFooter() {
                 <Link href="/cookies" className="hover:text-white">
                   Cookies
                 </Link>
+              </li>
+              <li>
+                <CookiePreferencesLink className="hover:text-white">
+                  Gérer mes cookies
+                </CookiePreferencesLink>
               </li>
             </ul>
           </div>

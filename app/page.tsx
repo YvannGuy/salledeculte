@@ -6,6 +6,7 @@ import { CheckCircle2, Facebook, Headphones, Instagram, Shield, Star, Zap } from
 import { getTrialActivated } from "@/app/actions/trial";
 import { buildCanonical } from "@/lib/seo";
 import { getEffectiveUserType } from "@/lib/auth-utils";
+import { CookiePreferencesLink } from "@/components/cookies/CookiePreferencesLink";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { ActiverEssaiButton } from "@/components/home/activer-essai-button";
 import { Button } from "@/components/ui/button";
@@ -471,6 +472,9 @@ export default async function Home() {
                 <li><Link href="/cgu" className="hover:text-white">CGU</Link></li>
                 <li><Link href="/confidentialite" className="hover:text-white">Confidentialité</Link></li>
                 <li><Link href="/cookies" className="hover:text-white">Cookies</Link></li>
+                <li>
+                  <CookiePreferencesLink className="hover:text-white">Gérer mes cookies</CookiePreferencesLink>
+                </li>
               </ul>
             </div>
           </div>

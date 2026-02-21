@@ -13,6 +13,7 @@ import "react-leaflet-cluster/dist/assets/MarkerCluster.Default.css";
 // Éviter toute exécution Leaflet côté serveur / avant montage DOM
 const isBrowser = typeof window !== "undefined";
 import type { Salle } from "@/lib/types/salle";
+import { getSallePriceFrom } from "@/lib/types/salle";
 import {
   ILE_DE_FRANCE_BOUNDS,
   ILE_DE_FRANCE_CENTER,
@@ -28,11 +29,12 @@ L.Icon.Default.mergeOptions({
 });
 
 // Badge maison + prix (bleu, icône blanche à gauche, prix à droite)
-function createPriceMarkerIcon(pricePerDay: number) {
+function createPriceMarkerIcon(price: number | null) {
   const svg =
     '<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2"><path d="M15 21v-8a1 1 0 0 0-1-1h-4a1 1 0 0 0-1 1v8"/><path d="M3 10a2 2 0 0 1 .709-1.528l7-5.999a2 2 0 0 1 2.582 0l7 5.999A2 2 0 0 1 21 10v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>';
+  const label = price != null && price > 0 ? `${price}€` : "—";
   return L.divIcon({
-    html: `<div style="display:flex;align-items:center;gap:6px;padding:6px 10px;border-radius:8px;background:#213398;color:white;font-weight:600;font-size:14px;box-shadow:0 2px 8px rgba(0,0,0,.15);cursor:pointer">${svg}<span>${pricePerDay}€</span></div>`,
+    html: `<div style="display:flex;align-items:center;gap:6px;padding:6px 10px;border-radius:8px;background:#213398;color:white;font-weight:600;font-size:14px;box-shadow:0 2px 8px rgba(0,0,0,.15);cursor:pointer">${svg}<span>${label}</span></div>`,
     className: "price-marker",
     iconSize: [80, 36],
     iconAnchor: [40, 36],
@@ -305,7 +307,7 @@ function MapInnerComponent({
             <Marker
               key={salle.id}
               position={[coords.lat, coords.lng]}
-              icon={createPriceMarkerIcon(salle.pricePerDay)}
+              icon={createPriceMarkerIcon(getSallePriceFrom(salle)?.value ?? (salle.pricePerDay > 0 ? salle.pricePerDay : null))}
               eventHandlers={{
                 click: () => onMarkerClick?.(salle.id),
               }}
@@ -361,7 +363,12 @@ function MapInnerComponent({
                     style={{ pointerEvents: "none" }}
                   >
                     <Home size={20} strokeWidth={2} className="shrink-0" />
-                    <span className="font-semibold">{salle.pricePerDay}€ / jour</span>
+                    <span className="font-semibold">
+                      {(() => {
+                        const pf = getSallePriceFrom(salle);
+                        return pf ? `${pf.value} € ${pf.label}` : "Sur demande";
+                      })()}
+                    </span>
                   </div>
                 </div>
               </Popup>

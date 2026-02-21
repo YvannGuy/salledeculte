@@ -16,6 +16,7 @@ import { Input } from "@/components/ui/input";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import type { Salle } from "@/lib/types/salle";
+import { getSallePriceFrom } from "@/lib/types/salle";
 
 const SearchMap = dynamic(
   () => import("@/components/rechercher/search-map").then((mod) => ({ default: mod.SearchMap })),
@@ -136,8 +137,9 @@ export function RechercherContent({
     let list = [...salles];
     const min = prixMin ? parseInt(prixMin, 10) : 0;
     const max = prixMax ? parseInt(prixMax, 10) : 0;
-    if (!isNaN(min) && min > 0) list = list.filter((s) => s.pricePerDay >= min);
-    if (!isNaN(max) && max > 0) list = list.filter((s) => s.pricePerDay <= max);
+    const getPrice = (s: Salle) => getSallePriceFrom(s)?.value ?? s.pricePerDay ?? 0;
+    if (!isNaN(min) && min > 0) list = list.filter((s) => getPrice(s) >= min);
+    if (!isNaN(max) && max > 0) list = list.filter((s) => getPrice(s) <= max);
     return list;
   }, [salles, prixMin, prixMax]);
 
@@ -146,13 +148,14 @@ export function RechercherContent({
     cardRefs.current[salleId]?.scrollIntoView({ behavior: "smooth", block: "nearest" });
   }, []);
 
+  const getSortPrice = (s: Salle) => getSallePriceFrom(s)?.value ?? s.pricePerDay ?? 0;
   const sortedSalles = useMemo(() => {
     const list = [...filteredSalles];
     switch (sort) {
       case "prix-asc":
-        return list.sort((a, b) => a.pricePerDay - b.pricePerDay);
+        return list.sort((a, b) => getSortPrice(a) - getSortPrice(b));
       case "prix-desc":
-        return list.sort((a, b) => b.pricePerDay - a.pricePerDay);
+        return list.sort((a, b) => getSortPrice(b) - getSortPrice(a));
       case "capacite":
         return list.sort((a, b) => b.capacity - a.capacity);
       default:
@@ -355,7 +358,10 @@ export function RechercherContent({
                   </div>
                   <div className="mt-3 flex items-center justify-between">
                     <p className="text-[15px] font-semibold text-black">
-                      {salle.pricePerDay}€ <span className="font-normal text-slate-500">/jour</span>
+                      {(() => {
+                        const pf = getSallePriceFrom(salle);
+                        return pf ? `${pf.value} €${pf.label}` : "Sur demande";
+                      })()}
                     </p>
                     <Link href={`/salles/${salle.slug}`}>
                       <Button size="sm" className="h-8 bg-[#213398] text-[13px] hover:bg-[#1a2980]">

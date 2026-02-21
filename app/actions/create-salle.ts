@@ -65,6 +65,8 @@ export async function createSalleFromOnboarding(formData: FormData): Promise<Cre
   }
   const description = String(formData.get("description") ?? "").trim();
   const tarifParJour = String(formData.get("tarifParJour") ?? "");
+  const tarifMensuel = String(formData.get("tarifMensuel") ?? "");
+  const tarifHoraire = String(formData.get("tarifHoraire") ?? "");
   const inclusions = JSON.parse(String(formData.get("inclusions") ?? "[]")) as string[];
   const placesParking = String(formData.get("placesParking") ?? "");
   const features = JSON.parse(String(formData.get("features") ?? "[]")) as string[];
@@ -84,6 +86,8 @@ export async function createSalleFromOnboarding(formData: FormData): Promise<Cre
     adresse,
     description,
     tarifParJour,
+    tarifMensuel,
+    tarifHoraire,
     inclusions,
     placesParking,
     features,
@@ -95,6 +99,14 @@ export async function createSalleFromOnboarding(formData: FormData): Promise<Cre
 
   let imageUrls: string[] = [];
   const files = formData.getAll("photos") as File[];
+
+  const hasAtLeastOneTarif =
+    (tarifParJour.trim() !== "" && parseInt(tarifParJour, 10) > 0) ||
+    (tarifMensuel.trim() !== "" && parseInt(tarifMensuel, 10) > 0) ||
+    (tarifHoraire.trim() !== "" && parseInt(tarifHoraire, 10) > 0);
+  if (!hasAtLeastOneTarif) {
+    return { success: false, error: "Indiquez au moins un tarif (jour, mois ou heure)." };
+  }
 
   if (files.length < 3) {
     return {
@@ -162,6 +174,8 @@ export async function createSalleFromOnboarding(formData: FormData): Promise<Cre
     lng: lng ?? null,
     capacity: mapped.capacity ?? (parseInt(capacite, 10) || 0),
     price_per_day: mapped.pricePerDay ?? (parseInt(tarifParJour, 10) || 0),
+    price_per_month: mapped.pricePerMonth ?? (parseInt(tarifMensuel, 10) || null),
+    price_per_hour: mapped.pricePerHour ?? (parseInt(tarifHoraire, 10) || null),
     description: mapped.description ?? "",
     images: mapped.images ?? imageUrls,
     features: mapped.features ?? [],

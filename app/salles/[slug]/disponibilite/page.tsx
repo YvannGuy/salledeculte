@@ -8,6 +8,7 @@ import { SiteFooter } from "@/components/layout/site-footer";
 import { SiteHeader } from "@/components/layout/site-header";
 import { buildCanonical } from "@/lib/seo";
 import { getSalleBySlug } from "@/lib/salles";
+import { formatSalleTarifs } from "@/lib/types/salle";
 import { siteConfig } from "@/config/site";
 import { FormulaireDisponibilite } from "./formulaire-disponibilite";
 
@@ -67,7 +68,7 @@ export default async function DisponibilitePage({
               </span>
               <span className="flex items-center gap-1.5">
                 <Euro className="h-4 w-4 text-slate-400" />
-                {salle.pricePerDay} € / jour
+                {formatSalleTarifs(salle)}
               </span>
             </div>
           </div>

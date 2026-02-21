@@ -7,12 +7,7 @@ export async function proxy(request: NextRequest) {
 }
 
 export const config = {
-  // Routes protégées uniquement. /api exclu pour éviter refresh concurrent avec les route handlers.
   matcher: [
-    "/dashboard/:path*",
-    "/proprietaire/:path*",
-    "/onboarding/:path*",
-    "/admin",
-    "/admin/:path*",
+    "/((?!api|auth|_next/static|_next/image|favicon|.well-known|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico|css|js|map|json)$).*)",
   ],
 };
