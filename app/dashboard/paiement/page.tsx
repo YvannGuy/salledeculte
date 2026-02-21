@@ -187,22 +187,24 @@ export default async function PaiementPage({
         </CardHeader>
         <CardContent>
           {!trialActivated && !activePass ? (
-            /* État : Essai pas encore activé */
-            <div className="space-y-4">
-              <div className="flex items-center gap-3 rounded-lg border border-slate-200 bg-slate-50 p-4">
-                <Gift className="h-6 w-6 shrink-0 text-slate-500" />
+            /* État : Essai pas encore activé — on n'affiche PAS "Essai actif" tant qu'il n'a pas cliqué */
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between rounded-lg border border-emerald-200 bg-emerald-50/50 p-4">
+              <div className="flex items-center gap-3">
+                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-emerald-100">
+                  <Gift className="h-6 w-6 text-emerald-600" />
+                </div>
                 <div>
-                  <span className="font-semibold text-slate-700">Essai gratuit disponible</span>
-                  <p className="mt-0.5 text-sm text-slate-600">
-                    Activez votre essai pour obtenir {freeTotal} demande{freeTotal > 1 ? "s" : ""} gratuite
-                    {freeTotal > 1 ? "s" : ""}
+                  <p className="font-semibold text-black">Activez votre essai gratuit</p>
+                  <p className="text-sm text-slate-600">
+                    Bénéficiez de {freeTotal} demande{freeTotal > 1 ? "s" : ""} gratuite
+                    {freeTotal > 1 ? "s" : ""} pour découvrir la plateforme
                   </p>
                 </div>
               </div>
               <ActiverEssaiSeekerButton
                 freeTotal={freeTotal}
                 freeUsed={freeUsed}
-                className="w-full bg-[#213398] hover:bg-[#1a2980]"
+                className="w-full sm:w-auto shrink-0 bg-[#213398] hover:bg-[#1a2980]"
               />
             </div>
           ) : isTrialActive ? (

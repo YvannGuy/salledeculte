@@ -47,7 +47,7 @@ export function ActiverEssaiSeekerButton({ freeTotal, freeUsed = 0, className }:
         disabled={loading}
         className={className}
       >
-        {loading ? "Activation..." : "Activer mon essai"}
+        {loading ? "Activation..." : "Activez mon essai gratuit"}
       </Button>
       <Dialog open={showSuccess} onOpenChange={(open) => !open && handleCloseSuccess()}>
         <DialogContent>
