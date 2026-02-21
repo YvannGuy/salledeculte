@@ -36,6 +36,8 @@ export type Thread = {
   nbPersonnes?: number | null;
   message?: string | null;
   lastMessageAt: string | null;
+  /** Date de création de la demande (ISO) - utilisé si pas encore de message */
+  createdAt?: string | null;
   lastMessagePreview: string | null;
   lastMessageSenderId: string | null;
   unreadCount: number;
@@ -93,6 +95,7 @@ export function MessagerieClient({ threads, currentUserId, userType, pagination,
   const [sending, setSending] = useState(false);
   const [statusUpdating, setStatusUpdating] = useState<"accepted" | "rejected" | "replied" | null>(null);
   const [search, setSearch] = useState("");
+  const [lastPreviews, setLastPreviews] = useState<Map<string, string>>(new Map());
   const [filterTab, setFilterTab] = useState<FilterTab>("all");
   const [detailsOpen, setDetailsOpen] = useState(true);
   const [mobileShowChat, setMobileShowChat] = useState(false);
@@ -145,6 +148,42 @@ export function MessagerieClient({ threads, currentUserId, userType, pagination,
       if (t) setSelected(t);
     }
   }, [initialDemandeId, threads]);
+
+  useEffect(() => {
+    const toFetch = threads
+      .filter((t) => t.conversationId)
+      .map((t) => ({ demandeId: t.demandeId, convId: t.conversationId! }));
+    if (toFetch.length === 0) return;
+    const fetchPreviews = async () => {
+      const supabase = createClient();
+      const next = new Map<string, string>();
+      for (const { demandeId, convId } of toFetch) {
+        const { data } = await supabase
+          .from("messages")
+          .select("content")
+          .eq("conversation_id", convId)
+          .order("sent_at", { ascending: false })
+          .limit(1);
+        if (!data?.length) {
+          const { data: alt } = await supabase
+            .from("messages")
+            .select("content")
+            .eq("conversation_id", convId)
+            .order("created_at", { ascending: false })
+            .limit(1);
+          if (alt?.length) {
+            const preview = (alt[0] as { content: string }).content;
+            next.set(demandeId, preview.length > 80 ? preview.slice(0, 77) + "..." : preview);
+          }
+        } else {
+          const preview = (data[0] as { content: string }).content;
+          next.set(demandeId, preview.length > 80 ? preview.slice(0, 77) + "..." : preview);
+        }
+      }
+      if (next.size) setLastPreviews((prev) => new Map([...prev, ...next]));
+    };
+    fetchPreviews();
+  }, [threads]);
 
   useEffect(() => {
     if (!selected) {
@@ -203,6 +242,11 @@ export function MessagerieClient({ threads, currentUserId, userType, pagination,
         read_at: null,
       };
       setMessages((prev) => [...prev, newMsg]);
+      if (selected) {
+        const preview = text.length > 80 ? text.slice(0, 77) + "..." : text;
+        setLastPreviews((prev) => new Map(prev).set(selected.demandeId, preview));
+      }
+      router.refresh();
     } else if (res.error) {
       alert(res.error);
     }
@@ -236,8 +280,8 @@ export function MessagerieClient({ threads, currentUserId, userType, pagination,
   const formatTime = (dateStr: string | null) => {
     if (!dateStr) return "";
     const d = new Date(dateStr);
-    const now = new Date();
-    const diffMs = now.getTime() - d.getTime();
+    const diffMs = Date.now() - d.getTime();
+    if (Number.isNaN(diffMs) || diffMs < 0) return "";
     const diffMins = Math.floor(diffMs / 60000);
     const diffHours = Math.floor(diffMs / 3600000);
     const diffDays = Math.floor(diffMs / 86400000);
@@ -246,7 +290,8 @@ export function MessagerieClient({ threads, currentUserId, userType, pagination,
     if (diffDays === 1) return "Hier";
     if (diffDays < 7) return `${diffDays} jours`;
     if (diffDays < 14) return "1 sem";
-    return `${Math.floor(diffDays / 7)} sem`;
+    const weeks = Math.floor(diffDays / 7);
+    return Number.isNaN(weeks) ? "" : `${weeks} sem`;
   };
 
   const otherName = selected?.seekerName ?? "";
@@ -354,7 +399,6 @@ export function MessagerieClient({ threads, currentUserId, userType, pagination,
         ) : (
           filteredThreads.map((t) => {
             const isSelected = selected?.demandeId === t.demandeId;
-            const tag = STATUS_TAG[t.demandeStatus ?? "sent"] ?? STATUS_TAG.sent;
             return (
               <button
                 key={t.demandeId}
@@ -374,16 +418,15 @@ export function MessagerieClient({ threads, currentUserId, userType, pagination,
                       {t.unreadCount > 0 && (
                         <span className="h-2.5 w-2.5 rounded-full bg-[#213398]" aria-hidden />
                       )}
-                      <span className="text-xs text-slate-500">{formatTime(t.lastMessageAt ?? t.dateDebut)}</span>
+                      <span className="text-xs text-slate-500">{formatTime(t.lastMessageAt ?? t.createdAt ?? null)}</span>
                     </div>
                   </div>
                   <p className="mt-0.5 truncate text-sm text-slate-600">
                     {t.seekerName} • {t.contactRole ?? (userType === "seeker" ? "Propriétaire" : "Organisateur")}
                   </p>
-                  <p className="mt-1 line-clamp-1 text-sm text-slate-500">{t.lastMessagePreview ?? "Aucun message"}</p>
-                  <span className={`mt-2 inline-block rounded-full px-2.5 py-0.5 text-xs font-medium ${tag.className}`}>
-                    {tag.label}
-                  </span>
+                  <p className="mt-1 line-clamp-1 text-sm text-slate-500">
+                    {lastPreviews.get(t.demandeId) ?? t.lastMessagePreview ?? t.message ?? "Aucun message"}
+                  </p>
                 </div>
               </button>
             );

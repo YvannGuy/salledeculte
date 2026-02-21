@@ -1,7 +1,10 @@
 import { redirect } from "next/navigation";
 
 import { MessagerieClient, type Thread } from "@/components/messagerie/messagerie-client";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
+
+export const dynamic = "force-dynamic";
 
 const PAGE_SIZE = 20;
 
@@ -31,6 +34,8 @@ export default async function MessageriePage({
   const demandeIds = (demandes ?? []).map((d) => d.id);
   const salleIds = [...new Set((demandes ?? []).map((d) => d.salle_id))];
 
+  const adminSupabase = createAdminClient();
+
   const [sallesRes, convsResRaw] = await Promise.all([
     salleIds.length > 0
       ? supabase.from("salles").select("id, name, city, capacity, images, slug, owner_id").in("id", salleIds)
@@ -59,19 +64,52 @@ export default async function MessageriePage({
   const convIds = convsData.map((c) => c.id);
 
   let unreadByConv = new Map<string, number>();
+  const lastMsgByConv = new Map<string, string>();
   if (convIds.length > 0) {
-    const unreadRes = await supabase
-      .from("messages")
-      .select("conversation_id")
-      .in("conversation_id", convIds)
-      .neq("sender_id", user.id)
-      .is("read_at", null);
+    const [unreadRes, lastMsgsResSent, lastMsgsResCreated] = await Promise.all([
+      supabase
+        .from("messages")
+        .select("conversation_id")
+        .in("conversation_id", convIds)
+        .neq("sender_id", user.id)
+        .is("read_at", null),
+      adminSupabase
+        .from("messages")
+        .select("conversation_id, content, sent_at")
+        .in("conversation_id", convIds)
+        .order("sent_at", { ascending: false }),
+      adminSupabase
+        .from("messages")
+        .select("conversation_id, content, created_at")
+        .in("conversation_id", convIds)
+        .order("created_at", { ascending: false }),
+    ]);
     if (!unreadRes.error) {
       (unreadRes.data ?? []).forEach((m) => {
         const cid = m.conversation_id as string;
         unreadByConv.set(cid, (unreadByConv.get(cid) ?? 0) + 1);
       });
     }
+    type MsgRow = { conversation_id: string; content: string };
+    let lastMsgsData: MsgRow[] = !lastMsgsResSent.error && lastMsgsResSent.data?.length
+      ? (lastMsgsResSent.data as MsgRow[])
+      : !lastMsgsResCreated.error && lastMsgsResCreated.data?.length
+        ? (lastMsgsResCreated.data as MsgRow[])
+        : [];
+    if (!lastMsgsData.length) {
+      const fallback = await adminSupabase
+        .from("messages")
+        .select("conversation_id, content, id")
+        .in("conversation_id", convIds)
+        .order("id", { ascending: false });
+      if (!fallback.error && fallback.data?.length) lastMsgsData = fallback.data as MsgRow[];
+    }
+    lastMsgsData.forEach((m) => {
+      if (!lastMsgByConv.has(m.conversation_id)) {
+        const preview = m.content.length > 80 ? m.content.slice(0, 77) + "..." : m.content;
+        lastMsgByConv.set(m.conversation_id, preview);
+      }
+    });
   }
 
   const threads: Thread[] = (demandes ?? []).map((d) => {
@@ -81,6 +119,8 @@ export default async function MessageriePage({
     const profile = ownerId ? profileMap.get(ownerId) : null;
     const convId = conv?.id ?? null;
     const unreadCount = convId ? unreadByConv.get(convId) ?? 0 : 0;
+    const lastPreview =
+      (convId ? lastMsgByConv.get(convId) : null) ?? conv?.last_message_preview ?? null;
 
     const dateStr = d.date_debut
       ? new Date(d.date_debut).toLocaleDateString("fr-FR", {
@@ -114,7 +154,8 @@ export default async function MessageriePage({
       nbPersonnes: (d as { nb_personnes?: number }).nb_personnes ?? null,
       message: (d as { message?: string }).message ?? null,
       lastMessageAt: conv?.last_message_at ?? null,
-      lastMessagePreview: conv?.last_message_preview ?? null,
+      createdAt: d.created_at ?? null,
+      lastMessagePreview: lastPreview,
       lastMessageSenderId: null,
       unreadCount,
     };
