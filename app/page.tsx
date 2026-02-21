@@ -19,7 +19,7 @@ import { SectionReveal } from "@/components/ui/section-reveal";
 import { siteConfig } from "@/config/site";
 import { getVilleImage } from "@/config/ville-images";
 import { getFeaturedCities } from "@/lib/salles";
-import { createClient } from "@/lib/supabase/server";
+import { getUserOrNull } from "@/lib/supabase/server";
 
 const plans = [
   {
@@ -98,13 +98,11 @@ export const metadata: Metadata = {
 };
 
 export default async function Home() {
-  const [cityCards, supabase] = await Promise.all([
+  const [cityCards, authResult] = await Promise.all([
     getFeaturedCities(getVilleImage),
-    createClient(),
+    getUserOrNull(),
   ]);
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const { user, supabase } = authResult;
   const getProfile = async (uid: string) => {
     const { data } = await supabase.from("profiles").select("user_type").eq("id", uid).maybeSingle();
     return data;

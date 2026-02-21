@@ -9,17 +9,14 @@ export const metadata: Metadata = {
 };
 import { AdminSidebar } from "@/components/dashboard/admin-sidebar";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { createClient } from "@/lib/supabase/server";
+import { getUserOrNull } from "@/lib/supabase/server";
 
 export default async function AdminLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const { user, supabase } = await getUserOrNull();
 
   if (!user) {
     redirect("/auth/admin");

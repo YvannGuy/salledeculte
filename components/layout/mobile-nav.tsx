@@ -4,9 +4,12 @@ import Link from "next/link";
 import { useState } from "react";
 import { Menu, X } from "lucide-react";
 
+import { HeaderAuthDropdown } from "@/components/layout/header-auth-dropdown";
+
 interface MobileNavProps {
   isLoggedIn: boolean;
   userType?: "seeker" | "owner" | "admin" | null;
+  dashboardHref?: string;
 }
 
 const navLinks = [
@@ -16,7 +19,7 @@ const navLinks = [
   { href: "/auth?tab=signup&userType=owner", label: "Ajoutez ma salle" },
 ];
 
-export function MobileNav({ isLoggedIn, userType }: MobileNavProps) {
+export function MobileNav({ isLoggedIn, userType, dashboardHref }: MobileNavProps) {
   const [open, setOpen] = useState(false);
 
   const handleClose = () => setOpen(false);
@@ -56,7 +59,15 @@ export function MobileNav({ isLoggedIn, userType }: MobileNavProps) {
                 </Link>
               ))}
               <div className="mt-2 border-t border-slate-200 px-6 py-4">
-                {isLoggedIn ? (
+                {isLoggedIn && dashboardHref ? (
+                  <div className="w-full px-0" onClick={(e) => e.stopPropagation()}>
+                    <HeaderAuthDropdown
+                      dashboardHref={dashboardHref}
+                      onNavigate={handleClose}
+                      fullWidth
+                    />
+                  </div>
+                ) : isLoggedIn ? (
                   <Link
                     href={
                       userType === "admin"

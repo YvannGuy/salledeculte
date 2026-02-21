@@ -5,14 +5,11 @@ import { HeaderAuth } from "@/components/layout/header-auth";
 import { MobileNav } from "@/components/layout/mobile-nav";
 import { siteConfig } from "@/config/site";
 import type { EffectiveUserType } from "@/lib/auth-utils";
-import { getEffectiveUserType } from "@/lib/auth-utils";
-import { createClient } from "@/lib/supabase/server";
+import { getDashboardHref, getEffectiveUserType } from "@/lib/auth-utils";
+import { getUserOrNull } from "@/lib/supabase/server";
 
 export async function SiteHeader() {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const { user, supabase } = await getUserOrNull();
   const isLoggedIn = !!user;
   const getProfile = async (userId: string) => {
     const { data } = await supabase
@@ -51,7 +48,11 @@ export async function SiteHeader() {
           <div className="max-md:hidden md:flex">
             <HeaderAuth />
           </div>
-          <MobileNav isLoggedIn={isLoggedIn} userType={userType} />
+          <MobileNav
+            isLoggedIn={isLoggedIn}
+            userType={userType}
+            dashboardHref={isLoggedIn ? getDashboardHref(userType ?? "seeker") : undefined}
+          />
         </div>
       </div>
     </header>

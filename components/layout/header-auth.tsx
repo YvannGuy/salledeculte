@@ -2,13 +2,10 @@ import Link from "next/link";
 
 import { HeaderAuthDropdown } from "@/components/layout/header-auth-dropdown";
 import { getDashboardHref, getEffectiveUserType } from "@/lib/auth-utils";
-import { createClient } from "@/lib/supabase/server";
+import { getUserOrNull } from "@/lib/supabase/server";
 
 export async function HeaderAuth() {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const { user, supabase } = await getUserOrNull();
 
   if (user) {
     const getProfile = async (userId: string) => {

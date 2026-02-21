@@ -8,17 +8,14 @@ export const metadata: Metadata = {
   robots: { index: false, follow: false },
 };
 import { getEffectiveUserType } from "@/lib/auth-utils";
-import { createClient } from "@/lib/supabase/server";
+import { getUserOrNull } from "@/lib/supabase/server";
 
 export default async function DashboardLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const { user, supabase } = await getUserOrNull();
 
   if (!user) {
     redirect("/auth");

@@ -1,6 +1,16 @@
 import { createServerClient } from "@supabase/ssr";
 import { type NextRequest, NextResponse } from "next/server";
 
+function clearSupabaseCookies(req: NextRequest, res: NextResponse) {
+  for (const c of req.cookies.getAll()) {
+    if (c.name.startsWith("sb-") || c.name === "sb-access-token" || c.name === "sb-refresh-token") {
+      res.cookies.set(c.name, "", { path: "/", maxAge: 0 });
+    }
+  }
+  res.cookies.set("sb-access-token", "", { path: "/", maxAge: 0 });
+  res.cookies.set("sb-refresh-token", "", { path: "/", maxAge: 0 });
+}
+
 export async function updateSession(request: NextRequest) {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
@@ -22,7 +32,6 @@ export async function updateSession(request: NextRequest) {
           return request.cookies.getAll();
         },
         setAll(cookiesToSet) {
-          cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value));
           supabaseResponse = NextResponse.next({
             request,
           });
@@ -34,16 +43,45 @@ export async function updateSession(request: NextRequest) {
     }
   );
 
-  // Rafraîchit le token et valide la session (important pour éviter les déconnexions aléatoires)
-  const { data } = await supabase.auth.getUser();
+  // Refresh token + validation (getUser). Une seule fois ici pour éviter double refresh avec les layouts.
+  let user = null;
+  try {
+    const { data } = await supabase.auth.getUser();
+    user = data.user;
+  } catch (err: unknown) {
+    const code =
+      err && typeof err === "object" && "code" in err
+        ? (err as { code?: string }).code
+        : undefined;
+
+    if (code === "refresh_token_not_found") {
+      const protectedPaths = ["/dashboard", "/proprietaire", "/onboarding", "/admin"];
+      const isProtected = protectedPaths.some((p) => request.nextUrl.pathname.startsWith(p));
+
+      if (isProtected) {
+        const redirectUrl = request.nextUrl.clone();
+        redirectUrl.pathname = request.nextUrl.pathname.startsWith("/admin") ? "/auth/admin" : "/auth";
+        redirectUrl.searchParams.set("redirectedFrom", request.nextUrl.pathname);
+
+        const redirectResponse = NextResponse.redirect(redirectUrl);
+
+        clearSupabaseCookies(request, redirectResponse);
+
+        return redirectResponse;
+      }
+
+      clearSupabaseCookies(request, supabaseResponse);
+      return supabaseResponse;
+    }
+
+    throw err;
+  }
 
   const protectedPaths = ["/dashboard", "/proprietaire", "/onboarding", "/admin"];
   const isProtected = protectedPaths.some((p) => request.nextUrl.pathname.startsWith(p));
-  if (!data.user && isProtected) {
+  if (!user && isProtected) {
     const redirectUrl = request.nextUrl.clone();
-    redirectUrl.pathname = request.nextUrl.pathname.startsWith("/admin")
-      ? "/auth/admin"
-      : "/auth";
+    redirectUrl.pathname = request.nextUrl.pathname.startsWith("/admin") ? "/auth/admin" : "/auth";
     redirectUrl.searchParams.set("redirectedFrom", request.nextUrl.pathname);
     return NextResponse.redirect(redirectUrl);
   }

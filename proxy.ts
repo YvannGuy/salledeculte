@@ -7,6 +7,7 @@ export async function proxy(request: NextRequest) {
 }
 
 export const config = {
+  // Routes protégées uniquement. /api exclu pour éviter refresh concurrent avec les route handlers.
   matcher: [
     "/dashboard/:path*",
     "/proprietaire/:path*",
