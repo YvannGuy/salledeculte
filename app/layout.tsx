@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Manrope } from "next/font/google";
 
+import { ScrollToTop } from "@/components/ui/scroll-to-top";
 import "./globals.css";
 import "@/styles/animations.css";
 
@@ -27,6 +28,7 @@ export default function RootLayout({
     <html lang="fr" suppressHydrationWarning>
       <body className={`${manrope.variable} font-sans antialiased`} suppressHydrationWarning>
         {children}
+        <ScrollToTop />
       </body>
     </html>
   );

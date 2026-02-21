@@ -219,6 +219,28 @@ export default async function Home() {
         </div>
       </SectionReveal>
 
+      <SectionReveal className="relative min-h-[320px] overflow-hidden sm:min-h-[400px]">
+        <div className="absolute inset-0">
+          <Image
+            src="https://images.unsplash.com/photo-1540575467063-178a50c2df87?w=1400&q=85"
+            alt=""
+            fill
+            className="object-cover object-center"
+            priority={false}
+            sizes="100vw"
+          />
+          <div className="absolute inset-0 bg-black/55" aria-hidden />
+        </div>
+        <div className="relative z-10 flex min-h-[320px] items-center justify-center px-4 sm:min-h-[400px]">
+          <h2 className="text-center text-[36px] font-bold leading-tight text-white drop-shadow-md sm:text-[48px] md:text-[56px]">
+            Plus qu&apos;un simple{" "}
+            <span className="bg-gradient-to-r from-amber-400 to-orange-500 bg-clip-text text-transparent">
+              espace
+            </span>
+          </h2>
+        </div>
+      </SectionReveal>
+
       <SectionReveal id="comment-ca-marche" className="py-12">
         <div className="container max-w-[1120px]">
           <h2 className="text-center text-[50px] font-semibold tracking-[-0.02em] text-black [zoom:0.5]">Comment ça marche</h2>
