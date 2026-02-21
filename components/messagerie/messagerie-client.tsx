@@ -663,7 +663,7 @@ export function MessagerieClient({ threads, currentUserId, userType, pagination,
 
   if (hasNoConversations) {
     return (
-      <div className="flex h-full min-h-0 flex-col md:h-[calc(100vh-2rem)]">
+      <div className="flex h-full min-h-0 flex-col">
         <div className="shrink-0 border-b border-slate-200 bg-white p-4 md:p-6">
           <div className="flex items-center justify-between">
             <h1 className="text-2xl font-bold text-black">Messagerie</h1>
@@ -761,7 +761,7 @@ export function MessagerieClient({ threads, currentUserId, userType, pagination,
   }
 
   return (
-    <div className="flex h-full min-h-0 flex-col md:h-[calc(100vh-2rem)] md:flex-row">
+    <div className="flex h-full min-h-0 flex-col md:flex-row">
       <div className={`flex min-h-0 flex-col md:w-[380px] ${mobileShowChat && selected ? "hidden md:flex" : ""}`}>
         {listPanel}
       </div>
