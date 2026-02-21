@@ -163,6 +163,7 @@ export default async function Home() {
 
       <PourquoiReserverCarousel />
 
+      {cityCards.length > 0 && (
       <SectionReveal className="bg-white py-12">
         <div className="container max-w-[1120px]">
           <h2 className="text-center text-[46px] font-semibold tracking-[-0.02em] text-black [zoom:0.5]">
@@ -172,14 +173,7 @@ export default async function Home() {
             Explorez les espaces disponibles dans votre région
           </p>
           <div className="mx-auto mt-10 grid max-w-5xl gap-6 sm:grid-cols-2 md:grid-cols-3">
-            {(cityCards.length > 0 ? cityCards : [
-              { city: "Paris", count: 24, image: getVilleImage("Paris") },
-              { city: "Versailles", count: 8, image: getVilleImage("Versailles") },
-              { city: "Saint-Denis", count: 6, image: getVilleImage("Saint-Denis") },
-              { city: "Créteil", count: 9, image: getVilleImage("Créteil") },
-              { city: "Nanterre", count: 11, image: getVilleImage("Nanterre") },
-              { city: "Boulogne-Billancourt", count: 5, image: getVilleImage("Boulogne-Billancourt") },
-            ]).map((item) => (
+            {cityCards.map((item) => (
               <Link
                 key={item.city}
                 href={`/rechercher?ville=${encodeURIComponent(item.city)}`}
@@ -209,6 +203,7 @@ export default async function Home() {
           </div>
         </div>
       </SectionReveal>
+      )}
 
       <SectionReveal id="categories-evenement" className="bg-slate-50 py-12">
         <div className="container max-w-[1120px]">
