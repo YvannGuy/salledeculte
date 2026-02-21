@@ -300,7 +300,7 @@ export function MessagerieClient({ threads, currentUserId, userType, pagination,
   const demandeLink = userType === "seeker" ? "/dashboard/demandes" : "/proprietaire/demandes";
 
   const listPanel = (
-    <div className="flex w-full flex-col border-r-0 border-slate-200 bg-white md:w-[380px] md:border-r">
+    <div className="flex min-h-0 w-full flex-1 flex-col border-r-0 border-slate-200 bg-white md:w-[380px] md:border-r-2 md:border-slate-300 md:shrink-0">
       <div className="shrink-0 border-b border-slate-200 p-4 md:p-4">
         <div className="flex items-center justify-between">
           <h1 className="text-2xl font-bold text-black">Messagerie</h1>
