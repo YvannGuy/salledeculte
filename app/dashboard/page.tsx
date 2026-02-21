@@ -282,12 +282,12 @@ export default async function DashboardPage() {
               </CardContent>
             </Card>
           ) : !trialActivated ? (
-            <Card className="overflow-hidden border-0 border-emerald-200 bg-emerald-50/50 shadow-sm">
+            <Card className="overflow-hidden border-0 border-emerald-100 bg-[#F8FDF9] shadow-sm">
               <CardContent className="p-6">
                 <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                   <div className="flex items-center gap-3">
-                    <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-emerald-100">
-                      <Crown className="h-6 w-6 text-emerald-600" />
+                    <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-[#D9F7E0]">
+                      <Crown className="h-6 w-6 text-[#189D52]" />
                     </div>
                     <div>
                       <p className="font-semibold text-black">Activez votre essai gratuit</p>
@@ -296,8 +296,8 @@ export default async function DashboardPage() {
                       </p>
                     </div>
                   </div>
-                  <Link href="/dashboard/paiement" className="sm:ml-auto">
-                    <Button className="w-full sm:w-auto bg-[#213398] hover:bg-[#1a2980]">
+                  <Link href="/dashboard/paiement?trial=1" className="sm:ml-auto">
+                    <Button className="w-full sm:w-auto bg-[#1A3E92] hover:bg-[#15317a] font-semibold">
                       Activez mon essai gratuit
                     </Button>
                   </Link>
@@ -305,16 +305,16 @@ export default async function DashboardPage() {
               </CardContent>
             </Card>
           ) : (
-            <Card className="overflow-hidden border-0 border-slate-200 shadow-sm">
+            <Card className="overflow-hidden border-0 border-amber-200 bg-amber-50/80 shadow-sm">
               <CardContent className="p-6">
                 <div className="flex items-center gap-3">
-                  <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-slate-100">
-                    <Crown className="h-6 w-6 text-slate-500" />
+                  <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-amber-100">
+                    <Crown className="h-6 w-6 text-amber-600" />
                   </div>
                   <div>
-                    <p className="font-semibold text-black">Aucun Pass actif</p>
-                    <p className="text-sm text-slate-500">
-                      Acquérez un Pass pour envoyer des demandes illimitées aux propriétaires
+                    <p className="font-semibold text-amber-800">Accès bloqué</p>
+                    <p className="text-sm text-amber-700">
+                      Vous n&apos;avez plus de demandes restantes. Choisissez un Pass pour continuer à contacter les propriétaires.
                     </p>
                   </div>
                   <Link href="/dashboard/paiement" className="ml-auto">

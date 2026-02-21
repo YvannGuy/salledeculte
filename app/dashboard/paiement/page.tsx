@@ -1,14 +1,14 @@
 import Link from "next/link";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
-import { AlertTriangle, CreditCard, Gift, Infinity, Lock, Zap } from "lucide-react";
+import { CreditCard, Crown, Gift, Infinity, Lock, Zap } from "lucide-react";
 
 import { activateTrialAction, getTrialActivated } from "@/app/actions/trial";
 import { getPaymentMethods } from "@/app/actions/stripe-portal";
 import { getPlatformSettings } from "@/app/actions/admin-settings";
-import { ActiverEssaiSeekerButton } from "@/components/paiement/activer-essai-seeker-button";
 import { PassCheckoutButton } from "@/components/pass-checkout-button";
 import { PortalButton } from "@/components/paiement/portal-button";
+import { TrialActivatedPopup } from "@/components/paiement/trial-activated-popup";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { createClient } from "@/lib/supabase/server";
@@ -159,6 +159,12 @@ export default async function PaiementPage({
 
   return (
     <div className="p-4 sm:p-6 lg:p-8">
+      <TrialActivatedPopup
+        show={!!trialJustActivated && isTrialActive}
+        freeTotal={freeTotal}
+        userType="seeker"
+        basePath="/dashboard/paiement"
+      />
       <h1 className="text-2xl font-bold text-black">Paiement</h1>
       <p className="mt-2 text-slate-500">Gérez votre accès et vos transactions</p>
 
@@ -186,95 +192,68 @@ export default async function PaiementPage({
           </CardTitle>
         </CardHeader>
         <CardContent>
-          {!trialActivated && !activePass ? (
-            /* État : Essai pas encore activé — on n'affiche PAS "Essai actif" tant qu'il n'a pas cliqué */
-            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between rounded-lg border border-emerald-200 bg-emerald-50/50 p-4">
+          {!trialActivated ? (
+            <div className="flex flex-col gap-4 rounded-xl border border-emerald-100 bg-[#F8FDF9] p-5 shadow-sm sm:flex-row sm:items-center sm:justify-between">
               <div className="flex items-center gap-3">
-                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-emerald-100">
-                  <Gift className="h-6 w-6 text-emerald-600" />
+                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-[#D9F7E0]">
+                  <Crown className="h-6 w-6 text-[#189D52]" />
                 </div>
                 <div>
                   <p className="font-semibold text-black">Activez votre essai gratuit</p>
-                  <p className="text-sm text-slate-600">
-                    Bénéficiez de {freeTotal} demande{freeTotal > 1 ? "s" : ""} gratuite
-                    {freeTotal > 1 ? "s" : ""} pour découvrir la plateforme
+                  <p className="mt-0.5 text-sm text-slate-600">
+                    Bénéficiez de demandes gratuites pour découvrir la plateforme
                   </p>
                 </div>
               </div>
-              <ActiverEssaiSeekerButton
-                freeTotal={freeTotal}
-                freeUsed={freeUsed}
-                className="w-full sm:w-auto shrink-0 bg-[#213398] hover:bg-[#1a2980]"
-              />
+              <Link href="/dashboard/paiement?trial=1" className="sm:ml-auto">
+                <Button className="w-full sm:w-auto bg-[#1A3E92] hover:bg-[#15317a] font-semibold">
+                  Activez mon essai gratuit
+                </Button>
+              </Link>
             </div>
           ) : isTrialActive ? (
-            /* État : Essai activé (demandes offertes restantes) */
-            <div className="space-y-3">
-              <div className="flex items-center gap-3 rounded-lg border border-emerald-200 bg-emerald-50/80 p-4">
-                <Gift className="h-6 w-6 shrink-0 text-emerald-600" />
-                <div className="flex-1">
-                  <span className="font-semibold text-emerald-800">Essai actif</span>
-                  <p className="mt-0.5 text-sm text-emerald-700">
-                    {freeTotal - freeUsed} demande{freeTotal - freeUsed > 1 ? "s" : ""} gratuite
-                    {freeTotal - freeUsed > 1 ? "s" : ""} restante{freeTotal - freeUsed > 1 ? "s" : ""}
-                  </p>
-                </div>
-                <span className="rounded-full bg-emerald-200 px-2.5 py-1 text-xs font-medium text-emerald-800">
-                  Essai
-                </span>
+            <div className="flex items-center gap-3 rounded-xl border border-emerald-200 bg-emerald-50/80 p-4">
+              <Gift className="h-6 w-6 shrink-0 text-emerald-600" />
+              <div>
+                <span className="font-semibold text-emerald-800">Essai actif</span>
+                <p className="mt-0.5 text-sm text-emerald-700">
+                  {freeTotal - freeUsed} demande{freeTotal - freeUsed > 1 ? "s" : ""} gratuite{freeTotal - freeUsed > 1 ? "s" : ""} restante{freeTotal - freeUsed > 1 ? "s" : ""}
+                </p>
               </div>
-              <p className="text-xs text-slate-500">
-                Une fois vos demandes offertes épuisées, choisissez un Pass pour continuer à contacter les propriétaires.
-              </p>
+              <span className="ml-auto rounded-full bg-emerald-200 px-2.5 py-1 text-xs font-medium text-emerald-800">
+                Essai
+              </span>
             </div>
-          ) : activePass && hasPaid ? (
-            /* État : Pass payant actif */
-            <div className="flex items-center gap-3 rounded-lg bg-emerald-50 p-4">
+          ) : activePass ? (
+            <div className="flex items-center gap-3 rounded-xl bg-emerald-50 p-4">
               <Zap className="h-6 w-6 shrink-0 text-emerald-600" />
               <div>
                 <span className="font-semibold text-emerald-800">Pass actif</span>
-                <p className="mt-0.5 text-sm text-emerald-700">Accès illimité aux demandes</p>
+                <p className="mt-0.5 text-sm text-emerald-700">Vous pouvez envoyer des demandes illimitées aux propriétaires</p>
               </div>
-              <span className="rounded-full bg-emerald-200 px-2.5 py-1 text-xs font-medium text-emerald-800">
+              <span className="ml-auto rounded-full bg-emerald-200 px-2.5 py-1 text-xs font-medium text-emerald-800">
                 Actif
               </span>
             </div>
           ) : (
-            /* État : Sans pass – essai épuisé */
-            <>
-              <div className="flex items-center gap-3 rounded-lg bg-slate-100 p-4">
-                <AlertTriangle className="h-6 w-6 shrink-0 text-slate-500" />
-                <div>
-                  <span className="font-semibold text-slate-700">Accès limité</span>
-                  <p className="mt-0.5 text-sm text-slate-600">
-                    Vos {freeTotal} demandes offertes sont épuisées
-                  </p>
-                </div>
-                <span className="rounded-full bg-slate-300 px-2.5 py-1 text-xs font-medium text-slate-600">
-                  Inactif
-                </span>
+            <div className="flex items-center gap-3 rounded-xl bg-amber-50 p-4">
+              <Crown className="h-6 w-6 shrink-0 text-amber-600" />
+              <div>
+                <span className="font-semibold text-amber-800">Accès bloqué</span>
+                <p className="mt-0.5 text-sm text-amber-700">
+                  Vous n&apos;avez plus de demandes restantes. Choisissez un Pass pour continuer à contacter les propriétaires.
+                </p>
               </div>
-              <div className="mt-4 flex items-start gap-3 rounded-lg border border-amber-200 bg-amber-50/80 p-4">
-                <AlertTriangle className="h-5 w-5 shrink-0 text-amber-600" />
-                <div>
-                  <p className="text-sm font-medium text-amber-800">
-                    Activez un Pass pour continuer à envoyer des demandes illimitées aux propriétaires de salles.
-                  </p>
-                  <p className="mt-1 text-sm text-amber-700">
-                    Pass 24h, 48h ou abonnement selon vos besoins
-                  </p>
-                </div>
-              </div>
-              <PassCheckoutButton passType="pass_24h" className="mt-4 bg-[#213398] hover:bg-[#1a2980]">
-                Choisir un Pass
-              </PassCheckoutButton>
-            </>
+              <Link href="#pass-abonnements" className="ml-auto">
+                <Button className="bg-[#213398] hover:bg-[#1a2980]">Voir les offres</Button>
+              </Link>
+            </div>
           )}
         </CardContent>
       </Card>
 
       {/* Pass & abonnements */}
-      <h2 className="mt-10 text-lg font-semibold text-black">Pass & abonnements</h2>
+      <h2 id="pass-abonnements" className="mt-10 text-lg font-semibold text-black">Pass & abonnements</h2>
       <div className="mt-4 grid grid-cols-1 gap-6 md:grid-cols-3 md:items-stretch">
         {plans.map((plan) => {
           const Icon = plan.icon;

@@ -44,7 +44,7 @@ export async function getAdminTrialStats(): Promise<TrialStats> {
     { data: salleViews },
     { data: salles },
   ] = await Promise.all([
-    supabase.from("profiles").select("id, email, full_name, user_type"),
+    supabase.from("profiles").select("id, email, full_name, user_type, trial_activated_at").not("trial_activated_at", "is", null),
     supabase.from("demandes").select("seeker_id").not("seeker_id", "is", null),
     supabase
       .from("payments")

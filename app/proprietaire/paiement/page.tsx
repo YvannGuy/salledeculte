@@ -1,18 +1,18 @@
 import Link from "next/link";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
-import { AlertTriangle, CreditCard, Infinity, Lock, Zap } from "lucide-react";
+import { CreditCard, Crown, Gift, Infinity, Lock, Zap } from "lucide-react";
 
 import { activateTrialAction, getTrialActivated } from "@/app/actions/trial";
 import { getPaymentMethods } from "@/app/actions/stripe-portal";
 import { getPlatformSettings } from "@/app/actions/admin-settings";
 import { PassCheckoutButton } from "@/components/pass-checkout-button";
 import { PortalButton } from "@/components/paiement/portal-button";
+import { TrialActivatedPopup } from "@/components/paiement/trial-activated-popup";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { createClient } from "@/lib/supabase/server";
 import { getOwnerBrowseAccess } from "@/lib/pass-utils";
-import { Gift } from "lucide-react";
 
 const PRODUCT_LABEL: Record<string, string> = {
   pass_24h: "Pass 24h",
@@ -80,7 +80,6 @@ export default async function ProprietairePaiementPage({
     ]);
 
   const pass = settings.pass;
-  const paidList = (payments ?? []).filter((p) => p.status === "paid" || p.status === "active");
   const isTrialActive = browse.freeUsed < browse.freeTotal && !browse.hasPaidPass;
   const trialJustActivated = params.trial === "1";
 
@@ -120,6 +119,12 @@ export default async function ProprietairePaiementPage({
 
   return (
     <div className="p-4 sm:p-6 lg:p-8">
+      <TrialActivatedPopup
+        show={!!trialJustActivated && isTrialActive}
+        freeTotal={browse.freeTotal}
+        userType="owner"
+        basePath="/proprietaire/paiement"
+      />
       <h1 className="text-2xl font-bold text-black">Paiement</h1>
       <p className="mt-2 text-slate-500">Gérez votre accès pour consulter les annonces des autres propriétaires</p>
 
@@ -145,79 +150,68 @@ export default async function ProprietairePaiementPage({
           </CardTitle>
         </CardHeader>
         <CardContent>
-          {isTrialActive ? (
-            <div className="space-y-3">
-              <div className="flex items-center gap-3 rounded-lg border border-emerald-200 bg-emerald-50/80 p-4">
-                <Gift className="h-6 w-6 shrink-0 text-emerald-600" />
-                <div className="flex-1">
-                  <span className="font-semibold text-emerald-800">Essai actif</span>
-                  <p className="mt-0.5 text-sm text-emerald-700">
-                    {browse.freeTotal - browse.freeUsed} consultation{browse.freeTotal - browse.freeUsed > 1 ? "s" : ""} gratuite
-                    {browse.freeTotal - browse.freeUsed > 1 ? "s" : ""} restante{browse.freeTotal - browse.freeUsed > 1 ? "s" : ""}
+          {!trialActivated ? (
+            <div className="flex flex-col gap-4 rounded-xl border border-emerald-100 bg-[#F8FDF9] p-5 shadow-sm sm:flex-row sm:items-center sm:justify-between">
+              <div className="flex items-center gap-3">
+                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-[#D9F7E0]">
+                  <Crown className="h-6 w-6 text-[#189D52]" />
+                </div>
+                <div>
+                  <p className="font-semibold text-black">Activez votre essai gratuit</p>
+                  <p className="mt-0.5 text-sm text-slate-600">
+                    Bénéficiez de consultations gratuites pour découvrir les annonces des autres propriétaires
                   </p>
                 </div>
-                <span className="rounded-full bg-emerald-200 px-2.5 py-1 text-xs font-medium text-emerald-800">
-                  Essai
-                </span>
               </div>
-              <p className="text-xs text-slate-500">
-                Une fois vos consultations offertes épuisées, choisissez un Pass pour continuer.
-              </p>
+              <Link href="/proprietaire/paiement?trial=1" className="sm:ml-auto">
+                <Button className="w-full sm:w-auto bg-[#1A3E92] hover:bg-[#15317a] font-semibold">
+                  Activez mon essai gratuit
+                </Button>
+              </Link>
+            </div>
+          ) : isTrialActive ? (
+            <div className="flex items-center gap-3 rounded-xl border border-emerald-200 bg-emerald-50/80 p-4">
+              <Gift className="h-6 w-6 shrink-0 text-emerald-600" />
+              <div>
+                <span className="font-semibold text-emerald-800">Essai actif</span>
+                <p className="mt-0.5 text-sm text-emerald-700">
+                  {browse.freeTotal - browse.freeUsed} consultation{browse.freeTotal - browse.freeUsed > 1 ? "s" : ""} gratuite{browse.freeTotal - browse.freeUsed > 1 ? "s" : ""} restante{browse.freeTotal - browse.freeUsed > 1 ? "s" : ""}
+                </p>
+              </div>
+              <span className="ml-auto rounded-full bg-emerald-200 px-2.5 py-1 text-xs font-medium text-emerald-800">
+                Essai
+              </span>
             </div>
           ) : browse.hasPaidPass ? (
-            <div className="flex items-center gap-3 rounded-lg bg-emerald-50 p-4">
+            <div className="flex items-center gap-3 rounded-xl bg-emerald-50 p-4">
               <Zap className="h-6 w-6 shrink-0 text-emerald-600" />
               <div>
                 <span className="font-semibold text-emerald-800">Pass actif</span>
                 <p className="mt-0.5 text-sm text-emerald-700">Vous pouvez consulter les annonces des autres propriétaires</p>
               </div>
-              <span className="rounded-full bg-emerald-200 px-2.5 py-1 text-xs font-medium text-emerald-800">
+              <span className="ml-auto rounded-full bg-emerald-200 px-2.5 py-1 text-xs font-medium text-emerald-800">
                 Actif
               </span>
             </div>
           ) : (
-            <>
-              <div className="flex items-center gap-3 rounded-lg bg-slate-100 p-4">
-                <AlertTriangle className="h-6 w-6 shrink-0 text-slate-500" />
-                <div>
-                  <span className="font-semibold text-slate-700">Accès limité</span>
-                  <p className="mt-0.5 text-sm text-slate-600">
-                    {trialActivated ? `Vos ${browse.freeTotal} consultations offertes sont épuisées` : "Activez votre essai ou un Pass"}
-                  </p>
-                </div>
-                <span className="rounded-full bg-slate-300 px-2.5 py-1 text-xs font-medium text-slate-600">
-                  Inactif
-                </span>
+            <div className="flex items-center gap-3 rounded-xl bg-amber-50 p-4">
+              <Crown className="h-6 w-6 shrink-0 text-amber-600" />
+              <div>
+                <span className="font-semibold text-amber-800">Accès bloqué</span>
+                <p className="mt-0.5 text-sm text-amber-700">
+                  Vous n&apos;avez plus de consultations restantes. Choisissez un Pass pour consulter les annonces des autres propriétaires.
+                </p>
               </div>
-              <div className="mt-4 flex items-start gap-3 rounded-lg border border-amber-200 bg-amber-50/80 p-4">
-                <AlertTriangle className="h-5 w-5 shrink-0 text-amber-600" />
-                <div>
-                  <p className="text-sm font-medium text-amber-800">
-                    Sans accès, vous ne pouvez consulter que vos propres annonces.
-                  </p>
-                  <p className="mt-1 text-sm text-amber-700">
-                    {trialActivated ? "Choisissez un Pass pour continuer." : "Activez votre essai (3 consultations gratuites) ou un Pass."}
-                  </p>
-                </div>
-              </div>
-              <div className="mt-4">
-                {trialActivated ? (
-                  <PassCheckoutButton passType="pass_24h" returnBase="/proprietaire/paiement" className="bg-[#213398] hover:bg-[#1a2980]">
-                    Choisir un Pass
-                  </PassCheckoutButton>
-                ) : (
-                  <Link href="/proprietaire/paiement?trial=1">
-                    <Button className="bg-[#213398] hover:bg-[#1a2980]">Activer mon essai</Button>
-                  </Link>
-                )}
-              </div>
-            </>
+              <Link href="#pass-abonnements" className="ml-auto">
+                <Button className="bg-[#213398] hover:bg-[#1a2980]">Voir les offres</Button>
+              </Link>
+            </div>
           )}
         </CardContent>
       </Card>
 
       {/* Pass & abonnements */}
-      <h2 className="mt-10 text-lg font-semibold text-black">Pass & abonnements</h2>
+      <h2 id="pass-abonnements" className="mt-10 text-lg font-semibold text-black">Pass & abonnements</h2>
       <div className="mt-4 grid grid-cols-1 gap-6 md:grid-cols-3 md:items-stretch">
         {plans.map((plan) => {
           const Icon = plan.icon;

@@ -1,16 +1,22 @@
 "use server";
 
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 
 export async function getTrialActivated(userId: string | null): Promise<boolean> {
   if (!userId) return false;
-  const supabase = await createClient();
-  const { data } = await supabase
-    .from("profiles")
-    .select("trial_activated_at")
-    .eq("id", userId)
-    .single();
-  return !!data?.trial_activated_at;
+  try {
+    const supabase = createAdminClient();
+    const { data, error } = await supabase
+      .from("profiles")
+      .select("trial_activated_at")
+      .eq("id", userId)
+      .maybeSingle();
+    if (error || !data) return false;
+    return !!data.trial_activated_at;
+  } catch {
+    return false;
+  }
 }
 
 export async function activateTrialAction(): Promise<{ success: boolean; error?: string }> {

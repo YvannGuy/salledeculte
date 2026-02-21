@@ -9,6 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { createClient } from "@/lib/supabase/server";
 import { getOwnerBrowseAccess } from "@/lib/pass-utils";
+import { getTrialActivated } from "@/app/actions/trial";
 
 const STATUT_SALLE_LABEL: Record<string, string> = {
   approved: "Active",
@@ -45,13 +46,14 @@ export default async function ProprietaireDashboardPage() {
   } = await supabase.auth.getUser();
   if (!user) return null;
 
-  const [{ data: sallesData }, browse] = await Promise.all([
+  const [{ data: sallesData }, browse, trialActivated] = await Promise.all([
     supabase
       .from("salles")
       .select("id, slug, name, city, images, status")
       .eq("owner_id", user.id)
       .order("created_at", { ascending: false }),
     getOwnerBrowseAccess(user.id),
+    getTrialActivated(user.id),
   ]);
 
   const salles = sallesData ?? [];
@@ -149,71 +151,93 @@ export default async function ProprietaireDashboardPage() {
         </div>
       )}
 
-      {browse.allowed ? (
+      {browse.hasPaidPass && browse.activePass ? (
         <div className="mb-6">
-          {browse.hasPaidPass && browse.activePass ? (
-            <Card className="overflow-hidden border-0 bg-gradient-to-br from-[#213398] to-[#1a2980] shadow-md">
-              <CardContent className="p-4 sm:p-6">
-                <div className="flex items-center gap-3">
-                  <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-white/20">
-                    <Crown className="h-6 w-6 text-white" />
-                  </div>
-                  <div>
-                    <p className="font-semibold text-white">
-                      {browse.activePass.product_type === "pass_48h" ? "Pass 48h" : browse.activePass.product_type === "abonnement" ? "Abonnement" : "Pass 24h"} actif
-                    </p>
-                    <p className="text-sm text-white/80">
-                      {passExpiryInfo
-                        ? `Expire dans ${passExpiryInfo.remainingText}`
-                        : browse.activePass.product_type === "abonnement"
-                          ? "Accès illimité"
-                          : "Consultez les annonces des autres propriétaires"}
-                    </p>
-                  </div>
+          <Card className="overflow-hidden border-0 bg-gradient-to-br from-[#213398] to-[#1a2980] shadow-md">
+            <CardContent className="p-4 sm:p-6">
+              <div className="flex items-center gap-3">
+                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-white/20">
+                  <Crown className="h-6 w-6 text-white" />
                 </div>
-                <Link href="/proprietaire/paiement">
-                  <Button className="mt-4 flex items-center gap-2 bg-white text-black hover:bg-white/90">
-                    <Lock className="h-4 w-4" />
-                    Prolonger mon accès
-                  </Button>
-                </Link>
-              </CardContent>
-            </Card>
-          ) : (
-            <Card className="overflow-hidden border-0 border-emerald-200 bg-emerald-50/80 shadow-sm">
-              <CardContent className="p-4 sm:p-6">
-                <div className="flex items-center gap-3">
-                  <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-emerald-200">
-                    <Gift className="h-6 w-6 text-emerald-700" />
-                  </div>
-                  <div>
-                    <p className="font-semibold text-emerald-800">Essai actif</p>
-                    <p className="text-sm text-emerald-700">
-                      {browse.freeTotal - browse.freeUsed} consultation{browse.freeTotal - browse.freeUsed > 1 ? "s" : ""} restante
-                      {browse.freeTotal - browse.freeUsed > 1 ? "s" : ""}
-                    </p>
-                  </div>
+                <div>
+                  <p className="font-semibold text-white">
+                    {browse.activePass.product_type === "pass_48h" ? "Pass 48h" : browse.activePass.product_type === "abonnement" ? "Abonnement" : "Pass 24h"} actif
+                  </p>
+                  <p className="text-sm text-white/80">
+                    {passExpiryInfo
+                      ? `Expire dans ${passExpiryInfo.remainingText}`
+                      : browse.activePass.product_type === "abonnement"
+                        ? "Accès illimité"
+                        : "Consultez les annonces des autres propriétaires"}
+                  </p>
                 </div>
-                <Link href="/proprietaire/paiement">
-                  <Button variant="outline" size="sm" className="mt-4 border-emerald-300 text-emerald-800 hover:bg-emerald-100">
-                    Voir Mon accès
-                  </Button>
-                </Link>
-              </CardContent>
-            </Card>
-          )}
+              </div>
+              <Link href="/proprietaire/paiement">
+                <Button className="mt-4 flex items-center gap-2 bg-white text-black hover:bg-white/90">
+                  <Lock className="h-4 w-4" />
+                  Prolonger mon accès
+                </Button>
+              </Link>
+            </CardContent>
+          </Card>
         </div>
-      ) : (
-        <Card className="mb-6 overflow-hidden border-0 border-slate-200 shadow-sm">
+      ) : trialActivated && browse.freeUsed < browse.freeTotal && !browse.hasPaidPass ? (
+        <div className="mb-6">
+          <Card className="overflow-hidden border-0 border-emerald-200 bg-emerald-50/80 shadow-sm">
+            <CardContent className="p-4 sm:p-6">
+              <div className="flex items-center gap-3">
+                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-emerald-200">
+                  <Gift className="h-6 w-6 text-emerald-700" />
+                </div>
+                <div>
+                  <p className="font-semibold text-emerald-800">Essai actif</p>
+                  <p className="text-sm text-emerald-700">
+                    {browse.freeTotal - browse.freeUsed} consultation{browse.freeTotal - browse.freeUsed > 1 ? "s" : ""} restante{browse.freeTotal - browse.freeUsed > 1 ? "s" : ""}
+                  </p>
+                </div>
+              </div>
+              <Link href="/proprietaire/paiement" className="mt-4 inline-block">
+                <Button variant="outline" size="sm" className="border-emerald-300 text-emerald-800 hover:bg-emerald-100">
+                  Prolonger mon accès
+                </Button>
+              </Link>
+            </CardContent>
+          </Card>
+        </div>
+      ) : !trialActivated ? (
+        <Card className="mb-6 overflow-hidden border-0 border-emerald-100 bg-[#F8FDF9] shadow-sm">
+          <CardContent className="p-6">
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+              <div className="flex items-center gap-3">
+                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-[#D9F7E0]">
+                  <Crown className="h-6 w-6 text-[#189D52]" />
+                </div>
+                <div>
+                  <p className="font-semibold text-black">Activez votre essai gratuit</p>
+                  <p className="text-sm text-slate-600">
+                    Bénéficiez de consultations gratuites pour découvrir les annonces des autres propriétaires
+                  </p>
+                </div>
+              </div>
+              <Link href="/proprietaire/paiement?trial=1" className="sm:ml-auto">
+                <Button className="w-full sm:w-auto bg-[#1A3E92] hover:bg-[#15317a] font-semibold">
+                  Activez mon essai gratuit
+                </Button>
+              </Link>
+            </div>
+          </CardContent>
+        </Card>
+      ) : !browse.allowed && trialActivated ? (
+        <Card className="mb-6 overflow-hidden border-0 border-amber-200 bg-amber-50/80 shadow-sm">
           <CardContent className="p-6">
             <div className="flex items-center gap-3">
-              <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-slate-100">
-                <Crown className="h-6 w-6 text-slate-500" />
+              <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-amber-100">
+                <Crown className="h-6 w-6 text-amber-600" />
               </div>
               <div>
-                <p className="font-semibold text-black">Aucun accès aux autres annonces</p>
-                <p className="text-sm text-slate-500">
-                  Activez votre essai ou un Pass pour consulter les annonces des autres propriétaires
+                <p className="font-semibold text-amber-800">Accès bloqué</p>
+                <p className="text-sm text-amber-700">
+                  Vous n&apos;avez plus de consultations restantes. Choisissez un Pass pour consulter les annonces des autres propriétaires.
                 </p>
               </div>
               <Link href="/proprietaire/paiement" className="ml-auto">
@@ -224,7 +248,7 @@ export default async function ProprietaireDashboardPage() {
             </div>
           </CardContent>
         </Card>
-      )}
+      ) : null}
 
       <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         {metrics.map((m) => {

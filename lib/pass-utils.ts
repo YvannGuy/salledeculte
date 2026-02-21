@@ -36,7 +36,7 @@ export async function hasAccessToBrowseOthers(
   const paidOrActive = ["paid", "active"];
 
   if (options?.forOwner) {
-    const [otherViewsCount, { data: payments }] = await Promise.all([
+    const [otherViewsCount, { data: payments }, { data: profile }] = await Promise.all([
       getOwnerOtherSallesViewCount(userId),
       supabase
         .from("payments")
@@ -45,8 +45,10 @@ export async function hasAccessToBrowseOthers(
         .in("status", paidOrActive)
         .in("product_type", ["pass_24h", "pass_48h", "abonnement"])
         .order("created_at", { ascending: false }),
+      supabase.from("profiles").select("trial_activated_at").eq("id", userId).maybeSingle(),
     ]);
-    if (otherViewsCount < freeTotal) return true;
+    const trialActivated = !!(profile as { trial_activated_at: string | null } | null)?.trial_activated_at;
+    if (trialActivated && otherViewsCount < freeTotal) return true;
     return hasValidPaidPass(payments ?? []);
   }
 
@@ -68,7 +70,7 @@ export async function getOwnerBrowseAccess(userId: string): Promise<OwnerBrowseR
   const freeTotal = settings.pass.demandes_gratuites;
 
   const paidOrActive = ["paid", "active"];
-  const [freeUsed, { data: payments }] = await Promise.all([
+  const [freeUsed, { data: payments }, { data: profile }] = await Promise.all([
     getOwnerOtherSallesViewCount(userId),
     supabase
       .from("payments")
@@ -77,11 +79,13 @@ export async function getOwnerBrowseAccess(userId: string): Promise<OwnerBrowseR
       .in("status", paidOrActive)
       .in("product_type", ["pass_24h", "pass_48h", "abonnement"])
       .order("created_at", { ascending: false }),
+    supabase.from("profiles").select("trial_activated_at").eq("id", userId).maybeSingle(),
   ]);
 
   const paidList = payments ?? [];
   const hasPaid = hasValidPaidPass(paidList);
-  const allowed = freeUsed < freeTotal || hasPaid;
+  const trialActivated = !!(profile as { trial_activated_at: string | null } | null)?.trial_activated_at;
+  const allowed = hasPaid || (trialActivated && freeUsed < freeTotal);
 
   const now = new Date();
   const activePass = (paidList ?? []).find((p) => {
@@ -123,14 +127,15 @@ export async function checkCanCreateDemande(
   const supabase = createAdminClient();
   const pass = settings.pass;
 
-  const { count: demandesCount } = await supabase
-    .from("demandes")
-    .select("*", { count: "exact", head: true })
-    .eq("seeker_id", seekerId);
+  const [{ count: demandesCount }, { data: profile }] = await Promise.all([
+    supabase.from("demandes").select("*", { count: "exact", head: true }).eq("seeker_id", seekerId),
+    supabase.from("profiles").select("trial_activated_at").eq("id", seekerId).maybeSingle(),
+  ]);
 
   const total = demandesCount ?? 0;
+  const trialActivated = !!(profile as { trial_activated_at: string | null } | null)?.trial_activated_at;
 
-  if (total < pass.demandes_gratuites) {
+  if (total < pass.demandes_gratuites && trialActivated) {
     return { allowed: true };
   }
 
