@@ -44,7 +44,7 @@ export async function getAdminTrialStats(): Promise<TrialStats> {
     { data: salleViews },
     { data: salles },
   ] = await Promise.all([
-    supabase.from("profiles").select("id, email, full_name, user_type, trial_activated_at").not("trial_activated_at", "is", null),
+    supabase.from("profiles").select("id, email, full_name, user_type, trial_activated_at, free_pass_credits").not("trial_activated_at", "is", null),
     supabase.from("demandes").select("seeker_id").not("seeker_id", "is", null),
     supabase
       .from("payments")
@@ -93,13 +93,15 @@ export async function getAdminTrialStats(): Promise<TrialStats> {
   (profiles ?? []).forEach((p) => {
     const id = (p as { id: string }).id;
     const userType = (p as { user_type: string | null }).user_type;
+    const credits = (p as { free_pass_credits?: number | null })?.free_pass_credits ?? 0;
+    const effectiveTotal = freeTotal + credits;
     const paidList = userPayments.get(id) ?? [];
     const hasPaid = hasValidPaidPass(paidList);
 
     if (userType === "seeker") {
       const used = seekerDemandesCount.get(id) ?? 0;
-      const remaining = Math.max(0, freeTotal - used);
-      const onTrial = used < freeTotal && !hasPaid;
+      const remaining = Math.max(0, effectiveTotal - used);
+      const onTrial = used < effectiveTotal && !hasPaid;
       if (onTrial) {
         organisateursOnTrial++;
         organisateursClicksRemaining += remaining;
@@ -109,15 +111,15 @@ export async function getAdminTrialStats(): Promise<TrialStats> {
           full_name: (p as { full_name: string | null }).full_name,
           user_type: userType,
           used,
-          total: freeTotal,
+          total: effectiveTotal,
           remaining,
         });
       }
     } else if (userType === "owner") {
       const viewedSalles = ownerDistinctViews.get(id);
       const usedCount = viewedSalles?.size ?? 0;
-      const remaining = Math.max(0, freeTotal - usedCount);
-      const onTrial = usedCount < freeTotal && !hasPaid;
+      const remaining = Math.max(0, effectiveTotal - usedCount);
+      const onTrial = usedCount < effectiveTotal && !hasPaid;
       if (onTrial) {
         proprietairesOnTrial++;
         proprietairesClicksRemaining += remaining;
@@ -127,7 +129,7 @@ export async function getAdminTrialStats(): Promise<TrialStats> {
           full_name: (p as { full_name: string | null }).full_name,
           user_type: userType,
           used: usedCount,
-          total: freeTotal,
+          total: effectiveTotal,
           remaining,
         });
       }

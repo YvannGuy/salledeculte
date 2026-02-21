@@ -32,6 +32,18 @@ export async function loginAction(_: AuthFormState, formData: FormData): Promise
     redirect("/auth");
   }
 
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("suspended")
+    .eq("id", user.id)
+    .maybeSingle();
+
+  if ((profile as { suspended?: boolean } | null)?.suspended) {
+    await supabase.auth.signOut();
+    revalidatePath("/", "layout");
+    return { error: "Votre compte a été suspendu. Contactez l'administrateur." };
+  }
+
   revalidatePath("/", "layout");
 
   const getProfile = async (userId: string) => {

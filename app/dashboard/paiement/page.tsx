@@ -110,13 +110,14 @@ export default async function PaiementPage({
         .eq("user_id", user.id)
         .in("status", ["paid", "active", "canceled"])
         .order("created_at", { ascending: false }),
-      supabase.from("profiles").select("stripe_customer_id").eq("id", user.id).single(),
+      supabase.from("profiles").select("stripe_customer_id, free_pass_credits").eq("id", user.id).single(),
       getPaymentMethods(user.id),
       getTrialActivated(user.id),
     ]);
 
   const freeUsed = demandesCount ?? 0;
-  const freeTotal = pass.demandes_gratuites;
+  const freePassCredits = (profile as { free_pass_credits?: number | null })?.free_pass_credits ?? 0;
+  const freeTotal = pass.demandes_gratuites + freePassCredits;
   const paidList = (payments ?? []).filter((p) => p.status === "paid" || p.status === "active");
   const activePass = hasActivePass(paidList, freeUsed, freeTotal);
   const hasPaid = hasPaidPass(paidList, freeUsed, freeTotal);

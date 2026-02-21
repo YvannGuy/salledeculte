@@ -2,8 +2,11 @@
 
 import { useMemo, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import {
   AlertCircle,
+  Ban,
+  BatteryPlus,
   Check,
   Clock,
   CreditCard,
@@ -20,6 +23,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ClientPagination } from "@/components/ui/pagination";
 import { Input } from "@/components/ui/input";
 import { PaymentDetailModal } from "./payment-detail-modal";
+import { revokeTrialForUser, rechargeTrialForUser } from "@/app/actions/admin-trial";
 import type { TrialStats } from "@/lib/admin-trial-stats";
 
 type Transaction = {
@@ -77,6 +81,81 @@ function formatStatus(status: string) {
     default:
       return { label: status, icon: Clock, className: "text-slate-600 bg-slate-100" };
   }
+}
+
+type TrialUser = TrialStats["usersWithClicksLeft"][number];
+
+function TrialUserRow({ user }: { user: TrialUser }) {
+  const router = useRouter();
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const handleRevoke = async () => {
+    if (loading || !confirm("Révoquer le pass gratuit pour cet utilisateur ?")) return;
+    setLoading(true);
+    setError(null);
+    const res = await revokeTrialForUser(user.id);
+    setLoading(false);
+    if (res.success) router.refresh();
+    else setError(res.error);
+  };
+
+  const handleRecharge = async (credits: number) => {
+    if (loading) return;
+    setLoading(true);
+    setError(null);
+    const res = await rechargeTrialForUser(user.id, credits);
+    setLoading(false);
+    if (res.success) router.refresh();
+    else setError(res.error);
+  };
+
+  return (
+    <tr className="border-b border-slate-100 hover:bg-slate-50">
+      <td className="px-3 py-2">
+        <Link
+          href={`/admin/utilisateurs?userId=${user.id}`}
+          className="font-medium text-blue-600 hover:underline"
+        >
+          {user.full_name || user.email || "—"}
+        </Link>
+      </td>
+      <td className="px-3 py-2">
+        {user.user_type === "seeker" ? "Organisateur" : user.user_type === "owner" ? "Propriétaire" : user.user_type ?? "—"}
+      </td>
+      <td className="px-3 py-2 text-right">{user.used}</td>
+      <td className="px-3 py-2 text-right">{user.total}</td>
+      <td className="px-3 py-2 text-right font-medium text-teal-600">{user.remaining}</td>
+      <td className="px-3 py-2">
+        <div className="flex flex-wrap items-center gap-1">
+          <Button
+            size="sm"
+            variant="outline"
+            className="h-7 gap-1 border-red-200 text-red-700 hover:bg-red-50"
+            onClick={handleRevoke}
+            disabled={loading}
+          >
+            <Ban className="h-3 w-3" />
+            Révoquer
+          </Button>
+          {[1, 2, 3].map((n) => (
+            <Button
+              key={n}
+              size="sm"
+              variant="outline"
+              className="h-7 gap-1 border-teal-200 text-teal-700 hover:bg-teal-50"
+              onClick={() => handleRecharge(n)}
+              disabled={loading}
+            >
+              <BatteryPlus className="h-3 w-3" />
+              +{n}
+            </Button>
+          ))}
+        </div>
+        {error && <p className="mt-1 text-xs text-red-600">{error}</p>}
+      </td>
+    </tr>
+  );
 }
 
 function formatDate(d: string) {
@@ -282,6 +361,7 @@ export function PaiementsClient({ transactions, stats, trialStats }: Props) {
                     <th className="px-3 py-2 text-right">Utilisés</th>
                     <th className="px-3 py-2 text-right">Total</th>
                     <th className="px-3 py-2 text-right">Restants</th>
+                    <th className="px-3 py-2">Actions</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -291,22 +371,7 @@ export function PaiementsClient({ transactions, stats, trialStats }: Props) {
                       (trialUsersPage - 1) * TRIAL_USERS_PAGE_SIZE + TRIAL_USERS_PAGE_SIZE
                     )
                     .map((u) => (
-                      <tr key={u.id} className="border-b border-slate-100 hover:bg-slate-50">
-                        <td className="px-3 py-2">
-                          <Link
-                            href={`/admin/utilisateurs?userId=${u.id}`}
-                            className="font-medium text-blue-600 hover:underline"
-                          >
-                            {u.full_name || u.email || "—"}
-                          </Link>
-                        </td>
-                        <td className="px-3 py-2">
-                          {u.user_type === "seeker" ? "Organisateur" : u.user_type === "owner" ? "Propriétaire" : u.user_type ?? "—"}
-                        </td>
-                        <td className="px-3 py-2 text-right">{u.used}</td>
-                        <td className="px-3 py-2 text-right">{u.total}</td>
-                        <td className="px-3 py-2 text-right font-medium text-teal-600">{u.remaining}</td>
-                      </tr>
+                      <TrialUserRow key={u.id} user={u} />
                     ))}
                 </tbody>
               </table>

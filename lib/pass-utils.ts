@@ -45,10 +45,12 @@ export async function hasAccessToBrowseOthers(
         .in("status", paidOrActive)
         .in("product_type", ["pass_24h", "pass_48h", "abonnement"])
         .order("created_at", { ascending: false }),
-      supabase.from("profiles").select("trial_activated_at").eq("id", userId).maybeSingle(),
+      supabase.from("profiles").select("trial_activated_at, free_pass_credits").eq("id", userId).maybeSingle(),
     ]);
     const trialActivated = !!(profile as { trial_activated_at: string | null } | null)?.trial_activated_at;
-    if (trialActivated && otherViewsCount < freeTotal) return true;
+    const credits = (profile as { free_pass_credits?: number | null } | null)?.free_pass_credits ?? 0;
+    const effectiveTotal = freeTotal + credits;
+    if (trialActivated && otherViewsCount < effectiveTotal) return true;
     return hasValidPaidPass(payments ?? []);
   }
 
@@ -79,13 +81,15 @@ export async function getOwnerBrowseAccess(userId: string): Promise<OwnerBrowseR
       .in("status", paidOrActive)
       .in("product_type", ["pass_24h", "pass_48h", "abonnement"])
       .order("created_at", { ascending: false }),
-    supabase.from("profiles").select("trial_activated_at").eq("id", userId).maybeSingle(),
+    supabase.from("profiles").select("trial_activated_at, free_pass_credits").eq("id", userId).maybeSingle(),
   ]);
 
   const paidList = payments ?? [];
   const hasPaid = hasValidPaidPass(paidList);
   const trialActivated = !!(profile as { trial_activated_at: string | null } | null)?.trial_activated_at;
-  const allowed = hasPaid || (trialActivated && freeUsed < freeTotal);
+  const credits = (profile as { free_pass_credits?: number | null } | null)?.free_pass_credits ?? 0;
+  const effectiveTotal = freeTotal + credits;
+  const allowed = hasPaid || (trialActivated && freeUsed < effectiveTotal);
 
   const now = new Date();
   const activePass = (paidList ?? []).find((p) => {
@@ -129,13 +133,15 @@ export async function checkCanCreateDemande(
 
   const [{ count: demandesCount }, { data: profile }] = await Promise.all([
     supabase.from("demandes").select("*", { count: "exact", head: true }).eq("seeker_id", seekerId),
-    supabase.from("profiles").select("trial_activated_at").eq("id", seekerId).maybeSingle(),
+    supabase.from("profiles").select("trial_activated_at, free_pass_credits").eq("id", seekerId).maybeSingle(),
   ]);
 
   const total = demandesCount ?? 0;
   const trialActivated = !!(profile as { trial_activated_at: string | null } | null)?.trial_activated_at;
+  const credits = (profile as { free_pass_credits?: number | null } | null)?.free_pass_credits ?? 0;
+  const effectiveTotal = pass.demandes_gratuites + credits;
 
-  if (total < pass.demandes_gratuites && trialActivated) {
+  if (total < effectiveTotal && trialActivated) {
     return { allowed: true };
   }
 
@@ -164,6 +170,6 @@ export async function checkCanCreateDemande(
   return {
     allowed: false,
     reason: "pass_required",
-    message: `Vos ${pass.demandes_gratuites} demandes gratuites sont épuisées. Vous devez acquérir un Pass 24h, 48h ou un abonnement pour continuer.`,
+    message: `Vos ${effectiveTotal} demandes gratuites sont épuisées. Vous devez acquérir un Pass 24h, 48h ou un abonnement pour continuer.`,
   };
 }

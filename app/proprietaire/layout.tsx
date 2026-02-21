@@ -21,6 +21,16 @@ export default async function ProprietaireLayout({
     redirect("/auth");
   }
 
+  const { data: suspendedCheck } = await supabase
+    .from("profiles")
+    .select("suspended")
+    .eq("id", user.id)
+    .maybeSingle();
+
+  if ((suspendedCheck as { suspended?: boolean } | null)?.suspended) {
+    redirect("/auth?suspended=1");
+  }
+
   const getProfile = async (userId: string) => {
     const { data } = await supabase
       .from("profiles")

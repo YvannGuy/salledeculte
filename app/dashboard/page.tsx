@@ -8,7 +8,6 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { SearchModalButton } from "@/components/search/search-modal";
 import { getPlatformSettings } from "@/app/actions/admin-settings";
-import { getTrialActivated } from "@/app/actions/trial";
 import { createClient } from "@/lib/supabase/server";
 
 const STATUT_LABEL: Record<string, string> = {
@@ -42,7 +41,7 @@ export default async function DashboardPage() {
     { count: favorisCount },
     { data: demandesList },
     { data: favorisList },
-    trialActivated,
+    { data: profile },
     { data: payments },
   ] = await Promise.all([
     supabase.from("demandes").select("id", { count: "exact", head: true }).eq("seeker_id", seekerId),
@@ -57,7 +56,7 @@ export default async function DashboardPage() {
       .from("favoris")
       .select("salle_id")
       .eq("user_id", seekerId),
-    getTrialActivated(seekerId),
+    supabase.from("profiles").select("trial_activated_at, free_pass_credits").eq("id", seekerId).maybeSingle(),
     supabase
       .from("payments")
       .select("product_type, status, amount, created_at")
@@ -67,6 +66,9 @@ export default async function DashboardPage() {
       .order("created_at", { ascending: false })
       .limit(5),
   ]);
+
+  const trialActivated = !!(profile as { trial_activated_at: string | null } | null)?.trial_activated_at;
+  const freePassCredits = (profile as { free_pass_credits?: number | null } | null)?.free_pass_credits ?? 0;
 
   const totalDemandes = demandesCount ?? 0;
   const totalFavoris = favorisCount ?? 0;
@@ -106,7 +108,8 @@ export default async function DashboardPage() {
   const convsCount = convIds.length;
 
   const freeUsed = totalDemandes;
-  const freeTotal = settings?.pass?.demandes_gratuites ?? 2;
+  const baseTotal = settings?.pass?.demandes_gratuites ?? 2;
+  const freeTotal = baseTotal + freePassCredits;
   const isTrialActive = trialActivated && freeUsed < freeTotal;
 
   const now = new Date();

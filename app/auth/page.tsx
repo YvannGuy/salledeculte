@@ -46,6 +46,7 @@ function AuthPageContent() {
   const tabParam = searchParams.get("tab");
   const userTypeParam = searchParams.get("userType");
   const redirectedFrom = searchParams.get("redirectedFrom") ?? "";
+  const suspended = searchParams.get("suspended") === "1";
   const initialUserType = userTypeParam === "owner" ? "owner" : undefined;
   const [activeTab, setActiveTab] = useState<"login" | "signup">(
     tabParam === "signup" ? "signup" : "login"
@@ -90,6 +91,11 @@ function AuthPageContent() {
       </div>
 
       <div className="relative flex flex-col bg-white p-6 md:p-10">
+        {suspended && (
+          <div className="mb-4 rounded-lg border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800">
+            Votre compte a été suspendu. Contactez l&apos;administrateur pour plus d&apos;informations.
+          </div>
+        )}
         <div className="flex gap-6 border-b border-slate-200">
           <button
             type="button"

@@ -21,6 +21,16 @@ export default async function DashboardLayout({
     redirect("/auth");
   }
 
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("suspended, full_name")
+    .eq("id", user.id)
+    .maybeSingle();
+
+  if ((profile as { suspended?: boolean } | null)?.suspended) {
+    redirect("/auth?suspended=1");
+  }
+
   const getProfile = async (userId: string) => {
     const { data } = await supabase
       .from("profiles")
@@ -33,13 +43,7 @@ export default async function DashboardLayout({
   if (userType === "admin") redirect("/admin");
   if (userType === "owner") redirect("/proprietaire");
 
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("full_name")
-    .eq("id", user.id)
-    .maybeSingle();
-
-  const displayName = profile?.full_name ?? user.user_metadata?.full_name ?? "Utilisateur";
+  const displayName = (profile as { full_name?: string | null } | null)?.full_name ?? user.user_metadata?.full_name ?? "Utilisateur";
 
   const [{ count: demandeCount }, { data: demandesForMessagerie }] = await Promise.all([
     supabase
