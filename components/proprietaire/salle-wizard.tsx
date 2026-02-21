@@ -75,6 +75,7 @@ type HorairesJour = { debut: string; fin: string };
 type WizardData = {
   nom: string;
   ville: string;
+  villeCode?: string | null;
   capacite: string;
   adresse: string;
   telephone: string;
@@ -563,7 +564,8 @@ function Step1({
             <label className="text-sm font-medium text-slate-700">Ville</label>
             <VilleAutocomplete
               value={data.ville}
-              onChange={(v) => updateData({ ville: v })}
+              onChange={(v) => updateData({ ville: v, ...(v ? {} : { villeCode: undefined }) })}
+              onCitySelect={(_, code) => updateData({ villeCode: code ?? undefined })}
               placeholder="Ex: Paris, Versailles..."
             />
           </div>
@@ -581,6 +583,7 @@ function Step1({
           <label className="text-sm font-medium text-slate-700">Adresse</label>
           <AdresseAutocomplete
             value={data.adresse}
+            citycode={data.villeCode ?? undefined}
             onChange={(v) => updateData({ adresse: v })}
             onSelectAddress={(addr, city, postcode, coords) => {
               updateData({

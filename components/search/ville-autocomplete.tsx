@@ -27,9 +27,13 @@ function rankMatch(ville: string, query: string): number {
   return 0;
 }
 
+const API_URL = "https://api-adresse.data.gouv.fr/search";
+
 interface VilleAutocompleteProps {
   value?: string;
   onChange?: (value: string) => void;
+  /** Appelé quand une ville est sélectionnée, avec son code INSEE (pour filtrer les adresses) */
+  onCitySelect?: (ville: string, citycode: string | null) => void;
   placeholder?: string;
   className?: string;
   inputClassName?: string;
@@ -38,6 +42,7 @@ interface VilleAutocompleteProps {
 export function VilleAutocomplete({
   value = "",
   onChange,
+  onCitySelect,
   placeholder = "Paris, Versailles, Meaux...",
   className,
   inputClassName,
@@ -71,12 +76,25 @@ export function VilleAutocomplete({
   }, [highlightedIndex, matches.length]);
 
   const handleSelect = useCallback(
-    (ville: string) => {
+    async (ville: string) => {
       setInputValue(ville);
       onChange?.(ville);
       setOpen(false);
+      if (onCitySelect) {
+        try {
+          const res = await fetch(
+            `${API_URL}?q=${encodeURIComponent(ville)}&type=municipality&limit=1`
+          );
+          const data = await res.json();
+          const feature = data.features?.[0];
+          const citycode = feature?.properties?.citycode ?? null;
+          onCitySelect(ville, citycode);
+        } catch {
+          onCitySelect(ville, null);
+        }
+      }
     },
-    [onChange]
+    [onChange, onCitySelect]
   );
 
   const handleKeyDown = (e: React.KeyboardEvent) => {

@@ -30,6 +30,8 @@ interface AdresseAutocompleteProps {
     postcode?: string,
     coords?: { lat: number; lng: number }
   ) => void;
+  /** Code INSEE de la commune : restreint les suggestions à cette ville */
+  citycode?: string | null;
   placeholder?: string;
   className?: string;
   inputClassName?: string;
@@ -39,6 +41,7 @@ export function AdresseAutocomplete({
   value = "",
   onChange,
   onSelectAddress,
+  citycode,
   placeholder = "Ex: 12 rue de la République, Paris",
   className,
   inputClassName,
@@ -51,16 +54,21 @@ export function AdresseAutocomplete({
   const listRef = useRef<HTMLUListElement>(null);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
 
-  const fetchSuggestions = useCallback(async (q: string) => {
-    if (!q || q.length < 3) {
-      setSuggestions([]);
-      return;
-    }
-    setLoading(true);
-    try {
-      const res = await fetch(
-        `${API_URL}?q=${encodeURIComponent(q)}&limit=15&autocomplete=1`
-      );
+  const fetchSuggestions = useCallback(
+    async (q: string) => {
+      if (!q || q.length < 3) {
+        setSuggestions([]);
+        return;
+      }
+      setLoading(true);
+      try {
+        const params = new URLSearchParams({
+          q,
+          limit: "15",
+          autocomplete: "1",
+        });
+        if (citycode) params.set("citycode", citycode);
+        const res = await fetch(`${API_URL}?${params}`);
       const data = await res.json();
       const features = (data.features ?? []) as AdresseFeature[];
       const idfFeatures = features
@@ -74,7 +82,9 @@ export function AdresseAutocomplete({
     } finally {
       setLoading(false);
     }
-  }, []);
+  },
+    [citycode]
+  );
 
   useEffect(() => {
     setInputValue(value);
