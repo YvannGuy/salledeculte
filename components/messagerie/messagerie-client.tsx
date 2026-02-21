@@ -404,8 +404,11 @@ export function MessagerieClient({ threads, currentUserId, userType, pagination,
               <button
                 key={t.demandeId}
                 type="button"
-                onClick={() => setSelected(t)}
-                className={`flex w-full items-start gap-4 border-b border-slate-100 p-4 text-left transition hover:bg-slate-50 ${
+                onClick={() => {
+                  setSelected(t);
+                  setMobileShowChat(true);
+                }}
+                className={`flex w-full items-start gap-4 border-b border-slate-100 p-4 text-left transition hover:bg-slate-50 active:bg-slate-100 ${
                   isSelected ? "bg-[#213398]/5" : ""
                 }`}
               >
