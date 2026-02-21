@@ -43,7 +43,7 @@ export async function SiteHeader() {
           <a href="/#tarifs" className="hover:text-black">
             Tarifs
           </a>
-          <Link href="/auth?tab=signup" className="hover:text-black">
+          <Link href="/auth?tab=signup&userType=owner" className="hover:text-black">
             Ajoutez ma salle
           </Link>
         </nav>

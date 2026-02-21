@@ -27,7 +27,7 @@ export function SiteFooter() {
                 </Link>
               </li>
               <li>
-                <Link href="/auth?tab=signup" className="hover:text-white">
+                <Link href="/auth?tab=signup&userType=owner" className="hover:text-white">
                   Ajoutez ma salle
                 </Link>
               </li>

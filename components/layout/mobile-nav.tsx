@@ -13,7 +13,7 @@ const navLinks = [
   { href: "/#categories-evenement", label: "Catégories" },
   { href: "/blog", label: "Blog" },
   { href: "/#tarifs", label: "Tarifs" },
-  { href: "/auth?tab=signup", label: "Ajoutez ma salle" },
+  { href: "/auth?tab=signup&userType=owner", label: "Ajoutez ma salle" },
 ];
 
 export function MobileNav({ isLoggedIn, userType }: MobileNavProps) {
