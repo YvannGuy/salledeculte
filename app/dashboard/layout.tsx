@@ -42,7 +42,11 @@ export default async function DashboardLayout({
   const displayName = profile?.full_name ?? user.user_metadata?.full_name ?? "Utilisateur";
 
   const [{ count: demandeCount }, { data: demandesForMessagerie }] = await Promise.all([
-    supabase.from("demandes").select("id", { count: "exact", head: true }).eq("seeker_id", user.id),
+    supabase
+      .from("demandes")
+      .select("id", { count: "exact", head: true })
+      .eq("seeker_id", user.id)
+      .in("status", ["sent", "viewed"]),
     supabase.from("demandes").select("id").eq("seeker_id", user.id),
   ]);
 

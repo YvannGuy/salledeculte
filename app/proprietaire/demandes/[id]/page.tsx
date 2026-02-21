@@ -46,6 +46,13 @@ export default async function DemandeDetailPage({
 
   if (!demande) return notFound();
 
+  if ((demande as { status?: string }).status === "sent") {
+    await supabase
+      .from("demandes")
+      .update({ status: "viewed" })
+      .eq("id", id);
+  }
+
   const adminSupabase = createAdminClient();
   const [{ data: salle }, { data: profile }] = await Promise.all([
     supabase

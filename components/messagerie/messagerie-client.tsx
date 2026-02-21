@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
-import { Archive, Check, ChevronDown, ChevronLeft, Lightbulb, MessageCircle, MoreVertical, Paperclip, Pencil, RotateCcw, Send, Search, Trash2 } from "lucide-react";
+import { Archive, Check, ChevronDown, ChevronLeft, Lightbulb, MessageCircle, MoreVertical, Paperclip, Pencil, RotateCcw, Send, Search, Trash2, X } from "lucide-react";
 
 import { updateDemandeStatusAction } from "@/app/actions/demande-owner";
 import {
@@ -16,6 +16,7 @@ import {
   editMessage,
   getLastMessagePreviews,
   getOrCreateConversation,
+  markConversationAsRead,
   sendMessage,
   sendMessageWithAttachments,
   unarchiveConversation,
@@ -121,6 +122,7 @@ export function MessagerieClient({ threads, currentUserId, userType, pagination,
   const [search, setSearch] = useState("");
   const [lastPreviews, setLastPreviews] = useState<Map<string, string>>(new Map());
   const [filterTab, setFilterTab] = useState<FilterTab>("all");
+  const [detailsClosedDefinitively, setDetailsClosedDefinitively] = useState(false);
   const [detailsOpen, setDetailsOpen] = useState(true);
   const [mobileShowChat, setMobileShowChat] = useState(false);
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
@@ -213,6 +215,19 @@ export function MessagerieClient({ threads, currentUserId, userType, pagination,
   }, []);
 
   useEffect(() => {
+    if (typeof window !== "undefined" && localStorage.getItem("messagerie_details_closed") === "1") {
+      setDetailsClosedDefinitively(true);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (selected && userType === "owner" && !detailsClosedDefinitively) {
+      const neverAutoExpand = typeof window !== "undefined" && localStorage.getItem("messagerie_details_auto_expanded") === "1";
+      setDetailsOpen(!neverAutoExpand);
+    }
+  }, [selected?.demandeId, userType, detailsClosedDefinitively]);
+
+  useEffect(() => {
     if (initialDemandeId) {
       const t = threads.find((x) => x.demandeId === initialDemandeId);
       if (t) setSelected(t);
@@ -272,7 +287,11 @@ export function MessagerieClient({ threads, currentUserId, userType, pagination,
       } else {
         setConversationId(convId);
       }
-      if (convId) loadMessages(convId);
+      if (convId) {
+        loadMessages(convId);
+        await markConversationAsRead(convId);
+        router.refresh();
+      }
       setMobileShowChat(true);
     };
     open();
@@ -720,20 +739,39 @@ export function MessagerieClient({ threads, currentUserId, userType, pagination,
           </div>
 
           {/* Détails de la demande (propriétaire) */}
-          {userType === "owner" && (
+          {userType === "owner" && !detailsClosedDefinitively && (
             <div className="shrink-0 border-b border-slate-200 bg-white px-4 py-3 md:px-6">
               <div className="rounded-xl border-2 border-[#213398]/30 bg-white p-4">
-                <button
-                  type="button"
-                  onClick={() => setDetailsOpen((o) => !o)}
-                  className="flex w-full items-center justify-between text-left"
-                >
-                  <span className="flex items-center gap-2 font-semibold text-black">
-                    <Paperclip className="h-4 w-4 text-[#213398]" />
-                    Détails de la demande
-                  </span>
-                  <ChevronDown className={`h-5 w-5 shrink-0 text-slate-500 transition ${detailsOpen ? "rotate-180" : ""}`} />
-                </button>
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const next = !detailsOpen;
+                      setDetailsOpen(next);
+                      if (!next) {
+                        localStorage.setItem("messagerie_details_auto_expanded", "1");
+                      }
+                    }}
+                    className="flex min-w-0 flex-1 items-center justify-between text-left"
+                  >
+                    <span className="flex items-center gap-2 font-semibold text-black">
+                      <Paperclip className="h-4 w-4 text-[#213398]" />
+                      Détails de la demande
+                    </span>
+                    <ChevronDown className={`h-5 w-5 shrink-0 text-slate-500 transition ${detailsOpen ? "rotate-180" : ""}`} />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      localStorage.setItem("messagerie_details_closed", "1");
+                      setDetailsClosedDefinitively(true);
+                    }}
+                    className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-red-600 transition hover:bg-red-50"
+                    aria-label="Fermer définitivement"
+                  >
+                    <X className="h-5 w-5" />
+                  </button>
+                </div>
                 {detailsOpen && (
                   <dl className="mt-4 space-y-3 border-t border-slate-100 pt-3 text-sm">
                     <div>

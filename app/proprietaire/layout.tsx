@@ -52,6 +52,7 @@ export default async function ProprietaireLayout({
           .from("demandes")
           .select("id", { count: "exact", head: true })
           .in("salle_id", salleIds)
+          .eq("status", "sent")
       : { count: 0 },
     salleIds.length > 0
       ? supabase.from("demandes").select("id").in("salle_id", salleIds)

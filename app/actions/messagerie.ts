@@ -425,6 +425,31 @@ export async function deleteConversation(conversationId: string): Promise<{ succ
   return { success: true };
 }
 
+export async function markConversationAsRead(conversationId: string): Promise<{ success: boolean; error?: string }> {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { success: false, error: "Non connecté" };
+
+  const { data: conv } = await supabase
+    .from("conversations")
+    .select("seeker_id, owner_id")
+    .eq("id", conversationId)
+    .single();
+
+  if (!conv || (conv.seeker_id !== user.id && conv.owner_id !== user.id))
+    return { success: false, error: "Accès refusé" };
+
+  const { error } = await supabase
+    .from("messages")
+    .update({ read_at: new Date().toISOString() })
+    .eq("conversation_id", conversationId)
+    .neq("sender_id", user.id)
+    .is("read_at", null);
+
+  if (error) return { success: false, error: error.message };
+  return { success: true };
+}
+
 export async function getLastMessagePreviews(
   items: { demandeId: string; conversationId: string }[]
 ): Promise<Record<string, string>> {
