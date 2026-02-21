@@ -143,7 +143,7 @@ export default async function PaiementPage({
     },
     {
       id: "abonnement" as const,
-      name: "Abonnement",
+      name: "Abonnement mensuel",
       description: "Accès illimité récurrent",
       price: pass.price_abonnement / 100,
       priceSuffix: "/mois",

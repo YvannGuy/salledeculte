@@ -32,7 +32,7 @@ const PASS_PLANS = [
   },
   {
     id: "abonnement" as const,
-    name: "Abonnement",
+    name: "Abonnement mensuel",
     description: "Accès prioritaire illimité",
     features: ["Demandes illimitées", "Accès prioritaire", "Accompagnement personnalisé"],
   },

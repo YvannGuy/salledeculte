@@ -46,7 +46,7 @@ export async function POST(request: Request) {
       abonnement: {
         price: pass.price_abonnement,
         enabled: pass.abonnement_enabled,
-        name: "Abonnement",
+        name: "Abonnement mensuel",
         description: "Accès prioritaire illimité",
       },
     };

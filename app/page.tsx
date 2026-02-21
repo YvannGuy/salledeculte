@@ -37,7 +37,7 @@ const plans = [
     highlighted: true,
   },
   {
-    name: "Abonnement Récurrence",
+    name: "Abonnement mensuel",
     price: "19,99€",
     period: "/mois",
     features: ["Demandes illimitées", "Accès complet aux annonces", "Support prioritaire 7j/7", "Gestion multi-événements", "Notifications personnalisées"],
