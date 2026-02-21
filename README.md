@@ -36,6 +36,11 @@ Exécutez le script `config/supabase.sql` dans l'éditeur SQL Supabase pour :
 2. Créez le bucket : `npm run supabase:init-storage`
 3. Exécutez `config/supabase-storage.sql` dans l'éditeur SQL Supabase pour les politiques RLS
 
+## Pièces jointes messagerie
+
+1. Créez le bucket : `npm run supabase:init-message-storage`
+2. Exécutez `config/supabase-message-attachments.sql` dans l'éditeur SQL Supabase (table `message_attachments` + politiques storage)
+
 ## Table salles
 
 Exécutez `config/supabase-salles.sql` dans l'éditeur SQL Supabase pour créer la table des annonces.

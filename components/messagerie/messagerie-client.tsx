@@ -9,7 +9,7 @@ import { fr } from "date-fns/locale";
 import { Check, ChevronDown, ChevronLeft, Lightbulb, MessageCircle, Paperclip, Send, Search } from "lucide-react";
 
 import { updateDemandeStatusAction } from "@/app/actions/demande-owner";
-import { getOrCreateConversation, sendMessage } from "@/app/actions/messagerie";
+import { getOrCreateConversation, sendMessage, sendMessageWithAttachments } from "@/app/actions/messagerie";
 import { AddSalleButton } from "@/components/proprietaire/add-salle-modal";
 import { SearchModalButton } from "@/components/search/search-modal";
 import { Button } from "@/components/ui/button";
@@ -43,12 +43,20 @@ export type Thread = {
   unreadCount: number;
 };
 
+type MessageAttachment = {
+  id: string;
+  storage_path: string;
+  filename: string;
+  mime_type: string | null;
+};
+
 type Message = {
   id: string;
   sender_id: string;
   content: string;
   sent_at: string;
   read_at: string | null;
+  attachments?: MessageAttachment[];
 };
 
 type FilterTab = "all" | "unread" | "pending" | "archived";
@@ -99,7 +107,9 @@ export function MessagerieClient({ threads, currentUserId, userType, pagination,
   const [filterTab, setFilterTab] = useState<FilterTab>("all");
   const [detailsOpen, setDetailsOpen] = useState(true);
   const [mobileShowChat, setMobileShowChat] = useState(false);
+  const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const filteredBySearch = threads.filter(
     (t) =>
@@ -123,23 +133,50 @@ export function MessagerieClient({ threads, currentUserId, userType, pagination,
       .select("id, sender_id, content, sent_at, read_at")
       .eq("conversation_id", convId)
       .order("sent_at", { ascending: true });
+    let msgs: Message[];
     if (!data?.length) {
       const { data: alt } = await supabase
         .from("messages")
         .select("id, sender_id, content, created_at, read_at")
         .eq("conversation_id", convId)
         .order("created_at", { ascending: true });
-      const msgs = (alt ?? []).map((m) => ({
+      msgs = (alt ?? []).map((m) => ({
         id: m.id,
         sender_id: m.sender_id,
         content: m.content,
         sent_at: (m as { created_at?: string }).created_at ?? new Date().toISOString(),
         read_at: m.read_at,
       })) as Message[];
-      setMessages(msgs);
-      return;
+    } else {
+      msgs = data as Message[];
     }
-    setMessages((data as Message[]) ?? []);
+
+    const msgIds = msgs.map((m) => m.id);
+    let attachmentsByMsg = new Map<string, MessageAttachment[]>();
+    if (msgIds.length > 0) {
+      const { data: att } = await supabase
+        .from("message_attachments")
+        .select("id, message_id, storage_path, filename, mime_type")
+        .in("message_id", msgIds);
+      if (att?.length) {
+        for (const a of att as { id: string; message_id: string; storage_path: string; filename: string; mime_type: string | null }[]) {
+          const list = attachmentsByMsg.get(a.message_id) ?? [];
+          list.push({
+            id: a.id,
+            storage_path: a.storage_path,
+            filename: a.filename,
+            mime_type: a.mime_type,
+          });
+          attachmentsByMsg.set(a.message_id, list);
+        }
+      }
+    }
+
+    const withAttachments = msgs.map((m) => ({
+      ...m,
+      attachments: attachmentsByMsg.get(m.id) ?? [],
+    }));
+    setMessages(withAttachments);
   }, []);
 
   useEffect(() => {
@@ -216,7 +253,8 @@ export function MessagerieClient({ threads, currentUserId, userType, pagination,
 
   const handleSend = async () => {
     const text = input.trim();
-    if (!text || !selected) return;
+    const hasFiles = selectedFiles.length > 0;
+    if ((!text && !hasFiles) || !selected) return;
 
     let convId: string | null = conversationId;
     if (!convId) {
@@ -231,20 +269,39 @@ export function MessagerieClient({ threads, currentUserId, userType, pagination,
     if (!convId) return;
 
     setSending(true);
-    const res = await sendMessage(convId, text);
+    let res: { success: boolean; error?: string };
+
+    if (hasFiles) {
+      const formData = new FormData();
+      formData.set("conversationId", convId);
+      formData.set("content", text);
+      selectedFiles.forEach((f) => formData.append("attachments", f));
+      res = await sendMessageWithAttachments(formData);
+    } else {
+      res = await sendMessage(convId, text);
+    }
+
     setSending(false);
+
     if (res.success) {
       setInput("");
-      const newMsg: Message = {
-        id: crypto.randomUUID(),
-        sender_id: currentUserId,
-        content: text,
-        sent_at: new Date().toISOString(),
-        read_at: null,
-      };
-      setMessages((prev) => [...prev, newMsg]);
+      setSelectedFiles([]);
+      if (fileInputRef.current) fileInputRef.current.value = "";
+
+      if (!hasFiles) {
+        const newMsg: Message = {
+          id: crypto.randomUUID(),
+          sender_id: currentUserId,
+          content: text,
+          sent_at: new Date().toISOString(),
+          read_at: null,
+        };
+        setMessages((prev) => [...prev, newMsg]);
+      } else {
+        loadMessages(convId);
+      }
       if (selected) {
-        const preview = text.length > 80 ? text.slice(0, 77) + "..." : text;
+        const preview = text.length > 80 ? text.slice(0, 77) + "..." : text || "[Pièce(s) jointe(s)]";
         setLastPreviews((prev) => new Map(prev).set(selected.demandeId, preview));
       }
       router.refresh();
@@ -583,7 +640,40 @@ export function MessagerieClient({ threads, currentUserId, userType, pagination,
                         isMe ? "bg-[#213398] text-white" : "bg-white text-black shadow-sm"
                       }`}
                     >
-                      <p className="text-sm">{m.content}</p>
+                      {m.content && m.content !== "[Pièce(s) jointe(s)]" && (
+                        <p className="text-sm">{m.content}</p>
+                      )}
+                      {m.attachments && m.attachments.length > 0 && (
+                        <div className="mt-2 space-y-2">
+                          {m.attachments.map((a) => {
+                            const url = `/api/messagerie/attachment?path=${encodeURIComponent(a.storage_path)}`;
+                            const isImage = a.mime_type?.startsWith("image/");
+                            return (
+                              <div key={a.id}>
+                                {isImage ? (
+                                  <a href={url} target="_blank" rel="noopener noreferrer" className="block">
+                                    <img
+                                      src={url}
+                                      alt={a.filename}
+                                      className="max-h-48 rounded-lg object-cover"
+                                    />
+                                  </a>
+                                ) : (
+                                  <a
+                                    href={url}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className={`inline-flex items-center gap-1 rounded border px-2 py-1 text-xs ${isMe ? "border-white/50 text-white hover:bg-white/10" : "border-slate-300 text-slate-700 hover:bg-slate-50"}`}
+                                  >
+                                    <Paperclip className="h-3 w-3" />
+                                    {a.filename}
+                                  </a>
+                                )}
+                              </div>
+                            );
+                          })}
+                        </div>
+                      )}
                       <p className={`mt-1 text-xs ${isMe ? "text-white/80" : "text-slate-500"}`}>
                         {format(new Date(m.sent_at), "HH:mm", { locale: fr })}
                       </p>
@@ -602,28 +692,62 @@ export function MessagerieClient({ threads, currentUserId, userType, pagination,
                 e.preventDefault();
                 handleSend();
               }}
-              className="flex gap-2"
+              className="flex flex-col gap-2"
             >
-              <button
-                type="button"
-                className="shrink-0 rounded p-2 text-slate-500 hover:bg-slate-100"
-                title="Pièce jointe (bientôt)"
-              >
-                <Paperclip className="h-5 w-5" />
-              </button>
-              <Input
-                placeholder="Écrivez votre message..."
-                value={input}
-                onChange={(e) => setInput(e.target.value)}
-                className="flex-1"
+              <input
+                ref={fileInputRef}
+                type="file"
+                multiple
+                accept="image/jpeg,image/png,image/gif,image/webp,application/pdf"
+                className="hidden"
+                onChange={(e) => {
+                  const files = Array.from(e.target.files ?? []);
+                  setSelectedFiles((prev) => [...prev, ...files].slice(-5));
+                }}
               />
-              <Button
-                type="submit"
-                disabled={sending || !input.trim()}
-                className="shrink-0 bg-[#213398] hover:bg-[#1a2980]"
-              >
-                <Send className="h-4 w-4" />
-              </Button>
+              {selectedFiles.length > 0 && (
+                <div className="flex flex-wrap gap-2">
+                  {selectedFiles.map((f, i) => (
+                    <span
+                      key={i}
+                      className="flex items-center gap-1 rounded-lg bg-slate-100 px-2 py-1 text-xs text-slate-700"
+                    >
+                      {f.name}
+                      <button
+                        type="button"
+                        onClick={() => setSelectedFiles((prev) => prev.filter((_, idx) => idx !== i))}
+                        className="text-slate-500 hover:text-slate-700"
+                        aria-label="Retirer"
+                      >
+                        ×
+                      </button>
+                    </span>
+                  ))}
+                </div>
+              )}
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  onClick={() => fileInputRef.current?.click()}
+                  className="shrink-0 rounded p-2 text-slate-500 hover:bg-slate-100"
+                  title="Ajouter une pièce jointe"
+                >
+                  <Paperclip className="h-5 w-5" />
+                </button>
+                <Input
+                  placeholder="Écrivez votre message..."
+                  value={input}
+                  onChange={(e) => setInput(e.target.value)}
+                  className="flex-1"
+                />
+                <Button
+                  type="submit"
+                  disabled={sending || (!input.trim() && selectedFiles.length === 0)}
+                  className="shrink-0 bg-[#213398] hover:bg-[#1a2980]"
+                >
+                  <Send className="h-4 w-4" />
+                </Button>
+              </div>
             </form>
             {userType === "owner" && !["replied", "accepted", "rejected"].includes(selected.demandeStatus ?? "") && (
               <div className="mt-2 flex flex-wrap gap-2">

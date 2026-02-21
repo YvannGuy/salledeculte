@@ -1,0 +1,4 @@
+npm run supabase:init-message-storage
+
+Ou directement :
+node scripts/init-message-storage.mjs
