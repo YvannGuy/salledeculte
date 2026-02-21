@@ -50,20 +50,20 @@ export type SalleRow = {
   updated_at: string;
 };
 
-/** Retourne les libellés tarifs (ex: "800 € / jour · 1500 € / mois") */
+/** Retourne les libellés tarifs (ex: "800 € / jour · 90 € / heure · 879 € / mois") - tarif horaire avant mensuel */
 export function formatSalleTarifs(salle: Salle): string {
   const parts: string[] = [];
   if (salle.pricePerDay > 0) parts.push(`${salle.pricePerDay} € / jour`);
-  if (salle.pricePerMonth && salle.pricePerMonth > 0) parts.push(`${salle.pricePerMonth} € / mois`);
   if (salle.pricePerHour && salle.pricePerHour > 0) parts.push(`${salle.pricePerHour} € / heure`);
+  if (salle.pricePerMonth && salle.pricePerMonth > 0) parts.push(`${salle.pricePerMonth} € / mois`);
   return parts.join(" · ") || "Sur demande";
 }
 
-/** Premier tarif affichable pour "À partir de" */
+/** Premier tarif affichable pour "À partir de" - horaire avant mensuel */
 export function getSallePriceFrom(salle: Salle): { label: string; value: number } | null {
   if (salle.pricePerDay > 0) return { label: "/ jour", value: salle.pricePerDay };
-  if (salle.pricePerMonth && salle.pricePerMonth > 0) return { label: "/ mois", value: salle.pricePerMonth };
   if (salle.pricePerHour && salle.pricePerHour > 0) return { label: "/ heure", value: salle.pricePerHour };
+  if (salle.pricePerMonth && salle.pricePerMonth > 0) return { label: "/ mois", value: salle.pricePerMonth };
   return null;
 }
 

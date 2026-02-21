@@ -8,7 +8,6 @@ import {
   Lock,
   MapPin,
   Phone,
-  MessageCircle,
   Car,
   CookingPot,
   HelpCircle,
@@ -315,15 +314,8 @@ export default async function SalleDetailPage({
                     Vérifier les disponibilités
                   </Button>
                 </Link>
-                <div className="mt-4 flex flex-col gap-2 sm:flex-row sm:gap-4">
-                  <Link
-                    href={`/salles/${salle.slug}/disponibilite`}
-                    className="flex items-center gap-2 text-[13px] font-medium text-slate-600 hover:text-black"
-                  >
-                    <MessageCircle className="h-4 w-4" />
-                    Envoyer un message
-                  </Link>
-                  {salle.displayContactPhone !== false && salle.contactPhone && (
+                {salle.displayContactPhone !== false && salle.contactPhone && (
+                  <div className="mt-4">
                     <a
                       href={`tel:${salle.contactPhone.replace(/\s/g, "")}`}
                       className="flex items-center gap-2 text-[13px] font-medium text-slate-600 hover:text-black"
@@ -331,8 +323,8 @@ export default async function SalleDetailPage({
                       <Phone className="h-4 w-4" />
                       Contactez le propriétaire
                     </a>
-                  )}
-                </div>
+                  </div>
+                )}
                 {recentViewerCount > 0 && (
                   <p className="mt-4 flex items-center gap-2 text-[12px] text-slate-400">
                     <Clock className="h-3.5 w-3.5" />
@@ -354,7 +346,10 @@ export default async function SalleDetailPage({
                   Activez un Pass pour contacter le propriétaire et vérifier la disponibilité.
                 </p>
                 <div className="mt-6">
-                  <UnlockAccessBloc isLoggedIn={!!user} />
+                  <UnlockAccessBloc
+                    isLoggedIn={!!user}
+                    paiementUrl={userType === "owner" ? "/proprietaire/paiement" : "/dashboard/paiement"}
+                  />
                 </div>
                 <ul className="mt-6 space-y-2">
                   {["Accès immédiat", "Devis personnalisés", "Suivi personnalisé"].map((item) => (

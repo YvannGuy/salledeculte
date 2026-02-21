@@ -202,7 +202,7 @@ export default async function ProprietaireDashboardPage() {
                 <div>
                   <p className="font-semibold text-emerald-800">Essai actif</p>
                   <p className="text-sm text-emerald-700">
-                    {browse.freeTotal - browse.freeUsed} consultation{browse.freeTotal - browse.freeUsed > 1 ? "s" : ""} restante{browse.freeTotal - browse.freeUsed > 1 ? "s" : ""}
+                    {browse.freeTotal - browse.freeUsed} demande{browse.freeTotal - browse.freeUsed > 1 ? "s" : ""} restante{browse.freeTotal - browse.freeUsed > 1 ? "s" : ""}
                   </p>
                 </div>
               </div>
@@ -247,7 +247,7 @@ export default async function ProprietaireDashboardPage() {
               <div>
                 <p className="font-semibold text-amber-800">Accès bloqué</p>
                 <p className="text-sm text-amber-700">
-                  Vous n&apos;avez plus de consultations restantes. Choisissez un Pass pour consulter les annonces des autres propriétaires.
+                  Vous n&apos;avez plus de demandes restantes. Choisissez un Pass pour consulter les annonces des autres propriétaires.
                 </p>
               </div>
               <Link href="/proprietaire/paiement" className="ml-auto">

@@ -176,8 +176,7 @@ export default async function PaiementPage({
           <div>
             <p className="font-semibold text-emerald-800">Votre essai est activé !</p>
             <p className="mt-1 text-sm text-emerald-700">
-              Vous disposez de {freeTotal - freeUsed} demande{freeTotal - freeUsed > 1 ? "s" : ""} gratuite
-              {freeTotal - freeUsed > 1 ? "s" : ""} pour découvrir la plateforme. Envoyez vos demandes aux propriétaires
+              Vous disposez de {freeTotal - freeUsed} demande{freeTotal - freeUsed > 1 ? "s" : ""} pour découvrir la plateforme. Envoyez vos demandes aux propriétaires
               pour vérifier les disponibilités.
             </p>
           </div>
@@ -218,7 +217,7 @@ export default async function PaiementPage({
               <div>
                 <span className="font-semibold text-emerald-800">Essai actif</span>
                 <p className="mt-0.5 text-sm text-emerald-700">
-                  {freeTotal - freeUsed} demande{freeTotal - freeUsed > 1 ? "s" : ""} gratuite{freeTotal - freeUsed > 1 ? "s" : ""} restante{freeTotal - freeUsed > 1 ? "s" : ""}
+                  {freeTotal - freeUsed} demande{freeTotal - freeUsed > 1 ? "s" : ""} restante{freeTotal - freeUsed > 1 ? "s" : ""}
                 </p>
               </div>
               <span className="ml-auto rounded-full bg-emerald-200 px-2.5 py-1 text-xs font-medium text-emerald-800">
@@ -282,6 +281,9 @@ export default async function PaiementPage({
                     <span className="text-base font-normal text-slate-500">{plan.priceSuffix}</span>
                   )}
                 </p>
+                {plan.id === "abonnement" && (
+                  <p className="mt-1 text-sm text-slate-500">90 € de l&apos;heure</p>
+                )}
                 <ul className="mt-4 min-h-[7.5rem] space-y-2 text-sm text-slate-600">
                   {plan.features.map((f) => (
                     <li key={f} className="flex items-center gap-2">

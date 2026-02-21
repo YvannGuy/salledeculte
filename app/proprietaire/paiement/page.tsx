@@ -134,8 +134,7 @@ export default async function ProprietairePaiementPage({
           <div>
             <p className="font-semibold text-emerald-800">Votre essai est activé !</p>
             <p className="mt-1 text-sm text-emerald-700">
-              Vous disposez de {browse.freeTotal - browse.freeUsed} consultation{browse.freeTotal - browse.freeUsed > 1 ? "s" : ""} gratuite
-              {browse.freeTotal - browse.freeUsed > 1 ? "s" : ""} pour découvrir les annonces des autres propriétaires.
+              Vous disposez de {browse.freeTotal - browse.freeUsed} demande{browse.freeTotal - browse.freeUsed > 1 ? "s" : ""} pour découvrir les annonces des autres propriétaires.
             </p>
           </div>
         </div>
@@ -159,7 +158,7 @@ export default async function ProprietairePaiementPage({
                 <div>
                   <p className="font-semibold text-black">Activez votre essai gratuit</p>
                   <p className="mt-0.5 text-sm text-slate-600">
-                    Bénéficiez de consultations gratuites pour découvrir les annonces des autres propriétaires
+                    Bénéficiez de demandes gratuites pour découvrir les annonces des autres propriétaires
                   </p>
                 </div>
               </div>
@@ -175,7 +174,7 @@ export default async function ProprietairePaiementPage({
               <div>
                 <span className="font-semibold text-emerald-800">Essai actif</span>
                 <p className="mt-0.5 text-sm text-emerald-700">
-                  {browse.freeTotal - browse.freeUsed} consultation{browse.freeTotal - browse.freeUsed > 1 ? "s" : ""} gratuite{browse.freeTotal - browse.freeUsed > 1 ? "s" : ""} restante{browse.freeTotal - browse.freeUsed > 1 ? "s" : ""}
+                  {browse.freeTotal - browse.freeUsed} demande{browse.freeTotal - browse.freeUsed > 1 ? "s" : ""} restante{browse.freeTotal - browse.freeUsed > 1 ? "s" : ""}
                 </p>
               </div>
               <span className="ml-auto rounded-full bg-emerald-200 px-2.5 py-1 text-xs font-medium text-emerald-800">
@@ -199,7 +198,7 @@ export default async function ProprietairePaiementPage({
               <div>
                 <span className="font-semibold text-amber-800">Accès bloqué</span>
                 <p className="mt-0.5 text-sm text-amber-700">
-                  Vous n&apos;avez plus de consultations restantes. Choisissez un Pass pour consulter les annonces des autres propriétaires.
+                  Vous n&apos;avez plus de demandes restantes. Choisissez un Pass pour consulter les annonces des autres propriétaires.
                 </p>
               </div>
               <Link href="#pass-abonnements" className="ml-auto">
@@ -239,6 +238,9 @@ export default async function ProprietairePaiementPage({
                     <span className="ml-1 text-base font-normal text-slate-500">{plan.priceSuffix}</span>
                   )}
                 </p>
+                {plan.id === "abonnement" && (
+                  <p className="mt-1 text-sm text-slate-500">90 € de l&apos;heure</p>
+                )}
                 <ul className="mt-4 min-h-[7.5rem] space-y-2 text-sm text-slate-600">
                   {plan.features.map((f) => (
                     <li key={f} className="flex items-center gap-2">

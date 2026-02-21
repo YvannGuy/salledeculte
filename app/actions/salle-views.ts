@@ -19,7 +19,7 @@ export async function recordSalleView(salleId: string, viewerId: string | null):
   }
 }
 
-/** Nombre de salles (d'autres propriétaires) consultées par cet owner (pour l'essai 3 consultations) */
+/** Nombre de salles (d'autres propriétaires) consultées par cet owner (pour l'essai demandes gratuites) */
 export async function getOwnerOtherSallesViewCount(ownerId: string): Promise<number> {
   try {
     const supabase = createAdminClient();

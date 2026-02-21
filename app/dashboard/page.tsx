@@ -324,7 +324,7 @@ export default async function DashboardPage() {
                     <div>
                       <p className="font-semibold text-emerald-800">Essai actif</p>
                       <p className="text-sm text-emerald-700">
-                        {freeTotal - freeUsed} demande{freeTotal - freeUsed > 1 ? "s" : ""} gratuite{freeTotal - freeUsed > 1 ? "s" : ""} restante{freeTotal - freeUsed > 1 ? "s" : ""}
+                        {freeTotal - freeUsed} demande{freeTotal - freeUsed > 1 ? "s" : ""} restante{freeTotal - freeUsed > 1 ? "s" : ""}
                       </p>
                     </div>
                   </div>

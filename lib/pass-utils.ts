@@ -23,7 +23,7 @@ export type OwnerBrowseResult = {
   activePass: { product_type: string; created_at: string } | null;
 };
 
-/** Retourne true si l'utilisateur peut consulter les annonces des autres (pass actif ou 3 consultations gratuites pour owners) */
+/** Retourne true si l'utilisateur peut consulter les annonces des autres (pass actif ou demandes gratuites pour owners) */
 export async function hasAccessToBrowseOthers(
   userId: string | null,
   options?: { forOwner?: boolean; settings?: PlatformSettings }

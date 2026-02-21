@@ -1157,7 +1157,7 @@ function Step5({
         <div>
           <p className="text-xs font-medium text-slate-500">Tarifs indicatifs</p>
           <p className="mt-1 font-medium text-black">
-            {[data.tarifParJour && `${data.tarifParJour} € / jour`, data.tarifMensuel && `${data.tarifMensuel} € / mois`, data.tarifHoraire && `${data.tarifHoraire} € / heure`]
+            {[data.tarifParJour && `${data.tarifParJour} € / jour`, data.tarifHoraire && `${data.tarifHoraire} € / heure`, data.tarifMensuel && `${data.tarifMensuel} € / mois`]
               .filter(Boolean)
               .join(" · ") || "—"}
           </p>

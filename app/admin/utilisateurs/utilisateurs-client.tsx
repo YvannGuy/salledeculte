@@ -8,7 +8,6 @@ import {
   Eye,
   Pause,
   Play,
-  Plus,
   Search,
   Trash2,
   Users,
@@ -105,18 +104,18 @@ function getStatusBadge(suspended: boolean | undefined) {
   );
 }
 
-function getTypeBadge(type: string) {
-  if (type === "owner") {
-    return (
-      <span className="inline-flex rounded-full bg-violet-100 px-2.5 py-0.5 text-xs font-medium text-violet-700">
-        Propriétaire
-      </span>
-    );
-  }
+function getTypeBadge(type: string, sallesCount?: number) {
   if (type === "admin") {
     return (
       <span className="inline-flex rounded-full bg-red-100 px-2.5 py-0.5 text-xs font-medium text-red-700">
         Admin
+      </span>
+    );
+  }
+  if (type === "owner" || (sallesCount ?? 0) > 0) {
+    return (
+      <span className="inline-flex rounded-full bg-violet-100 px-2.5 py-0.5 text-xs font-medium text-violet-700">
+        Propriétaire
       </span>
     );
   }
@@ -321,14 +320,6 @@ export function UtilisateursClient({ users, stats, highlightUserId }: Props) {
               />
               Sélectionner tout
             </label>
-            <Button
-              className="bg-blue-600 hover:bg-blue-700"
-              disabled
-              title="À venir"
-            >
-              <Plus className="mr-2 h-4 w-4" />
-              Nouvel utilisateur
-            </Button>
           </div>
           <div className="overflow-x-auto">
             <table className="w-full min-w-[800px]">
@@ -374,7 +365,7 @@ export function UtilisateursClient({ users, stats, highlightUserId }: Props) {
                     <td className="px-4 py-3">
                       <p className="text-sm text-slate-700">{u.email}</p>
                     </td>
-                    <td className="px-4 py-3">{getTypeBadge(u.user_type)}</td>
+                    <td className="px-4 py-3">{getTypeBadge(u.user_type, u.salles_count)}</td>
                     <td className="px-4 py-3">
                       <p className="text-sm text-slate-700">
                         {formatDate(u.created_at)}

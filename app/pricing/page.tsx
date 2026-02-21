@@ -85,6 +85,9 @@ export default async function PricingPage() {
                   <span className="text-base font-normal text-slate-500"> unitaire</span>
                 )}
               </p>
+              {plan.id === "abonnement" && (
+                <p className="mt-1 text-sm text-slate-500">90 € de l&apos;heure</p>
+              )}
               <ul className="mt-4 space-y-2 text-sm text-slate-600">
                 {plan.features.map((feature) => (
                   <li key={feature} className="flex items-center gap-2">
