@@ -93,11 +93,13 @@ export default async function MessageriePage({
         .from("messages")
         .select("conversation_id, content, sent_at")
         .in("conversation_id", convIds)
+        .is("deleted_at", null)
         .order("sent_at", { ascending: false }),
       adminSupabase
         .from("messages")
         .select("conversation_id, content, created_at")
         .in("conversation_id", convIds)
+        .is("deleted_at", null)
         .order("created_at", { ascending: false }),
     ]);
     if (!unreadRes.error) {
@@ -117,13 +119,18 @@ export default async function MessageriePage({
         .from("messages")
         .select("conversation_id, content, id")
         .in("conversation_id", convIds)
+        .is("deleted_at", null)
         .order("id", { ascending: false });
       if (!fallback.error && fallback.data?.length) lastMsgsData = fallback.data as MsgRow[];
     }
     lastMsgsData.forEach((m) => {
       if (!lastMsgByConv.has(m.conversation_id)) {
-        const preview = m.content.length > 80 ? m.content.slice(0, 77) + "..." : m.content;
-        lastMsgByConv.set(m.conversation_id, preview);
+        const raw = (m as { content?: string | null }).content;
+        const text = (raw && String(raw).trim()) || "";
+        if (text) {
+          const preview = text.length > 80 ? text.slice(0, 77) + "..." : text;
+          lastMsgByConv.set(m.conversation_id, preview);
+        }
       }
     });
   }

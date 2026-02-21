@@ -425,6 +425,60 @@ export async function deleteConversation(conversationId: string): Promise<{ succ
   return { success: true };
 }
 
+export async function getLastMessagePreviews(
+  items: { demandeId: string; conversationId: string }[]
+): Promise<Record<string, string>> {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return {};
+
+  const convIds = [...new Set(items.map((i) => i.conversationId))];
+  const demandeByConv = new Map(items.map((i) => [i.conversationId, i.demandeId]));
+
+  const { data: convs } = await supabase
+    .from("conversations")
+    .select("id, seeker_id, owner_id, last_message_preview")
+    .in("id", convIds);
+  const allowed = new Set(
+    (convs ?? [])
+      .filter((c) => c.seeker_id === user.id || c.owner_id === user.id)
+      .map((c) => c.id)
+  );
+  const convPreview = new Map(
+    (convs ?? [])
+      .filter((c) => (c as { last_message_preview?: string }).last_message_preview)
+      .map((c) => [c.id, (c as { last_message_preview: string }).last_message_preview.trim()])
+  );
+
+  const admin = createAdminClient();
+  const { data: msgs } = await admin
+    .from("messages")
+    .select("conversation_id, content")
+    .in("conversation_id", convIds)
+    .is("deleted_at", null)
+    .order("sent_at", { ascending: false });
+
+  const lastByConv = new Map<string, string>();
+  for (const m of msgs ?? []) {
+    const cid = m.conversation_id as string;
+    if (!allowed.has(cid) || lastByConv.has(cid)) continue;
+    const raw = (m as { content?: string }).content;
+    const text = (raw && String(raw).trim()) || "";
+    if (text) lastByConv.set(cid, text);
+  }
+
+  const result: Record<string, string> = {};
+  for (const convId of allowed) {
+    const demandeId = demandeByConv.get(convId);
+    if (!demandeId) continue;
+    let text = lastByConv.get(convId) ?? convPreview.get(convId) ?? "";
+    if (text) {
+      result[demandeId] = text.length > 80 ? text.slice(0, 77) + "..." : text;
+    }
+  }
+  return result;
+}
+
 export async function getAttachmentSignedUrls(
   paths: string[]
 ): Promise<Record<string, string>> {

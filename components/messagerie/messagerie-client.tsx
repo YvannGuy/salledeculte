@@ -14,6 +14,7 @@ import {
   deleteConversation,
   deleteMessage,
   editMessage,
+  getLastMessagePreviews,
   getOrCreateConversation,
   sendMessage,
   sendMessageWithAttachments,
@@ -219,32 +220,30 @@ export function MessagerieClient({ threads, currentUserId, userType, pagination,
   }, [initialDemandeId, threads]);
 
   useEffect(() => {
+    const fromThreads = new Map<string, string>();
+    for (const t of threads) {
+      const preview = t.lastMessagePreview ?? t.message;
+      if (preview && String(preview).trim()) {
+        const text = String(preview).trim();
+        fromThreads.set(t.demandeId, text.length > 80 ? text.slice(0, 77) + "..." : text);
+      }
+    }
+    if (fromThreads.size) {
+      setLastPreviews((prev) => new Map([...prev, ...fromThreads]));
+    }
+  }, [threads]);
+
+  useEffect(() => {
     const toFetch = threads
       .filter((t) => t.conversationId)
-      .map((t) => ({ demandeId: t.demandeId, convId: t.conversationId! }));
+      .map((t) => ({ demandeId: t.demandeId, conversationId: t.conversationId! }));
     if (toFetch.length === 0) return;
-    const fetchPreviews = async () => {
-      const supabase = createClient();
-      const next = new Map<string, string>();
-      for (const { demandeId, convId } of toFetch) {
-        const tryFetch = async (orderBy: string) => {
-          const res = await supabase
-            .from("messages")
-            .select("content")
-            .eq("conversation_id", convId)
-            .order(orderBy, { ascending: false })
-            .limit(1);
-          return res.data?.[0] as { content: string } | undefined;
-        };
-        const row = (await tryFetch("id")) ?? (await tryFetch("sent_at")) ?? (await tryFetch("created_at"));
-        if (row?.content) {
-          const preview = row.content.length > 80 ? row.content.slice(0, 77) + "..." : row.content;
-          next.set(demandeId, preview);
-        }
+    (async () => {
+      const previews = await getLastMessagePreviews(toFetch);
+      if (Object.keys(previews).length) {
+        setLastPreviews((prev) => new Map([...prev, ...Object.entries(previews)]));
       }
-      if (next.size) setLastPreviews((prev) => new Map([...prev, ...next]));
-    };
-    fetchPreviews();
+    })();
   }, [threads]);
 
   useEffect(() => {
@@ -616,7 +615,7 @@ export function MessagerieClient({ threads, currentUserId, userType, pagination,
                       {t.seekerName} • {t.contactRole ?? (userType === "seeker" ? "Propriétaire" : "Organisateur")}
                     </p>
                     <p className="mt-1 line-clamp-1 text-sm text-slate-500">
-                      {lastPreviews.get(t.demandeId) ?? t.lastMessagePreview ?? t.message ?? "Aucun message"}
+                      {(lastPreviews.get(t.demandeId) ?? t.lastMessagePreview ?? t.message) || "Aucun message"}
                     </p>
                   </div>
                 </button>
