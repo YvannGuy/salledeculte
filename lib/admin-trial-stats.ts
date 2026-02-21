@@ -49,7 +49,7 @@ export async function getAdminTrialStats(): Promise<TrialStats> {
     supabase
       .from("payments")
       .select("user_id, product_type, created_at")
-      .eq("status", "paid")
+      .in("status", ["paid", "active"])
       .in("product_type", ["pass_24h", "pass_48h", "abonnement"]),
     supabase.from("salle_views").select("viewer_id, salle_id"),
     supabase.from("salles").select("id, owner_id"),

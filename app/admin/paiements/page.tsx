@@ -63,11 +63,12 @@ export default async function AdminPaiementsPage({
   const tx30 = transactions.filter((t) => new Date(t.created_at) >= thirtyDaysAgo);
   const tx7 = transactions.filter((t) => new Date(t.created_at) >= sevenDaysAgo);
   const failed7 = tx7.filter((t) => t.status === "failed");
-  const revenue30 = tx30.filter((t) => t.status === "paid").reduce((s, t) => s + t.amount, 0);
+  const isPaidOrActive = (t: { status: string }) => t.status === "paid" || t.status === "active";
+  const revenue30 = tx30.filter(isPaidOrActive).reduce((s, t) => s + t.amount, 0);
   const pass24h = tx30.filter((t) => t.product_type === "pass_24h" && t.status === "paid").length;
   const pass48h = tx30.filter((t) => t.product_type === "pass_48h" && t.status === "paid").length;
-  const abonnements = tx30.filter((t) => t.product_type === "abonnement" && t.status === "paid").length;
-  const totalPaid = tx30.filter((t) => t.status === "paid").length;
+  const abonnements = tx30.filter((t) => t.product_type === "abonnement" && isPaidOrActive(t)).length;
+  const totalPaid = tx30.filter(isPaidOrActive).length;
   const totalAttempts = tx30.length;
   const conversionRate = totalAttempts > 0 ? (totalPaid / totalAttempts) * 100 : 0;
 

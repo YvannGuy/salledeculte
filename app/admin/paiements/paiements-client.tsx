@@ -64,6 +64,10 @@ function formatStatus(status: string) {
   switch (status) {
     case "paid":
       return { label: "Payé", icon: Check, className: "text-emerald-600 bg-emerald-100" };
+    case "active":
+      return { label: "Actif", icon: Check, className: "text-emerald-600 bg-emerald-100" };
+    case "canceled":
+      return { label: "Annulé", icon: RotateCcw, className: "text-slate-600 bg-slate-100" };
     case "pending":
       return { label: "En attente", icon: Clock, className: "text-amber-600 bg-amber-100" };
     case "failed":
@@ -119,7 +123,7 @@ export function PaiementsClient({ transactions, stats, trialStats }: Props) {
       const total = filtered
         .filter(
           (t) =>
-            t.created_at.startsWith(dayStart) && t.status === "paid"
+            t.created_at.startsWith(dayStart) && (t.status === "paid" || t.status === "active")
         )
         .reduce((s, t) => s + t.amount, 0);
       result.push(total / 100);
@@ -131,17 +135,17 @@ export function PaiementsClient({ transactions, stats, trialStats }: Props) {
   const pieData = [
     {
       label: "Pass 24h",
-      count: filtered.filter((t) => t.product_type === "pass_24h" && t.status === "paid").length,
+      count: filtered.filter((t) => t.product_type === "pass_24h" && (t.status === "paid" || t.status === "active")).length,
       color: "bg-blue-500",
     },
     {
       label: "Pass 48h",
-      count: filtered.filter((t) => t.product_type === "pass_48h" && t.status === "paid").length,
+      count: filtered.filter((t) => t.product_type === "pass_48h" && (t.status === "paid" || t.status === "active")).length,
       color: "bg-violet-500",
     },
     {
       label: "Abonnement",
-      count: filtered.filter((t) => t.product_type === "abonnement" && t.status === "paid").length,
+      count: filtered.filter((t) => t.product_type === "abonnement" && (t.status === "paid" || t.status === "active")).length,
       color: "bg-amber-500",
     },
   ];

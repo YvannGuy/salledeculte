@@ -26,6 +26,8 @@ const STATUS_LABEL: Record<string, string> = {
   pending: "En cours",
   failed: "Échoué",
   refunded: "Remboursé",
+  active: "Actif",
+  canceled: "Annulé",
 };
 
 const STATUS_COLOR: Record<string, string> = {
@@ -33,6 +35,8 @@ const STATUS_COLOR: Record<string, string> = {
   pending: "text-amber-600",
   failed: "text-red-600",
   refunded: "text-slate-500",
+  active: "text-emerald-600",
+  canceled: "text-slate-500",
 };
 
 const CARD_BRAND_LABEL: Record<string, string> = {
@@ -76,7 +80,7 @@ export default async function ProprietairePaiementPage({
     ]);
 
   const pass = settings.pass;
-  const paidList = (payments ?? []).filter((p) => p.status === "paid");
+  const paidList = (payments ?? []).filter((p) => p.status === "paid" || p.status === "active");
   const isTrialActive = browse.freeUsed < browse.freeTotal && !browse.hasPaidPass;
   const trialJustActivated = params.trial === "1";
 

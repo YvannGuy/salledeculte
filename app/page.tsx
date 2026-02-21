@@ -24,13 +24,13 @@ import { createClient } from "@/lib/supabase/server";
 const plans = [
   {
     name: "Pass 24h",
-    price: "9,90€",
+    price: "9,99€",
     features: ["Demandes illimitées pendant 24h", "Accès complet aux annonces", "Support prioritaire"],
     cta: "Choisir ce pass",
   },
   {
     name: "Pass 48h",
-    price: "19,90€",
+    price: "9,99€",
     badge: "Plus populaire",
     features: ["Demandes illimitées pendant 48h", "Accès complet aux annonces", "Support prioritaire", "Historique des demandes"],
     cta: "Choisir ce pass",
@@ -38,7 +38,7 @@ const plans = [
   },
   {
     name: "Abonnement Récurrence",
-    price: "29,90€",
+    price: "19,99€",
     period: "/mois",
     features: ["Demandes illimitées", "Accès complet aux annonces", "Support prioritaire 7j/7", "Gestion multi-événements", "Notifications personnalisées"],
     cta: "Choisir ce pass",

@@ -21,6 +21,8 @@ const PRODUCT_LABEL: Record<string, string> = {
 
 const STATUS_LABEL: Record<string, string> = {
   paid: "Payé",
+  active: "Actif",
+  canceled: "Annulé",
   pending: "En cours",
   failed: "Échoué",
   refunded: "Remboursé",
@@ -28,6 +30,8 @@ const STATUS_LABEL: Record<string, string> = {
 
 const STATUS_COLOR: Record<string, string> = {
   paid: "text-emerald-600",
+  active: "text-emerald-600",
+  canceled: "text-slate-500",
   pending: "text-amber-600",
   failed: "text-red-600",
   refunded: "text-slate-500",
@@ -103,6 +107,7 @@ export default async function PaiementPage({
         .from("payments")
         .select("id, product_type, amount, status, created_at")
         .eq("user_id", user.id)
+        .in("status", ["paid", "active", "canceled"])
         .order("created_at", { ascending: false }),
       supabase.from("profiles").select("stripe_customer_id").eq("id", user.id).single(),
       getPaymentMethods(user.id),
@@ -110,7 +115,7 @@ export default async function PaiementPage({
 
   const freeUsed = demandesCount ?? 0;
   const freeTotal = pass.demandes_gratuites;
-  const paidList = (payments ?? []).filter((p) => p.status === "paid");
+  const paidList = (payments ?? []).filter((p) => p.status === "paid" || p.status === "active");
   const activePass = hasActivePass(paidList, freeUsed, freeTotal);
   const hasPaid = hasPaidPass(paidList, freeUsed, freeTotal);
   const isTrialActive = freeUsed < freeTotal && !hasPaid;

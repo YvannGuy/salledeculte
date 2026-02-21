@@ -65,7 +65,7 @@ export default async function AdminLayout({
         admin
           .from("payments")
           .select("id, amount, product_type, created_at")
-          .eq("status", "paid")
+          .in("status", ["paid", "active"])
           .order("created_at", { ascending: false })
           .limit(5),
       ]);

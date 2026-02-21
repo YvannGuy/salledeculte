@@ -63,34 +63,48 @@ export async function POST(request: Request) {
       .single();
 
     const stripe = getStripe();
-    const sessionConfig: Stripe.Checkout.SessionCreateParams = {
-      mode: "payment",
-      line_items: [
-        {
-          price_data: {
-            currency: "eur",
-            product_data: {
-              name: plan.name,
-              description: plan.description,
+    const isSubscription = passType === "abonnement";
+    const priceId = process.env.STRIPE_PRICE_ABONNEMENT;
+
+    if (isSubscription && !priceId) {
+      return NextResponse.json(
+        { error: "Abonnement non configuré. Définissez STRIPE_PRICE_ABONNEMENT dans les variables d'environnement." },
+        { status: 500 }
+      );
+    }
+
+    const sessionConfig: Stripe.Checkout.SessionCreateParams = isSubscription
+      ? {
+          mode: "subscription",
+          line_items: [{ price: priceId!, quantity: 1 }],
+          success_url: `${siteConfig.url}${base}?checkout=success`,
+          cancel_url: `${siteConfig.url}${base}?checkout=cancel`,
+          metadata: { user_id: user.id, product_type: passType },
+          subscription_data: { metadata: { user_id: user.id, product_type: passType } },
+          ...(profile?.stripe_customer_id
+            ? { customer: profile.stripe_customer_id }
+            : { customer_email: user.email ?? undefined }),
+        }
+      : {
+          mode: "payment",
+          line_items: [
+            {
+              price_data: {
+                currency: "eur",
+                product_data: { name: plan.name, description: plan.description },
+                unit_amount: plan.price,
+              },
+              quantity: 1,
             },
-            unit_amount: plan.price,
-          },
-          quantity: 1,
-        },
-      ],
-      success_url: `${siteConfig.url}${base}?checkout=success`,
-      cancel_url: `${siteConfig.url}${base}?checkout=cancel`,
-      metadata: {
-        user_id: user.id,
-        product_type: passType,
-      },
-      payment_intent_data: {
-        setup_future_usage: "off_session",
-      },
-      ...(profile?.stripe_customer_id
-        ? { customer: profile.stripe_customer_id }
-        : { customer_email: user.email ?? undefined }),
-    };
+          ],
+          success_url: `${siteConfig.url}${base}?checkout=success`,
+          cancel_url: `${siteConfig.url}${base}?checkout=cancel`,
+          metadata: { user_id: user.id, product_type: passType },
+          payment_intent_data: { setup_future_usage: "off_session" },
+          ...(profile?.stripe_customer_id
+            ? { customer: profile.stripe_customer_id }
+            : { customer_email: user.email ?? undefined }),
+        };
 
     const session = await stripe.checkout.sessions.create(sessionConfig);
 

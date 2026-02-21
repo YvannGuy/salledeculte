@@ -45,6 +45,10 @@ function formatStatus(status: string) {
   switch (status) {
     case "paid":
       return "Payé";
+    case "active":
+      return "Actif";
+    case "canceled":
+      return "Annulé";
     case "pending":
       return "En attente";
     case "failed":

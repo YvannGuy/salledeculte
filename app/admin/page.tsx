@@ -37,7 +37,7 @@ export default async function AdminDashboardPage() {
     supabase
       .from("payments")
       .select("id, user_id, amount, product_type, status, created_at")
-      .eq("status", "paid")
+      .in("status", ["paid", "active"])
       .order("created_at", { ascending: false }),
     supabase
       .from("demandes")
@@ -57,7 +57,7 @@ export default async function AdminDashboardPage() {
     getAdminTrialStats(),
   ]);
 
-  const paidPayments = (payments ?? []).filter((p) => p.status === "paid");
+  const paidPayments = (payments ?? []).filter((p) => p.status === "paid" || p.status === "active");
   const passActifs = paidPayments.length;
   const pass24h = paidPayments.filter((p) => p.product_type === "pass_24h").length;
   const pass48h = paidPayments.filter((p) => p.product_type === "pass_48h").length;

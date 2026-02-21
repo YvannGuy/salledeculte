@@ -57,7 +57,7 @@ export default async function DashboardPage() {
       .from("payments")
       .select("product_type, status, amount, created_at")
       .eq("user_id", seekerId)
-      .eq("status", "paid")
+      .in("status", ["paid", "active"])
       .in("product_type", ["pass_24h", "pass_48h", "abonnement"])
       .order("created_at", { ascending: false })
       .limit(5),

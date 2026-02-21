@@ -19,6 +19,8 @@ const PRODUCT_LABEL: Record<string, string> = {
 
 const STATUS_LABEL: Record<string, string> = {
   paid: "Payé",
+  active: "Actif",
+  canceled: "Annulé",
   pending: "En cours",
   failed: "Échoué",
   refunded: "Remboursé",
@@ -26,6 +28,8 @@ const STATUS_LABEL: Record<string, string> = {
 
 const STATUS_COLOR: Record<string, string> = {
   paid: "text-emerald-600",
+  active: "text-emerald-600",
+  canceled: "text-slate-500",
   pending: "text-amber-600",
   failed: "text-red-600",
   refunded: "text-slate-500",

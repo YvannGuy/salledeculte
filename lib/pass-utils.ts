@@ -33,14 +33,16 @@ export async function hasAccessToBrowseOthers(
   const settings = options?.settings ?? (await import("@/app/actions/admin-settings").then((m) => m.getPlatformSettings()));
   const freeTotal = settings?.pass?.demandes_gratuites ?? 3;
 
+  const paidOrActive = ["paid", "active"];
+
   if (options?.forOwner) {
     const [otherViewsCount, { data: payments }] = await Promise.all([
       getOwnerOtherSallesViewCount(userId),
       supabase
         .from("payments")
-        .select("product_type, created_at")
+        .select("product_type, created_at, status")
         .eq("user_id", userId)
-        .eq("status", "paid")
+        .in("status", paidOrActive)
         .in("product_type", ["pass_24h", "pass_48h", "abonnement"])
         .order("created_at", { ascending: false }),
     ]);
@@ -50,9 +52,9 @@ export async function hasAccessToBrowseOthers(
 
   const { data: payments } = await supabase
     .from("payments")
-    .select("product_type, created_at")
+    .select("product_type, created_at, status")
     .eq("user_id", userId)
-    .eq("status", "paid")
+    .in("status", paidOrActive)
     .in("product_type", ["pass_24h", "pass_48h", "abonnement"])
     .order("created_at", { ascending: false });
 
@@ -65,13 +67,14 @@ export async function getOwnerBrowseAccess(userId: string): Promise<OwnerBrowseR
   const settings = await import("@/app/actions/admin-settings").then((m) => m.getPlatformSettings());
   const freeTotal = settings.pass.demandes_gratuites;
 
+  const paidOrActive = ["paid", "active"];
   const [freeUsed, { data: payments }] = await Promise.all([
     getOwnerOtherSallesViewCount(userId),
     supabase
       .from("payments")
-      .select("product_type, created_at")
+      .select("product_type, created_at, status")
       .eq("user_id", userId)
-      .eq("status", "paid")
+      .in("status", paidOrActive)
       .in("product_type", ["pass_24h", "pass_48h", "abonnement"])
       .order("created_at", { ascending: false }),
   ]);
@@ -133,9 +136,9 @@ export async function checkCanCreateDemande(
 
   const { data: payments } = await supabase
     .from("payments")
-    .select("product_type, created_at")
+    .select("product_type, created_at, status")
     .eq("user_id", seekerId)
-    .eq("status", "paid")
+    .in("status", ["paid", "active"])
     .in("product_type", ["pass_24h", "pass_48h", "abonnement"])
     .order("created_at", { ascending: false });
 
