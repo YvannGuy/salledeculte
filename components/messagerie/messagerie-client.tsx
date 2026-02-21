@@ -382,7 +382,12 @@ export function MessagerieClient({ threads, currentUserId, userType, pagination,
   };
 
   const handleUnarchiveConversation = async (t: Thread) => {
-    const convId = t.conversationId;
+    let convId = t.conversationId;
+    if (!convId) {
+      const cres = await getOrCreateConversation(t.demandeId);
+      if (!cres.conversationId) return;
+      convId = cres.conversationId;
+    }
     if (!convId) return;
     const res = await unarchiveConversation(convId);
     if (res.success) {
