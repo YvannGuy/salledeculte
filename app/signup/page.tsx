@@ -4,6 +4,7 @@ import { SignupForm } from "@/components/auth/signup-form";
 
 export const metadata: Metadata = {
   title: "Inscription | salledeculte.com",
+  robots: { index: false, follow: false },
 };
 
 export default function SignupPage() {

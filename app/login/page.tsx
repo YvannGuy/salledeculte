@@ -4,6 +4,7 @@ import { LoginForm } from "@/components/auth/login-form";
 
 export const metadata: Metadata = {
   title: "Connexion | salledeculte.com",
+  robots: { index: false, follow: false },
 };
 
 export default function LoginPage() {

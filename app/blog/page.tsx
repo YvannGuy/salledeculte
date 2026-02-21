@@ -1,8 +1,19 @@
+import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
 import { ChevronRight } from "lucide-react";
 
 import { BLOG_POSTS } from "@/lib/blog-posts";
+import { buildCanonical } from "@/lib/seo";
+import { siteConfig } from "@/config/site";
+
+export const metadata: Metadata = {
+  title: "Blog",
+  description:
+    "Conseils et guides pour organiser vos événements cultuels. Choisir une salle, normes ERP, réservation et bonnes pratiques.",
+  alternates: { canonical: buildCanonical("/blog") },
+};
+
 import { SiteFooter } from "@/components/layout/site-footer";
 import { SiteHeader } from "@/components/layout/site-header";
 import { Card, CardContent } from "@/components/ui/card";

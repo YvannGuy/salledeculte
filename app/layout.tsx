@@ -1,7 +1,8 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Manrope } from "next/font/google";
 
 import { ScrollToTop } from "@/components/ui/scroll-to-top";
+import { defaultMetadata } from "@/lib/seo";
 import "./globals.css";
 import "@/styles/animations.css";
 
@@ -11,12 +12,11 @@ const manrope = Manrope({
 });
 
 export const metadata: Metadata = {
-  title: "salledeculte.com",
-  description: "Boilerplate Next.js + Stripe + Supabase",
-  icons: {
-    icon: "/favicon/favicon.ico",
-    apple: "/favicon/apple-icon.png",
-  },
+  ...defaultMetadata,
+};
+
+export const viewport: Viewport = {
+  themeColor: "#213398",
 };
 
 export default function RootLayout({

@@ -1,6 +1,12 @@
+import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 
 import { DashboardSidebar } from "@/components/dashboard/dashboard-sidebar";
+
+export const metadata: Metadata = {
+  title: "Tableau de bord",
+  robots: { index: false, follow: false },
+};
 import { getEffectiveUserType } from "@/lib/auth-utils";
 import { createClient } from "@/lib/supabase/server";
 

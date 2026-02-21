@@ -1,6 +1,14 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 
 import { siteConfig } from "@/config/site";
+import { buildCanonical } from "@/lib/seo";
+
+export const metadata: Metadata = {
+  title: "Aide organisateur",
+  description: "Tout savoir sur la recherche et la réservation d'une salle sur salledeculte.com.",
+  alternates: { canonical: buildCanonical("/centre-aide/organisateur") },
+};
 import { SiteHeader } from "@/components/layout/site-header";
 import { SiteFooter } from "@/components/layout/site-footer";
 

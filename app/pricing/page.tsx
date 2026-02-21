@@ -4,12 +4,16 @@ import { CheckCircle2 } from "lucide-react";
 
 import { getPlatformSettings } from "@/app/actions/admin-settings";
 import { PassCheckoutButton } from "@/components/pass-checkout-button";
+import { buildCanonical } from "@/lib/seo";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 
 export const metadata: Metadata = {
-  title: "Tarifs | salledeculte.com",
+  title: "Tarifs",
+  description:
+    "Pass 24h, Pass 48h ou abonnement : choisissez la formule adaptée pour envoyer des demandes aux propriétaires de salles.",
+  alternates: { canonical: buildCanonical("/pricing") },
 };
 
 const PASS_PLANS = [

@@ -3,14 +3,47 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import ReactMarkdown from "react-markdown";
 
+import type { Metadata } from "next";
 import { BLOG_POSTS, getBlogPost } from "@/lib/blog-posts";
 import { SiteFooter } from "@/components/layout/site-footer";
 import { SiteHeader } from "@/components/layout/site-header";
+import { buildCanonical, defaultMetadata } from "@/lib/seo";
+import { siteConfig } from "@/config/site";
 
 type Props = { params: Promise<{ slug: string }> };
 
 export function generateStaticParams() {
   return BLOG_POSTS.map((post) => ({ slug: post.slug }));
+}
+
+export async function generateMetadata({ params }: Props): Promise<Metadata> {
+  const { slug } = await params;
+  const post = getBlogPost(slug);
+  if (!post) return { title: "Article introuvable" };
+
+  const title = `${post.title} | ${siteConfig.name}`;
+  const description = post.excerpt;
+  const canonical = buildCanonical(`/blog/${slug}`);
+
+  return {
+    title,
+    description,
+    alternates: { canonical },
+    openGraph: {
+      ...defaultMetadata.openGraph,
+      type: "article",
+      title,
+      description,
+      url: canonical,
+      images: [{ url: post.image, width: 1200, height: 630, alt: post.title }],
+    },
+    twitter: {
+      ...defaultMetadata.twitter,
+      title,
+      description,
+      images: [post.image],
+    },
+  };
 }
 
 const markdownComponents = {

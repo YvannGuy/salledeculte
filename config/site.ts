@@ -10,7 +10,7 @@ type PricingPlan = {
 
 export const siteConfig = {
   name: "salledeculte.com",
-  description: "Trouvez et réservez une salle adaptée à vos événements culturels.",
+  description: "Trouvez et réservez une salle adaptée à vos événements cultuels en Île-de-France.",
   url: process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000",
 };
 

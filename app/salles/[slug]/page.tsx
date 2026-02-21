@@ -33,7 +33,9 @@ import { getSalleRatingStats } from "@/app/actions/salle-ratings";
 import { getEffectiveUserType } from "@/lib/auth-utils";
 import { hasAccessToBrowseOthers, hasAccessToContact } from "@/lib/pass-utils";
 import { createClient } from "@/lib/supabase/server";
+import { buildCanonical, defaultMetadata } from "@/lib/seo";
 import { getSalleBySlug, getSallesByCity } from "@/lib/salles";
+import { siteConfig } from "@/config/site";
 
 const iconMap: Record<string, React.ComponentType<{ className?: string }>> = {
   check: CheckCircle2,
@@ -54,6 +56,42 @@ export const dynamic = "force-dynamic";
 
 export async function generateStaticParams() {
   return [];
+}
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ slug: string }>;
+}): Promise<import("next").Metadata> {
+  const { slug } = await params;
+  const salle = await getSalleBySlug(slug);
+  if (!salle) return { title: "Salle introuvable" };
+
+  const title = `${salle.name} - ${salle.city} | ${siteConfig.name}`;
+  const description =
+    salle.description?.slice(0, 155) + (salle.description?.length > 155 ? "…" : "") ||
+    `Salle ${salle.name} à ${salle.city}. Capacité ${salle.capacity} personnes. À partir de ${salle.pricePerDay}€/jour.`;
+  const canonical = buildCanonical(`/salles/${slug}`);
+  const ogImage = salle.images?.[0] || `${siteConfig.url}/og-image.png`;
+
+  return {
+    title,
+    description,
+    alternates: { canonical },
+    openGraph: {
+      ...defaultMetadata.openGraph,
+      title,
+      description,
+      url: canonical,
+      images: [{ url: ogImage, width: 1200, height: 630, alt: salle.name }],
+    },
+    twitter: {
+      ...defaultMetadata.twitter,
+      title,
+      description,
+      images: [ogImage],
+    },
+  };
 }
 
 export default async function SalleDetailPage({

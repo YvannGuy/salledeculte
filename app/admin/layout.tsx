@@ -1,6 +1,12 @@
+import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 
 import { AdminHeader } from "@/components/dashboard/admin-header";
+
+export const metadata: Metadata = {
+  title: "Administration",
+  robots: { index: false, follow: false },
+};
 import { AdminSidebar } from "@/components/dashboard/admin-sidebar";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";

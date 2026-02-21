@@ -1,0 +1,42 @@
+import type { MetadataRoute } from "next";
+
+import { BLOG_POSTS } from "@/lib/blog-posts";
+import { siteConfig } from "@/config/site";
+import { getSalles } from "@/lib/salles";
+
+export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
+  const baseUrl = siteConfig.url;
+
+  const staticRoutes: MetadataRoute.Sitemap = [
+    { url: baseUrl, lastModified: new Date(), changeFrequency: "daily", priority: 1 },
+    { url: `${baseUrl}/rechercher`, lastModified: new Date(), changeFrequency: "daily", priority: 0.9 },
+    { url: `${baseUrl}/blog`, lastModified: new Date(), changeFrequency: "weekly", priority: 0.8 },
+    { url: `${baseUrl}/pricing`, lastModified: new Date(), changeFrequency: "weekly", priority: 0.8 },
+    { url: `${baseUrl}/centre-aide`, lastModified: new Date(), changeFrequency: "monthly", priority: 0.6 },
+    { url: `${baseUrl}/centre-aide/organisateur`, lastModified: new Date(), changeFrequency: "monthly", priority: 0.5 },
+    { url: `${baseUrl}/centre-aide/proprietaire`, lastModified: new Date(), changeFrequency: "monthly", priority: 0.5 },
+    { url: `${baseUrl}/centre-aide/general`, lastModified: new Date(), changeFrequency: "monthly", priority: 0.5 },
+  ];
+
+  const blogRoutes: MetadataRoute.Sitemap = BLOG_POSTS.map((post) => ({
+    url: `${baseUrl}/blog/${post.slug}`,
+    lastModified: new Date(),
+    changeFrequency: "monthly" as const,
+    priority: 0.7,
+  }));
+
+  let salleRoutes: MetadataRoute.Sitemap = [];
+  try {
+    const salles = await getSalles();
+    salleRoutes = salles.map((s) => ({
+      url: `${baseUrl}/salles/${s.slug}`,
+      lastModified: new Date(),
+      changeFrequency: "weekly" as const,
+      priority: 0.8,
+    }));
+  } catch {
+    // Fallback si erreur (ex: DB)
+  }
+
+  return [...staticRoutes, ...blogRoutes, ...salleRoutes];
+}

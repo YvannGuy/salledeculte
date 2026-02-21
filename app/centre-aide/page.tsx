@@ -1,6 +1,15 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 
 import { siteConfig } from "@/config/site";
+import { buildCanonical } from "@/lib/seo";
+
+export const metadata: Metadata = {
+  title: "Centre d'aide",
+  description:
+    "Comment pouvons-nous vous aider ? Trouvez des réponses sur la recherche de salles, la mise en ligne de votre lieu et les questions générales.",
+  alternates: { canonical: buildCanonical("/centre-aide") },
+};
 import { SiteHeader } from "@/components/layout/site-header";
 import { SiteFooter } from "@/components/layout/site-footer";
 import { Card, CardContent } from "@/components/ui/card";

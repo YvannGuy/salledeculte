@@ -1,8 +1,10 @@
+import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
 import { CheckCircle2, Facebook, Headphones, Instagram, Shield, Star, Zap } from "lucide-react";
 
 import { getTrialActivated } from "@/app/actions/trial";
+import { buildCanonical } from "@/lib/seo";
 import { getEffectiveUserType } from "@/lib/auth-utils";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { ActiverEssaiButton } from "@/components/home/activer-essai-button";
@@ -90,6 +92,10 @@ const faqSectionItems = [
       "La plateforme accueille les cultes réguliers, conférences, baptêmes, célébrations, retraites et autres événements à caractère cultuel. Vous pouvez préciser le type lors de votre recherche.",
   },
 ];
+
+export const metadata: Metadata = {
+  alternates: { canonical: buildCanonical("/") },
+};
 
 export default async function Home() {
   const [cityCards, supabase] = await Promise.all([

@@ -1,6 +1,14 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 
 import { siteConfig } from "@/config/site";
+import { buildCanonical } from "@/lib/seo";
+
+export const metadata: Metadata = {
+  title: "Aide propriétaire",
+  description: "Découvrez comment proposer votre salle et recevoir des demandes ciblées sur salledeculte.com.",
+  alternates: { canonical: buildCanonical("/centre-aide/proprietaire") },
+};
 import { SiteHeader } from "@/components/layout/site-header";
 import { SiteFooter } from "@/components/layout/site-footer";
 

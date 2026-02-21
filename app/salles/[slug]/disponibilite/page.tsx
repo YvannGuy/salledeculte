@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
@@ -5,10 +6,27 @@ import { MapPin, Users, Euro } from "lucide-react";
 
 import { SiteFooter } from "@/components/layout/site-footer";
 import { SiteHeader } from "@/components/layout/site-header";
+import { buildCanonical } from "@/lib/seo";
 import { getSalleBySlug } from "@/lib/salles";
+import { siteConfig } from "@/config/site";
 import { FormulaireDisponibilite } from "./formulaire-disponibilite";
 
 export const dynamic = "force-dynamic";
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ slug: string }>;
+}): Promise<Metadata> {
+  const { slug } = await params;
+  const salle = await getSalleBySlug(slug);
+  if (!salle) return { title: "Salle introuvable" };
+  return {
+    title: `Vérifier les disponibilités - ${salle.name}`,
+    description: `Vérifiez les disponibilités et envoyez une demande pour ${salle.name} à ${salle.city}.`,
+    alternates: { canonical: buildCanonical(`/salles/${slug}/disponibilite`) },
+  };
+}
 
 export default async function DisponibilitePage({
   params,
