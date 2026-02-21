@@ -8,8 +8,17 @@ import { AlertTriangle, CheckCircle, Clock, Crown, FolderOpen, Gift, Inbox, Lock
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { getOwnerBrowseAccess } from "@/lib/pass-utils";
 import { getTrialActivated } from "@/app/actions/trial";
+
+const TYPE_EVENEMENT_LABEL: Record<string, string> = {
+  "culte-regulier": "Culte régulier",
+  conference: "Conférence",
+  celebration: "Célébration",
+  bapteme: "Baptême",
+  retraite: "Retraite",
+};
 
 const STATUT_SALLE_LABEL: Record<string, string> = {
   approved: "Active",
@@ -96,9 +105,10 @@ export default async function ProprietaireDashboardPage() {
   const demandes = demandesData ?? [];
 
   const seekerIds = [...new Set(demandes.map((d) => d.seeker_id).filter(Boolean))];
+  const adminSupabase = createAdminClient();
   const { data: profiles } =
     seekerIds.length > 0
-      ? await supabase.from("profiles").select("id, full_name, email").in("id", seekerIds)
+      ? await adminSupabase.from("profiles").select("id, full_name, email").in("id", seekerIds)
       : { data: [] };
   const profileMap = new Map((profiles ?? []).map((p) => [p.id, p]));
   const salleMap = new Map(salles.map((s) => [s.id, s]));
@@ -365,7 +375,7 @@ export default async function ProprietaireDashboardPage() {
                           </div>
                         </div>
                       </td>
-                      <td className="py-4 pr-4 text-sm text-slate-600">{d.type_evenement ?? "—"}</td>
+                      <td className="py-4 pr-4 text-sm text-slate-600">{TYPE_EVENEMENT_LABEL[d.type_evenement ?? ""] ?? d.type_evenement ?? "—"}</td>
                       <td className="py-4 pr-4 text-sm text-slate-600">
                         {d.date_debut ? format(new Date(d.date_debut), "d MMMM yyyy", { locale: fr }) : "—"}
                       </td>

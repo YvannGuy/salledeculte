@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 
 import { MessagerieClient, type Thread } from "@/components/messagerie/messagerie-client";
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 
 const PAGE_SIZE = 20;
 
@@ -14,7 +15,7 @@ function formatTime(t: string | null): string {
 export default async function MessageriePage({
   searchParams,
 }: {
-  searchParams: Promise<{ page?: string }>;
+  searchParams: Promise<{ page?: string; demandeId?: string }>;
 }) {
   const supabase = await createClient();
   const {
@@ -42,9 +43,10 @@ export default async function MessageriePage({
   const seekerIds = [...new Set((demandes ?? []).map((d) => d.seeker_id))];
   const salleIdsDem = [...new Set((demandes ?? []).map((d) => d.salle_id))];
 
+  const adminSupabase = createAdminClient();
   const [profilesRes, sallesRes, convsResRaw] = await Promise.all([
     seekerIds.length > 0
-      ? supabase.from("profiles").select("id, full_name, email").in("id", seekerIds)
+      ? adminSupabase.from("profiles").select("id, full_name, email").in("id", seekerIds)
       : { data: [] },
     salleIdsDem.length > 0
       ? supabase.from("salles").select("id, name, city, capacity, images, slug").in("id", salleIdsDem)
@@ -138,17 +140,26 @@ export default async function MessageriePage({
     return String(bTime).localeCompare(String(aTime));
   });
 
-  const pageParam = (await searchParams).page;
+  const params = await searchParams;
+  const demandeIdParam = params.demandeId ?? null;
+  const pageParam = params.page;
   const page = Math.max(1, parseInt(String(pageParam || "1"), 10) || 1);
   const totalPages = Math.ceil(threads.length / PAGE_SIZE) || 1;
   const currentPage = Math.min(page, totalPages);
   const from = (currentPage - 1) * PAGE_SIZE;
-  const paginatedThreads = threads.slice(from, from + PAGE_SIZE);
+  let paginatedThreads = threads.slice(from, from + PAGE_SIZE);
+  if (demandeIdParam) {
+    const targetThread = threads.find((t) => t.demandeId === demandeIdParam);
+    if (targetThread && !paginatedThreads.some((t) => t.demandeId === demandeIdParam)) {
+      paginatedThreads = [targetThread, ...paginatedThreads];
+    }
+  }
 
   return (
     <div className="flex min-h-0 flex-1 flex-col md:h-[calc(100vh-2rem)]">
       <MessagerieClient
         threads={paginatedThreads}
+        initialDemandeId={demandeIdParam}
         currentUserId={user.id}
         userType="owner"
         pagination={

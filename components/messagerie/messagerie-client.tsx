@@ -2,11 +2,13 @@
 
 import Image from "next/image";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
 import { Check, ChevronDown, ChevronLeft, Lightbulb, MessageCircle, Paperclip, Send, Search } from "lucide-react";
 
+import { updateDemandeStatusAction } from "@/app/actions/demande-owner";
 import { getOrCreateConversation, sendMessage } from "@/app/actions/messagerie";
 import { AddSalleButton } from "@/components/proprietaire/add-salle-modal";
 import { SearchModalButton } from "@/components/search/search-modal";
@@ -62,6 +64,8 @@ type Props = {
   currentUserId: string;
   userType: "seeker" | "owner";
   pagination?: PaginationInfo | null;
+  /** Quand défini, ouvre automatiquement la conversation correspondante */
+  initialDemandeId?: string | null;
 };
 
 const STATUS_TAG: Record<string, { label: string; className: string }> = {
@@ -80,12 +84,14 @@ const TYPE_EVENEMENT_LABEL: Record<string, string> = {
   retraite: "Retraite",
 };
 
-export function MessagerieClient({ threads, currentUserId, userType, pagination }: Props) {
+export function MessagerieClient({ threads, currentUserId, userType, pagination, initialDemandeId }: Props) {
+  const router = useRouter();
   const [selected, setSelected] = useState<Thread | null>(null);
   const [conversationId, setConversationId] = useState<string | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [sending, setSending] = useState(false);
+  const [statusUpdating, setStatusUpdating] = useState<"accepted" | "rejected" | "replied" | null>(null);
   const [search, setSearch] = useState("");
   const [filterTab, setFilterTab] = useState<FilterTab>("all");
   const [detailsOpen, setDetailsOpen] = useState(true);
@@ -134,6 +140,13 @@ export function MessagerieClient({ threads, currentUserId, userType, pagination 
   }, []);
 
   useEffect(() => {
+    if (initialDemandeId) {
+      const t = threads.find((x) => x.demandeId === initialDemandeId);
+      if (t) setSelected(t);
+    }
+  }, [initialDemandeId, threads]);
+
+  useEffect(() => {
     if (!selected) {
       setConversationId(null);
       setMessages([]);
@@ -177,6 +190,31 @@ export function MessagerieClient({ threads, currentUserId, userType, pagination 
         read_at: null,
       };
       setMessages((prev) => [...prev, newMsg]);
+    }
+  };
+
+  const handleStatusUpdate = async (status: "accepted" | "rejected" | "replied") => {
+    if (!selected) return;
+    setStatusUpdating(status);
+    const res = await updateDemandeStatusAction(selected.demandeId, status);
+    setStatusUpdating(null);
+    if (res.success) {
+      setSelected((prev) => (prev ? { ...prev, demandeStatus: status } : null));
+      if (status === "replied") {
+        const msg =
+          "J'aurais besoin de quelques précisions avant de confirmer.";
+        setMessages((prev) => [
+          ...prev,
+          {
+            id: crypto.randomUUID(),
+            sender_id: currentUserId,
+            content: msg,
+            sent_at: new Date().toISOString(),
+            read_at: null,
+          },
+        ]);
+      }
+      router.refresh();
     }
   };
 
@@ -432,17 +470,30 @@ export function MessagerieClient({ threads, currentUserId, userType, pagination 
                 )}
                 {detailsOpen && !["replied", "accepted", "rejected"].includes(selected.demandeStatus ?? "") && (
                   <div className="mt-4 flex flex-wrap gap-2">
-                    <Link href={`${demandeLink}/${selected.demandeId}`}>
-                      <Button size="sm" className="bg-emerald-600 hover:bg-emerald-700">
-                        ✓ Disponible
-                      </Button>
-                    </Link>
-                    <Link href={`${demandeLink}/${selected.demandeId}`}>
-                      <Button size="sm" variant="outline" className="border-red-300 text-red-700 hover:bg-red-50">
-                        ✗ Indisponible
-                      </Button>
-                    </Link>
-                    <Button size="sm" variant="outline" className="border-[#213398]/50 text-[#213398] hover:bg-[#213398]/5">
+                    <Button
+                      size="sm"
+                      className="bg-emerald-600 hover:bg-emerald-700"
+                      disabled={!!statusUpdating}
+                      onClick={() => handleStatusUpdate("accepted")}
+                    >
+                      ✓ Disponible
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="border-red-300 text-red-700 hover:bg-red-50"
+                      disabled={!!statusUpdating}
+                      onClick={() => handleStatusUpdate("rejected")}
+                    >
+                      ✗ Indisponible
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="border-[#213398]/50 text-[#213398] hover:bg-[#213398]/5"
+                      disabled={!!statusUpdating}
+                      onClick={() => handleStatusUpdate("replied")}
+                    >
                       Demander précision
                     </Button>
                   </div>
@@ -514,9 +565,33 @@ export function MessagerieClient({ threads, currentUserId, userType, pagination 
             </div>
             {userType === "owner" && !["replied", "accepted", "rejected"].includes(selected.demandeStatus ?? "") && (
               <div className="mt-2 flex flex-wrap gap-2">
-                <Button size="sm" variant="outline" className="h-7 text-xs">✓ Disponible</Button>
-                <Button size="sm" variant="outline" className="h-7 text-xs">✗ Indisponible</Button>
-                <Button size="sm" variant="outline" className="h-7 text-xs">Besoin d&apos;infos</Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="h-7 text-xs"
+                  disabled={!!statusUpdating}
+                  onClick={() => handleStatusUpdate("accepted")}
+                >
+                  ✓ Disponible
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="h-7 text-xs"
+                  disabled={!!statusUpdating}
+                  onClick={() => handleStatusUpdate("rejected")}
+                >
+                  ✗ Indisponible
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="h-7 text-xs"
+                  disabled={!!statusUpdating}
+                  onClick={() => handleStatusUpdate("replied")}
+                >
+                  Demander précision
+                </Button>
               </div>
             )}
           </div>

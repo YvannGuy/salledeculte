@@ -26,6 +26,7 @@ export async function createDemande(formData: FormData): Promise<CreateDemandeRe
   const frequence = String(formData.get("frequence") ?? "ponctuel") as "ponctuel" | "hebdomadaire" | "mensuel";
   const joursSemaine = JSON.parse(String(formData.get("joursSemaine") ?? "[]")) as string[];
   const nbPersonnes = parseInt(String(formData.get("nbPersonnes") ?? "0"), 10);
+  const typeEvenement = String(formData.get("typeEvenement") ?? "").trim() || null;
   const heureDebut = String(formData.get("heureDebut") ?? "").trim();
   const heureFin = String(formData.get("heureFin") ?? "").trim();
   const message = String(formData.get("message") ?? "").trim();
@@ -82,6 +83,7 @@ export async function createDemande(formData: FormData): Promise<CreateDemandeRe
   const { error } = await supabase.from("demandes").insert({
     seeker_id: user.id,
     salle_id: salleId,
+    type_evenement: typeEvenement,
     date_debut: dateDebut.toISOString().slice(0, 10),
     date_fin: dateFin && !isNaN(dateFin.getTime()) ? dateFin.toISOString().slice(0, 10) : null,
     nb_personnes: nbPersonnes || null,

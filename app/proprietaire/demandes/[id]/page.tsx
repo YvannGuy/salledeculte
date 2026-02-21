@@ -6,17 +6,23 @@ import { fr } from "date-fns/locale";
 import {
   ArrowLeft,
   Mail,
-  MapPin,
   MessageSquare,
-  MoreHorizontal,
+  MessageSquareText,
   Phone,
-  Reply,
-  X,
   Zap,
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
+
+const TYPE_EVENEMENT_LABEL: Record<string, string> = {
+  "culte-regulier": "Culte régulier",
+  conference: "Conférence",
+  celebration: "Célébration",
+  bapteme: "Baptême",
+  retraite: "Retraite",
+};
 
 export default async function DemandeDetailPage({
   params,
@@ -40,6 +46,7 @@ export default async function DemandeDetailPage({
 
   if (!demande) return notFound();
 
+  const adminSupabase = createAdminClient();
   const [{ data: salle }, { data: profile }] = await Promise.all([
     supabase
       .from("salles")
@@ -47,7 +54,7 @@ export default async function DemandeDetailPage({
       .eq("id", demande.salle_id)
       .eq("owner_id", user.id)
       .maybeSingle(),
-    supabase
+    adminSupabase
       .from("profiles")
       .select("full_name, email, phone, created_at")
       .eq("id", demande.seeker_id)
@@ -150,7 +157,7 @@ export default async function DemandeDetailPage({
               {profile?.full_name ?? "Organisateur"}
             </h1>
             <p className="text-sm text-slate-600">
-              • {demande.type_evenement ?? "Événement"} • {dateStr}
+              • {TYPE_EVENEMENT_LABEL[demande.type_evenement ?? ""] ?? demande.type_evenement ?? "Événement"} • {dateStr}
             </p>
           </div>
         </div>
@@ -248,10 +255,6 @@ export default async function DemandeDetailPage({
                       {(profile as { phone?: string }).phone}
                     </p>
                   )}
-                  <p className="flex items-center gap-2 text-sm text-slate-600">
-                    <MapPin className="h-4 w-4 text-slate-400" />
-                    —
-                  </p>
                 </div>
               </div>
             </div>
@@ -284,25 +287,14 @@ export default async function DemandeDetailPage({
 
           {/* Actions */}
           {!["replied", "accepted", "rejected"].includes(demande.status) && (
-            <div className="space-y-2">
-              <Button
-                className="w-full bg-[#213398] hover:bg-[#1a2980]"
-                size="lg"
+            <div>
+              <Link
+                href={`/proprietaire/messagerie?demandeId=${demande.id}`}
+                className="inline-flex h-11 w-full items-center justify-center rounded-md bg-[#213398] px-8 text-sm font-medium text-white transition-all hover:bg-[#1a2980] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-400 focus-visible:ring-offset-2"
               >
-                <Reply className="mr-2 h-4 w-4" />
-                Répondre à la demande
-              </Button>
-              <Button
-                variant="outline"
-                className="w-full border-red-200 text-red-700 hover:bg-red-50"
-              >
-                <X className="mr-2 h-4 w-4" />
-                Refuser
-              </Button>
-              <Button variant="outline" className="w-full">
-                <MoreHorizontal className="mr-2 h-4 w-4" />
-                Plus d&apos;actions
-              </Button>
+                <MessageSquareText className="mr-2 h-4 w-4" />
+                Voir dans la messagerie
+              </Link>
             </div>
           )}
 
@@ -319,6 +311,13 @@ export default async function DemandeDetailPage({
                   })}
                 </p>
               )}
+              <Link
+                href={`/proprietaire/messagerie?demandeId=${demande.id}`}
+                className="mt-3 inline-flex items-center text-sm font-medium text-[#213398] hover:underline"
+              >
+                <MessageSquareText className="mr-1.5 h-4 w-4" />
+                Voir la conversation
+              </Link>
             </div>
           )}
 

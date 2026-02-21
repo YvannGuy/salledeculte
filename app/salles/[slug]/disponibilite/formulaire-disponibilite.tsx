@@ -8,6 +8,13 @@ import { Clock, Lightbulb, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { DatePicker } from "@/components/search/date-picker";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { createDemande } from "@/app/actions/create-demande";
 import type { Salle } from "@/lib/types/salle";
 import { cn } from "@/lib/utils";
@@ -16,6 +23,14 @@ const FREQUENCES = [
   { id: "ponctuel", label: "Ponctuel", desc: "Un seul événement" },
   { id: "hebdomadaire", label: "Hebdomadaire", desc: "Chaque semaine" },
   { id: "mensuel", label: "Mensuel", desc: "Chaque mois" },
+] as const;
+
+const TYPES_EVENEMENT = [
+  { id: "culte-regulier", label: "Culte régulier" },
+  { id: "conference", label: "Conférence" },
+  { id: "celebration", label: "Célébration" },
+  { id: "bapteme", label: "Baptême" },
+  { id: "retraite", label: "Retraite" },
 ] as const;
 
 const JOURS_SEMAINE = [
@@ -34,6 +49,7 @@ export function FormulaireDisponibilite({ salle }: { salle: Salle }) {
   const [frequence, setFrequence] = useState<string>("ponctuel");
   const [joursSemaine, setJoursSemaine] = useState<string[]>([]);
   const [nbPersonnes, setNbPersonnes] = useState("");
+  const [typeEvenement, setTypeEvenement] = useState<string>("");
   const [heureDebut, setHeureDebut] = useState("");
   const [heureFin, setHeureFin] = useState("");
   const [message, setMessage] = useState("");
@@ -53,6 +69,7 @@ export function FormulaireDisponibilite({ salle }: { salle: Salle }) {
     formData.set("frequence", frequence);
     formData.set("joursSemaine", JSON.stringify(joursSemaine));
     formData.set("nbPersonnes", nbPersonnes);
+    formData.set("typeEvenement", typeEvenement || "culte-regulier");
     formData.set("heureDebut", heureDebut || "--- --:--");
     formData.set("heureFin", heureFin || "--- --:--");
     formData.set("message", message);
@@ -125,6 +142,24 @@ export function FormulaireDisponibilite({ salle }: { salle: Salle }) {
             )}
           </div>
         )}
+
+        <div>
+          <label className="mb-2 block text-sm font-medium text-slate-700">
+            Type d&apos;événement *
+          </label>
+          <Select value={typeEvenement || "culte-regulier"} onValueChange={setTypeEvenement}>
+            <SelectTrigger className="h-11 rounded-lg border-slate-200">
+              <SelectValue placeholder="Sélectionnez un type" />
+            </SelectTrigger>
+            <SelectContent>
+              {TYPES_EVENEMENT.map(({ id, label }) => (
+                <SelectItem key={id} value={id}>
+                  {label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
 
         <div>
           <label className="mb-2 block text-sm font-medium text-slate-700">

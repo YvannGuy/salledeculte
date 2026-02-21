@@ -7,6 +7,7 @@ import { Zap, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Pagination } from "@/components/ui/pagination";
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 
 const PAGE_SIZE = 15;
 
@@ -18,6 +19,14 @@ const STATUT_LABEL: Record<string, string> = {
   replied: "Répondue",
   accepted: "Répondue",
   rejected: "Refusée",
+};
+
+const TYPE_EVENEMENT_LABEL: Record<string, string> = {
+  "culte-regulier": "Culte régulier",
+  conference: "Conférence",
+  celebration: "Célébration",
+  bapteme: "Baptême",
+  retraite: "Retraite",
 };
 
 const STATUT_BADGE: Record<string, string> = {
@@ -135,9 +144,10 @@ export default async function DemandesPage({
   const seekerIds = [...new Set((demandesData ?? []).map((d) => d.seeker_id).filter(Boolean))];
   const salleIdsForDemandes = [...new Set((demandesData ?? []).map((d) => d.salle_id).filter(Boolean))];
 
+  const adminSupabase = createAdminClient();
   const [profilesRes, sallesRes] = await Promise.all([
     seekerIds.length > 0
-      ? supabase.from("profiles").select("id, full_name, email").in("id", seekerIds)
+      ? adminSupabase.from("profiles").select("id, full_name, email").in("id", seekerIds)
       : { data: [] },
     salleIdsForDemandes.length > 0
       ? supabase.from("salles").select("id, name").in("id", salleIdsForDemandes)
@@ -273,7 +283,7 @@ export default async function DemandesPage({
                     <td className="px-4 py-4">
                       <span className="flex items-center gap-1.5">
                         <span className="text-slate-600">
-                          {d.type_evenement ?? "—"}
+                          {TYPE_EVENEMENT_LABEL[d.type_evenement ?? ""] ?? d.type_evenement ?? "—"}
                         </span>
                       </span>
                     </td>
