@@ -22,7 +22,7 @@ export function SiteFooter() {
             <p className="text-[24px] font-semibold leading-none text-white [zoom:0.5]">Plateforme</p>
             <ul className="mt-3 space-y-2 text-[13px] text-slate-300">
               <li>
-                <Link href="/rechercher" className="hover:text-white">
+                <Link href="/#recherche" className="hover:text-white">
                   Rechercher une salle
                 </Link>
               </li>
@@ -62,10 +62,26 @@ export function SiteFooter() {
           <div>
             <p className="text-[24px] font-semibold leading-none text-white [zoom:0.5]">Légal</p>
             <ul className="mt-3 space-y-2 text-[13px] text-slate-300">
-              <li>Mentions légales</li>
-              <li>CGU</li>
-              <li>Confidentialité</li>
-              <li>Cookies</li>
+              <li>
+                <Link href="/mentions-legales" className="hover:text-white">
+                  Mentions légales
+                </Link>
+              </li>
+              <li>
+                <Link href="/cgu" className="hover:text-white">
+                  CGU
+                </Link>
+              </li>
+              <li>
+                <Link href="/confidentialite" className="hover:text-white">
+                  Confidentialité
+                </Link>
+              </li>
+              <li>
+                <Link href="/cookies" className="hover:text-white">
+                  Cookies
+                </Link>
+              </li>
             </ul>
           </div>
         </div>
