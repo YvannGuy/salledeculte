@@ -35,7 +35,7 @@ import { hasAccessToBrowseOthers, hasAccessToContact } from "@/lib/pass-utils";
 import { createClient } from "@/lib/supabase/server";
 import { buildCanonical, defaultMetadata } from "@/lib/seo";
 import { getSalleBySlug, getSallesByCity } from "@/lib/salles";
-import { formatSalleTarifs, getSallePriceFrom } from "@/lib/types/salle";
+import { formatSalleTarifs, getSallePriceFrom, getSalleTarifParts } from "@/lib/types/salle";
 import { siteConfig } from "@/config/site";
 
 const iconMap: Record<string, React.ComponentType<{ className?: string }>> = {
@@ -126,6 +126,7 @@ export default async function SalleDetailPage({
   recordSalleView(salle.id, user?.id ?? null);
 
   const nearbySalles = canViewFullPage ? await getSallesByCity(salle.city, slug) : [];
+  const tarifParts = getSalleTarifParts(salle);
 
   if (user && userType === "owner" && !isOwnSalle && !canBrowseOthers) {
     return (
@@ -193,22 +194,18 @@ export default async function SalleDetailPage({
               </section>
 
               <section>
-                <h2 className="mb-3 text-lg font-semibold text-black">Caractéristiques</h2>
-                <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                <h2 className="mb-4 text-lg font-semibold text-black">Caractéristiques</h2>
+                <div className="flex flex-wrap gap-x-8 gap-y-3">
                   {salle.features.map((f, i) => {
                     const Icon = iconMap[f.icon] ?? CheckCircle2;
                     const hasSublabel = "sublabel" in f && f.sublabel;
                     return (
-                      <div key={i} className="flex items-start gap-3 rounded-lg border border-slate-100 bg-slate-50/50 p-4">
-                        <Icon className="mt-0.5 h-5 w-5 shrink-0 text-emerald-600" />
+                      <div key={i} className="flex items-center gap-2">
+                        <Icon className="h-4 w-4 shrink-0 text-emerald-600" />
                         <div>
-                          {hasSublabel ? (
-                            <>
-                              <p className="font-medium text-black">{f.label}</p>
-                              <p className="mt-0.5 text-[13px] text-slate-600">{f.sublabel}</p>
-                            </>
-                          ) : (
-                            <p className="text-[14px] text-slate-700">{f.label}</p>
+                          <span className="text-sm text-slate-700">{f.label}</span>
+                          {hasSublabel && (
+                            <span className="block text-xs text-slate-500">{f.sublabel}</span>
                           )}
                         </div>
                       </div>
@@ -240,15 +237,25 @@ export default async function SalleDetailPage({
 
               <section>
                 <h2 className="mb-3 text-lg font-semibold text-black">Tarification</h2>
-                <div className="rounded-xl border border-violet-200 bg-violet-50/60 p-5">
-                  <p className="text-xl font-bold text-black">{formatSalleTarifs(salle)}</p>
+                <div className="rounded-xl border border-slate-200 bg-slate-50/50 p-6">
+                  <div className="flex flex-col gap-3">
+                    {tarifParts.length > 0 ? (
+                      tarifParts.map((p) => (
+                        <p key={p.label} className="text-xl font-bold text-[#213398]">
+                          {p.value} € {p.label}
+                        </p>
+                      ))
+                    ) : (
+                      <p className="text-xl font-bold text-[#213398]">Sur demande</p>
+                    )}
+                  </div>
                   {salle.pricingInclusions.length > 0 && (
                     <>
-                      <p className="mt-4 text-[13px] font-medium text-slate-700">Ce tarif comprend :</p>
-                      <ul className="mt-2 space-y-2">
+                      <p className="mt-5 text-sm font-medium text-slate-600">Ce tarif comprend</p>
+                      <ul className="mt-2 space-y-2.5">
                         {salle.pricingInclusions.map((inc, i) => (
-                          <li key={i} className="flex items-center gap-2 text-[13px] text-slate-600">
-                            <CheckCircle2 className="h-4 w-4 text-emerald-600" />
+                          <li key={i} className="flex items-center gap-3 text-sm text-slate-700">
+                            <CheckCircle2 className="h-4 w-4 shrink-0 text-[#213398]" />
                             {inc}
                           </li>
                         ))}

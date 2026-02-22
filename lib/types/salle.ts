@@ -52,11 +52,17 @@ export type SalleRow = {
 
 /** Retourne les libellés tarifs (ex: "800 € / jour · 90 € / heure · 879 € / mois") - tarif horaire avant mensuel */
 export function formatSalleTarifs(salle: Salle): string {
-  const parts: string[] = [];
-  if (salle.pricePerDay > 0) parts.push(`${salle.pricePerDay} € / jour`);
-  if (salle.pricePerHour && salle.pricePerHour > 0) parts.push(`${salle.pricePerHour} € / heure`);
-  if (salle.pricePerMonth && salle.pricePerMonth > 0) parts.push(`${salle.pricePerMonth} € / mois`);
-  return parts.join(" · ") || "Sur demande";
+  const parts = getSalleTarifParts(salle);
+  return parts.length > 0 ? parts.map((p) => `${p.value} € ${p.label}`).join(" · ") : "Sur demande";
+}
+
+/** Retourne les tarifs sous forme de parts pour affichage séparé (ordre: jour, heure, mois) */
+export function getSalleTarifParts(salle: Salle): { value: number; label: string }[] {
+  const parts: { value: number; label: string }[] = [];
+  if (salle.pricePerDay > 0) parts.push({ value: salle.pricePerDay, label: "/ jour" });
+  if (salle.pricePerHour && salle.pricePerHour > 0) parts.push({ value: salle.pricePerHour, label: "/ heure" });
+  if (salle.pricePerMonth && salle.pricePerMonth > 0) parts.push({ value: salle.pricePerMonth, label: "/ mois" });
+  return parts;
 }
 
 /** Premier tarif affichable pour "À partir de" - horaire avant mensuel */

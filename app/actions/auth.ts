@@ -127,3 +127,37 @@ export async function signOutAction() {
   revalidatePath("/", "layout");
   redirect("/auth");
 }
+
+export async function requestPasswordResetAction(_: AuthFormState, formData: FormData): Promise<AuthFormState> {
+  const email = String(formData.get("email") ?? "").trim();
+  if (!email) return { error: "Veuillez indiquer votre adresse email." };
+
+  const supabase = await createClient();
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
+  const { error } = await supabase.auth.resetPasswordForEmail(email, {
+    redirectTo: `${siteUrl}/auth/mot-de-passe-oublie/nouveau`,
+  });
+
+  if (error) {
+    return { error: error.message || "Une erreur est survenue." };
+  }
+  revalidatePath("/", "layout");
+  return {
+    success:
+      "Un email de réinitialisation a été envoyé. Consultez votre boîte de réception et suivez le lien pour définir un nouveau mot de passe.",
+  };
+}
+
+export async function updatePasswordAction(_: AuthFormState, formData: FormData): Promise<AuthFormState> {
+  const password = String(formData.get("password") ?? "");
+  if (password.length < 8) return { error: "Le mot de passe doit faire au moins 8 caractères." };
+
+  const supabase = await createClient();
+  const { error } = await supabase.auth.updateUser({ password });
+
+  if (error) {
+    return { error: error.message || "Une erreur est survenue." };
+  }
+  revalidatePath("/", "layout");
+  redirect("/auth?reset=success");
+}

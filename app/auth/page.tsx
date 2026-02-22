@@ -47,6 +47,7 @@ function AuthPageContent() {
   const userTypeParam = searchParams.get("userType");
   const redirectedFrom = searchParams.get("redirectedFrom") ?? "";
   const suspended = searchParams.get("suspended") === "1";
+  const resetSuccess = searchParams.get("reset") === "success";
   const initialUserType = userTypeParam === "owner" ? "owner" : undefined;
   const [activeTab, setActiveTab] = useState<"login" | "signup">(
     tabParam === "signup" ? "signup" : "login"
@@ -91,6 +92,11 @@ function AuthPageContent() {
       </div>
 
       <div className="relative flex flex-col bg-white p-6 md:p-10">
+        {resetSuccess && (
+          <div className="mb-4 rounded-lg border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-800">
+            Votre mot de passe a été modifié. Vous pouvez maintenant vous connecter.
+          </div>
+        )}
         {suspended && (
           <div className="mb-4 rounded-lg border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800">
             Votre compte a été suspendu. Contactez l&apos;administrateur pour plus d&apos;informations.
@@ -169,9 +175,9 @@ function LoginFormContent({ redirectedFrom, onSwitchToSignup }: { redirectedFrom
         <div className="space-y-2">
           <div className="flex items-center justify-between">
             <label className="text-sm font-medium text-slate-700">Mot de passe</label>
-            <a href="#" className="text-xs font-medium text-black hover:underline">
+            <Link href="/auth/mot-de-passe-oublie" className="text-xs font-medium text-black hover:underline">
               Mot de passe oublié ?
-            </a>
+            </Link>
           </div>
           <div className="relative">
             <Input
