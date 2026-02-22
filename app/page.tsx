@@ -136,10 +136,10 @@ export default async function Home() {
         </div>
         <div className="container relative z-10 flex flex-col items-center px-4 py-12 md:py-16">
           <h1 className="max-w-3xl text-center text-[28px] font-bold leading-tight text-white sm:text-[38px] md:text-[44px] lg:text-[52px]">
-            Le bon espace, pour chaque occasion
+            Trouvez et réservez un lieu adapté en toute sérénité
           </h1>
           <p className="mt-4 max-w-2xl text-center text-[14px] leading-relaxed text-white/95 sm:text-[16px]">
-            Parce que chaque moment mérite un lieu adapté. Découvrez des lieux sélectionnés et vérifiés, pensés pour accueillir vos événements dans les meilleures conditions.
+            Des lieux sélectionnés et vérifiés pour accueillir vos cultes et évènements.
           </p>
           <div className="mt-8 w-full max-w-4xl">
             <HeroSearchBar />
@@ -233,10 +233,11 @@ export default async function Home() {
         </div>
         <div className="relative z-10 flex min-h-[320px] items-center justify-center px-4 sm:min-h-[400px]">
           <h2 className="text-center text-[36px] font-bold leading-tight text-white drop-shadow-md sm:text-[48px] md:text-[56px]">
-            Plus qu&apos;un simple{" "}
+            Plus que de simples{" "}
             <span className="bg-gradient-to-r from-amber-400 to-orange-500 bg-clip-text text-transparent">
-              espace
+              espaces
             </span>
+            , vos lieux pour les moments essentiels
           </h2>
         </div>
       </SectionReveal>
