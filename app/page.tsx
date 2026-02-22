@@ -242,31 +242,31 @@ export default async function Home() {
         </div>
       </SectionReveal>
 
-      <SectionReveal className="bg-white py-12">
-        <div className="container max-w-[1120px]">
-          <div className="grid gap-10 lg:grid-cols-2 lg:items-stretch lg:gap-12">
+      <SectionReveal className="bg-white py-14">
+        <div className="container max-w-[1200px]">
+          <div className="grid gap-12 lg:grid-cols-2 lg:items-stretch lg:gap-14">
             <div className="flex flex-col">
-              <h2 className="text-[32px] font-semibold leading-tight text-black sm:text-[40px]">
+              <h2 className="text-[36px] font-semibold leading-tight text-black sm:text-[44px]">
                 {siteConfig.name} pour chaque{" "}
                 <span className="font-bold text-[#213398]">occasion</span>
               </h2>
-              <div className="mt-8 grid grid-cols-2 gap-x-8 gap-y-4 sm:grid-cols-3">
+              <div className="mt-10 grid grid-cols-2 gap-x-10 gap-y-5 sm:grid-cols-3">
                 {["Cultes", "Conférences", "Baptêmes", "Célébrations", "Retraites", "Concert", "Podcast"].map((label) => (
-                  <span key={label} className="text-base font-medium text-slate-700">
+                  <span key={label} className="text-lg font-medium text-slate-700">
                     {label}
                   </span>
                 ))}
               </div>
               <Link
                 href="/#recherche"
-                className="mt-8 inline-flex h-11 w-fit shrink-0 items-center justify-center rounded-lg bg-[#213398] px-4 text-base font-semibold text-white transition hover:bg-[#1a2980]"
+                className="mt-10 inline-flex h-11 w-fit shrink-0 items-center justify-center rounded-lg bg-[#213398] px-4 text-base font-semibold text-white transition hover:bg-[#1a2980]"
               >
                 Trouvez une salle
               </Link>
             </div>
-            <div className="relative min-h-[280px] overflow-hidden rounded-xl sm:min-h-[320px] lg:min-h-0 lg:h-full">
+            <div className="relative min-h-[320px] overflow-hidden rounded-xl sm:min-h-[380px] lg:min-h-0 lg:h-full">
               <Image
-                src="https://images.unsplash.com/photo-1519167758481-83f550bb49b3?w=800&q=85"
+                src="https://images.unsplash.com/photo-1519167758481-83f550bb49b3?w=1200&q=85"
                 alt="Salle adaptée aux événements cultuels"
                 fill
                 className="object-cover"
