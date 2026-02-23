@@ -17,14 +17,14 @@ type UnlockAccessBlocProps = {
   paiementUrl?: string;
 };
 
-export function UnlockAccessBloc({ isLoggedIn, paiementUrl = "/dashboard/paiement" }: UnlockAccessBlocProps) {
+export function UnlockAccessBloc({ isLoggedIn, paiementUrl = "/dashboard" }: UnlockAccessBlocProps) {
   const [modalOpen, setModalOpen] = useState(false);
 
   if (isLoggedIn) {
     return (
       <Link href={paiementUrl}>
         <Button className="h-12 w-full rounded-lg bg-[#213398] font-semibold hover:bg-[#1a2980]">
-          Débloquer l&apos;accès
+          Accéder à mon espace
         </Button>
       </Link>
     );
@@ -40,14 +40,14 @@ export function UnlockAccessBloc({ isLoggedIn, paiementUrl = "/dashboard/paiemen
         onClick={() => setModalOpen(true)}
         className="h-12 w-full rounded-lg bg-[#213398] font-semibold hover:bg-[#1a2980]"
       >
-        Débloquer l&apos;accès
+        Se connecter
       </Button>
       <Dialog open={modalOpen} onOpenChange={setModalOpen}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Connectez-vous pour continuer</DialogTitle>
             <DialogDescription>
-              Créez un compte ou connectez-vous pour accéder à l&apos;espace paiement et choisir un Pass.
+              Créez un compte ou connectez-vous pour contacter les propriétaires.
             </DialogDescription>
           </DialogHeader>
           <div className="mt-6 flex flex-col gap-3">

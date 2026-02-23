@@ -19,7 +19,6 @@ import {
   Wifi,
 } from "lucide-react";
 
-import { getPlatformSettings } from "@/app/actions/admin-settings";
 import { UnlockAccessBloc } from "@/components/salles/unlock-access-bloc";
 import { Button } from "@/components/ui/button";
 import { SiteFooter } from "@/components/layout/site-footer";
@@ -31,7 +30,7 @@ import { isFavori } from "@/app/actions/favoris";
 import { getSalleRecentViewerCount, recordSalleView } from "@/app/actions/salle-views";
 import { getSalleRatingStats } from "@/app/actions/salle-ratings";
 import { getEffectiveUserType } from "@/lib/auth-utils";
-import { hasAccessToBrowseOthers, hasAccessToContact } from "@/lib/pass-utils";
+import { hasAccessToContact } from "@/lib/pass-utils";
 import { createClient } from "@/lib/supabase/server";
 import { buildCanonical, defaultMetadata } from "@/lib/seo";
 import { getSalleBySlug, getSallesByCity } from "@/lib/salles";
@@ -112,49 +111,18 @@ export default async function SalleDetailPage({
     return data;
   };
   const userType = user ? await getEffectiveUserType(user, getProfile) : null;
-  const [settings, favori, ratingStats, recentViewerCount, canBrowseOthers] = await Promise.all([
-    getPlatformSettings(),
+  const [favori, ratingStats, recentViewerCount, canContact] = await Promise.all([
     isFavori(user?.id ?? null, salle.id),
     getSalleRatingStats(salle.id),
     getSalleRecentViewerCount(salle.id),
-    user?.id ? hasAccessToBrowseOthers(user.id, { forOwner: userType === "owner" }) : Promise.resolve(false),
+    hasAccessToContact(user?.id ?? null),
   ]);
   const isOwnSalle = salle.ownerId === user?.id;
-  const canViewFullPage = isOwnSalle || canBrowseOthers;
-  const canContact = await hasAccessToContact(user?.id ?? null, settings);
 
   recordSalleView(salle.id, user?.id ?? null);
 
-  const nearbySalles = canViewFullPage ? await getSallesByCity(salle.city, slug) : [];
+  const nearbySalles = await getSallesByCity(salle.city, slug);
   const tarifParts = getSalleTarifParts(salle);
-
-  if (user && userType === "owner" && !isOwnSalle && !canBrowseOthers) {
-    return (
-      <div className="min-h-screen bg-white">
-        <SiteHeader />
-        <main className="container max-w-[1120px] py-12">
-          <div className="mx-auto max-w-lg rounded-xl border border-slate-200 bg-white p-8 shadow-sm">
-            <div className="flex justify-center">
-              <div className="flex h-14 w-14 items-center justify-center rounded-full bg-[#213398]/10">
-                <Lock className="h-7 w-7 text-[#213398]" />
-              </div>
-            </div>
-            <h2 className="mt-6 text-center text-xl font-semibold text-black">Accès requis</h2>
-            <p className="mt-2 text-center text-sm text-slate-600">
-              En tant que propriétaire, activez un Pass pour consulter les annonces des autres propriétaires.
-            </p>
-            <div className="mt-6">
-              <UnlockAccessBloc
-                isLoggedIn={true}
-                paiementUrl="/proprietaire/paiement"
-              />
-            </div>
-          </div>
-        </main>
-        <SiteFooter />
-      </div>
-    );
-  }
 
   return (
     <div className="min-h-screen bg-white">
@@ -360,27 +328,16 @@ export default async function SalleDetailPage({
                     <Lock className="h-6 w-6 text-[#213398]" />
                   </div>
                 </div>
-                <h3 className="mt-4 text-center text-lg font-semibold text-black">Accès requis</h3>
+                <h3 className="mt-4 text-center text-lg font-semibold text-black">Connectez-vous</h3>
                 <p className="mt-2 text-center text-[14px] text-slate-600">
-                  Activez un Pass pour contacter le propriétaire et vérifier la disponibilité.
+                  Connectez-vous pour contacter le propriétaire et vérifier la disponibilité.
                 </p>
                 <div className="mt-6">
                   <UnlockAccessBloc
                     isLoggedIn={!!user}
-                    paiementUrl={userType === "owner" ? "/proprietaire/paiement" : "/dashboard/paiement"}
+                    paiementUrl={`/salles/${slug}`}
                   />
                 </div>
-                <ul className="mt-6 space-y-2">
-                  {["Accès immédiat", "Devis personnalisés", "Suivi personnalisé"].map((item) => (
-                    <li key={item} className="flex items-center gap-2 text-[13px] text-slate-600">
-                      <CheckCircle2 className="h-4 w-4 shrink-0 text-emerald-500" />
-                      {item}
-                    </li>
-                  ))}
-                </ul>
-                <p className="mt-4 text-center text-[12px] text-slate-500">
-                  Les paiements sont sécurisés sur notre site.
-                </p>
               </div>
             )}
             <div className="mt-6 flex gap-4 rounded-xl border border-amber-200 bg-amber-50/80 p-6">

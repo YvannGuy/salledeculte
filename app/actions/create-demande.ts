@@ -1,7 +1,5 @@
 "use server";
 
-import { getPlatformSettings } from "@/app/actions/admin-settings";
-import { checkCanCreateDemande } from "@/lib/pass-utils";
 import { sendNewDemandeNotification } from "@/lib/email";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
@@ -77,12 +75,6 @@ export async function createDemande(formData: FormData): Promise<CreateDemandeRe
     if (!match) return null;
     return `${match[1].padStart(2, "0")}:${match[2]}:00`;
   };
-
-  const settings = await getPlatformSettings();
-  const passCheck = await checkCanCreateDemande(user.id, settings);
-  if (!passCheck.allowed) {
-    return { success: false, error: passCheck.message };
-  }
 
   const { error } = await supabase.from("demandes").insert({
     seeker_id: user.id,

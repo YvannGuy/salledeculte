@@ -66,6 +66,19 @@ export async function handleStripeWebhook(event: Stripe.Event) {
           });
           if (msgError) console.error("[webhook] Erreur insert message:", msgError.message);
 
+          // Sauvegarder stripe_customer_id si nouveau client (pour carte enregistrée)
+          const customerId = typeof session.customer === "string" ? session.customer : session.customer?.id;
+          if (customerId) {
+            const { data: existing } = await supabase
+              .from("profiles")
+              .select("stripe_customer_id")
+              .eq("id", metadata.user_id)
+              .single();
+            if (!(existing as { stripe_customer_id?: string } | null)?.stripe_customer_id) {
+              await supabase.from("profiles").update({ stripe_customer_id: customerId }).eq("id", metadata.user_id);
+            }
+          }
+
           await supabase.from("conversations").update({
             last_message_at: new Date().toISOString(),
             last_message_preview: msgContent,

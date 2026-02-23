@@ -124,6 +124,7 @@ export async function POST(request: Request) {
       payment_intent_data: {
         application_fee_amount: applicationFeeCents,
         transfer_data: { destination: stripeAccountId },
+        setup_future_usage: "off_session",
         metadata: {
           offer_id: offerId,
           seeker_id: user.id,

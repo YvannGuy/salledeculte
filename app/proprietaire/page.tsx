@@ -3,7 +3,7 @@ import Link from "next/link";
 import { AddSalleButton } from "@/components/proprietaire/add-salle-modal";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
-import { AlertTriangle, Banknote, CheckCircle, Clock, Crown, FolderOpen, Gift, Inbox, Lock, Star } from "lucide-react";
+import { Banknote, CheckCircle, Clock, FolderOpen, Inbox, Star } from "lucide-react";
 
 import { ConnectLoginButton } from "@/components/paiement/connect-login-button";
 import { ConnectOnboardingButton } from "@/components/paiement/connect-onboarding-button";
@@ -12,8 +12,6 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { getOwnerBrowseAccess } from "@/lib/pass-utils";
-import { getTrialActivated } from "@/app/actions/trial";
 
 const TYPE_EVENEMENT_LABEL: Record<string, string> = {
   "culte-regulier": "Culte régulier",
@@ -51,6 +49,23 @@ const STATUT_DEMANDE_COLOR: Record<string, string> = {
   rejected: "text-red-600",
 };
 
+const PRODUCT_LABEL: Record<string, string> = {
+  pass_24h: "Pass 24h",
+  pass_48h: "Pass 48h",
+  abonnement: "Abonnement",
+  reservation: "Réservation",
+  autre: "Autre",
+};
+
+const STATUS_PAIEMENT_LABEL: Record<string, string> = {
+  paid: "Payé",
+  pending: "En cours",
+  active: "Actif",
+  failed: "Échoué",
+  refunded: "Remboursé",
+  canceled: "Annulé",
+};
+
 export default async function ProprietaireDashboardPage() {
   const supabase = await createClient();
   const {
@@ -58,42 +73,34 @@ export default async function ProprietaireDashboardPage() {
   } = await supabase.auth.getUser();
   if (!user) return null;
 
-  const [{ data: sallesData }, browse, trialActivated, { data: profile }] = await Promise.all([
+  const [{ data: sallesData }, { data: profile }, { data: recentPayments }] = await Promise.all([
     supabase
       .from("salles")
       .select("id, slug, name, city, images, status")
       .eq("owner_id", user.id)
       .order("created_at", { ascending: false }),
-    getOwnerBrowseAccess(user.id),
-    getTrialActivated(user.id),
     supabase.from("profiles").select("stripe_account_id").eq("id", user.id).single(),
+    (async () => {
+      const adminSupabase = createAdminClient();
+      const { data: paidOffers } = await adminSupabase
+        .from("offers")
+        .select("id")
+        .eq("owner_id", user.id)
+        .eq("status", "paid");
+      const offerIds = (paidOffers ?? []).map((o) => (o as { id: string }).id);
+      if (offerIds.length === 0) return { data: [] };
+      const { data } = await adminSupabase
+        .from("payments")
+        .select("id, product_type, amount, status, created_at")
+        .in("offer_id", offerIds)
+        .eq("product_type", "reservation")
+        .order("created_at", { ascending: false })
+        .limit(5);
+      return { data: data ?? [] };
+    })(),
   ]);
 
   const salles = sallesData ?? [];
-
-  const now = new Date();
-  const passExpiryInfo =
-    browse.activePass && browse.activePass.product_type !== "abonnement"
-      ? (() => {
-          const created = new Date(browse.activePass.created_at);
-          const durationHours = browse.activePass.product_type === "pass_48h" ? 48 : 24;
-          const expiresAt = new Date(created.getTime() + durationHours * 60 * 60 * 1000);
-          const remainingMs = expiresAt.getTime() - now.getTime();
-          const remainingHours = remainingMs / (1000 * 60 * 60);
-          const threshold = browse.activePass.product_type === "pass_48h" ? 6 : 4;
-          const isExpiringSoon = remainingHours > 0 && remainingHours < threshold;
-          const formatRemaining = () => {
-            if (remainingHours < 1) {
-              const mins = Math.floor((remainingMs / (1000 * 60)) % 60);
-              return `${mins} min`;
-            }
-            const h = Math.floor(remainingHours);
-            const m = Math.floor((remainingHours - h) * 60);
-            return m > 0 ? `${h}h ${m}min` : `${h}h`;
-          };
-          return { isExpiringSoon, remainingText: formatRemaining() };
-        })()
-      : null;
   const salleIds = salles.map((s) => s.id);
 
   const { data: demandesData } =
@@ -147,125 +154,8 @@ export default async function ProprietaireDashboardPage() {
         <p className="mt-1 text-slate-500">Gérez vos annonces et vos demandes</p>
       </div>
 
-      {passExpiryInfo?.isExpiringSoon && browse.activePass && (
-        <div className="mb-6 flex items-start gap-3 rounded-xl border border-amber-200 bg-amber-50/80 p-4">
-          <AlertTriangle className="h-6 w-6 shrink-0 text-amber-600" />
-          <div className="min-w-0 flex-1">
-            <p className="font-semibold text-amber-800">Votre Pass expire bientôt</p>
-            <p className="mt-1 text-sm text-amber-700">
-              Il vous reste environ <span className="font-medium">{passExpiryInfo.remainingText}</span> avant l&apos;expiration.
-              Prolongez pour continuer à consulter les annonces des autres propriétaires.
-            </p>
-            <Link href="/proprietaire/paiement" className="mt-3 inline-block">
-              <Button size="sm" className="bg-amber-600 hover:bg-amber-700">
-                Prolonger maintenant
-              </Button>
-            </Link>
-          </div>
-        </div>
-      )}
-
-      {browse.hasPaidPass && browse.activePass ? (
-        <div className="mb-6">
-          <Card className="overflow-hidden border-0 bg-gradient-to-br from-[#213398] to-[#1a2980] shadow-md">
-            <CardContent className="p-4 sm:p-6">
-              <div className="flex items-center gap-3">
-                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-white/20">
-                  <Crown className="h-6 w-6 text-white" />
-                </div>
-                <div>
-                  <p className="font-semibold text-white">
-                    {browse.activePass.product_type === "pass_48h" ? "Pass 48h" : browse.activePass.product_type === "abonnement" ? "Abonnement" : "Pass 24h"} actif
-                  </p>
-                  <p className="text-sm text-white/80">
-                    {passExpiryInfo
-                      ? `Expire dans ${passExpiryInfo.remainingText}`
-                      : browse.activePass.product_type === "abonnement"
-                        ? "Accès illimité"
-                        : "Consultez les annonces des autres propriétaires"}
-                  </p>
-                </div>
-              </div>
-              <Link href="/proprietaire/paiement">
-                <Button className="mt-4 flex items-center gap-2 bg-white text-black hover:bg-white/90">
-                  <Lock className="h-4 w-4" />
-                  Prolonger mon accès
-                </Button>
-              </Link>
-            </CardContent>
-          </Card>
-        </div>
-      ) : trialActivated && browse.freeUsed < browse.freeTotal && !browse.hasPaidPass ? (
-        <div className="mb-6">
-          <Card className="overflow-hidden border-0 border-emerald-200 bg-emerald-50/80 shadow-sm">
-            <CardContent className="p-4 sm:p-6">
-              <div className="flex items-center gap-3">
-                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-emerald-200">
-                  <Gift className="h-6 w-6 text-emerald-700" />
-                </div>
-                <div>
-                  <p className="font-semibold text-emerald-800">Essai actif</p>
-                  <p className="text-sm text-emerald-700">
-                    {browse.freeTotal - browse.freeUsed} demande{browse.freeTotal - browse.freeUsed > 1 ? "s" : ""} restante{browse.freeTotal - browse.freeUsed > 1 ? "s" : ""}
-                  </p>
-                </div>
-              </div>
-              <Link href="/proprietaire/paiement" className="mt-4 inline-block">
-                <Button variant="outline" size="sm" className="border-emerald-300 text-emerald-800 hover:bg-emerald-100">
-                  Prolonger mon accès
-                </Button>
-              </Link>
-            </CardContent>
-          </Card>
-        </div>
-      ) : !trialActivated ? (
-        <Card className="mb-6 overflow-hidden border-0 border-emerald-100 bg-[#F8FDF9] shadow-sm">
-          <CardContent className="p-6">
-            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-              <div className="flex items-center gap-3">
-                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-[#D9F7E0]">
-                  <Crown className="h-6 w-6 text-[#189D52]" />
-                </div>
-                <div>
-                  <p className="font-semibold text-black">Activez votre essai gratuit</p>
-                  <p className="text-sm text-slate-600">
-                    Bénéficiez de consultations gratuites pour découvrir les annonces des autres propriétaires
-                  </p>
-                </div>
-              </div>
-              <Link href="/proprietaire/paiement?trial=1" className="sm:ml-auto">
-                <Button className="w-full sm:w-auto bg-[#1A3E92] hover:bg-[#15317a] font-semibold">
-                  Activez mon essai gratuit
-                </Button>
-              </Link>
-            </div>
-          </CardContent>
-        </Card>
-      ) : !browse.allowed && trialActivated ? (
-        <Card className="mb-6 overflow-hidden border-0 border-amber-200 bg-amber-50/80 shadow-sm">
-          <CardContent className="p-6">
-            <div className="flex items-center gap-3">
-              <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-amber-100">
-                <Crown className="h-6 w-6 text-amber-600" />
-              </div>
-              <div>
-                <p className="font-semibold text-amber-800">Accès bloqué</p>
-                <p className="text-sm text-amber-700">
-                  Vous n&apos;avez plus de demandes restantes. Choisissez un Pass pour consulter les annonces des autres propriétaires.
-                </p>
-              </div>
-              <Link href="/proprietaire/paiement" className="ml-auto">
-                <Button className="bg-[#213398] hover:bg-[#1a2980]">
-                  Voir les offres
-                </Button>
-              </Link>
-            </div>
-          </CardContent>
-        </Card>
-      ) : null}
-
       {/* Recevoir les paiements / Paiements activés */}
-      <Card className="mt-6 border-0 shadow-sm">
+      <Card id="recevoir-paiements" className="mt-6 border-0 shadow-sm scroll-mt-24">
         <CardContent className="p-5">
           {(profile as { stripe_account_id?: string | null } | null)?.stripe_account_id ? (
             <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
@@ -324,62 +214,115 @@ export default async function ProprietaireDashboardPage() {
         })}
       </div>
 
-      <Card className="mt-6 border-0 shadow-sm">
-        <CardHeader className="flex flex-row items-center justify-between pb-2">
-          <CardTitle className="text-lg">Mes annonces</CardTitle>
-          <Link href="/proprietaire/annonces" className="text-sm font-medium text-black hover:underline">
-            Voir tout →
-          </Link>
-        </CardHeader>
-        <CardContent>
-          {salles.length === 0 ? (
-            <div className="flex flex-col items-center justify-center rounded-xl border border-dashed border-slate-200 py-12 text-center">
-              <Inbox className="mb-3 h-12 w-12 text-slate-300" />
-              <p className="text-slate-500">Aucune annonce pour le moment</p>
-              <AddSalleButton size="sm" className="mt-3 bg-[#213398] hover:bg-[#1a2980]">
-                Créer une annonce
-              </AddSalleButton>
-            </div>
-          ) : (
-            <div className="grid gap-4 sm:grid-cols-3">
-              {salles.slice(0, 6).map((s) => (
-                <div
-                  key={s.id}
-                  className="overflow-hidden rounded-xl border border-slate-200 bg-white"
-                >
-                  <div className="relative h-40">
-                    <Image
-                      src={Array.isArray(s.images) && s.images[0] ? String(s.images[0]) : "/img.png"}
-                      alt=""
-                      fill
-                      className="object-cover"
-                    />
-                  </div>
-                  <div className="p-4">
-                    <p className="font-semibold text-black">{s.name}</p>
-                    <p className="text-sm text-slate-500">{s.city}</p>
-                    <span className={`mt-2 inline-block text-sm font-medium ${STATUT_SALLE_COLOR[s.status] ?? "text-slate-600"}`}>
-                      • {STATUT_SALLE_LABEL[s.status] ?? s.status}
-                    </span>
-                    <div className="mt-3 flex gap-2">
-                      <Link href={`/salles/${s.slug}`}>
-                        <Button variant="outline" size="sm" className="flex-1 border-slate-300">
-                          Voir
-                        </Button>
-                      </Link>
-                      <Link href={`/proprietaire/annonces?edit=${s.id}`}>
-                        <Button size="sm" className="flex-1 bg-[#213398] hover:bg-[#1a2980]">
-                          Modifier
-                        </Button>
-                      </Link>
+      <div className="mt-6 grid gap-6 lg:grid-cols-2">
+        <Card className="border-0 shadow-sm">
+          <CardHeader className="flex flex-row items-center justify-between pb-2">
+            <CardTitle className="text-lg">Mes annonces</CardTitle>
+            <Link href="/proprietaire/annonces" className="text-sm font-medium text-black hover:underline">
+              Voir tout →
+            </Link>
+          </CardHeader>
+          <CardContent>
+            {salles.length === 0 ? (
+              <div className="flex flex-col items-center justify-center rounded-xl border border-dashed border-slate-200 py-12 text-center">
+                <Inbox className="mb-3 h-12 w-12 text-slate-300" />
+                <p className="text-slate-500">Aucune annonce pour le moment</p>
+                <AddSalleButton size="sm" className="mt-3 bg-[#213398] hover:bg-[#1a2980]">
+                  Créer une annonce
+                </AddSalleButton>
+              </div>
+            ) : (
+              <div className="grid gap-4 sm:grid-cols-2">
+                {salles.slice(0, 4).map((s) => (
+                  <div
+                    key={s.id}
+                    className="overflow-hidden rounded-xl border border-slate-200 bg-white"
+                  >
+                    <div className="relative h-32">
+                      <Image
+                        src={Array.isArray(s.images) && s.images[0] ? String(s.images[0]) : "/img.png"}
+                        alt=""
+                        fill
+                        className="object-cover"
+                      />
+                    </div>
+                    <div className="p-4">
+                      <p className="font-semibold text-black">{s.name}</p>
+                      <p className="text-sm text-slate-500">{s.city}</p>
+                      <span className={`mt-2 inline-block text-sm font-medium ${STATUT_SALLE_COLOR[s.status] ?? "text-slate-600"}`}>
+                        • {STATUT_SALLE_LABEL[s.status] ?? s.status}
+                      </span>
+                      <div className="mt-3 flex gap-2">
+                        <Link href={`/salles/${s.slug}`}>
+                          <Button variant="outline" size="sm" className="flex-1 border-slate-300">
+                            Voir
+                          </Button>
+                        </Link>
+                        <Link href={`/proprietaire/annonces?edit=${s.id}`}>
+                          <Button size="sm" className="flex-1 bg-[#213398] hover:bg-[#1a2980]">
+                            Modifier
+                          </Button>
+                        </Link>
+                      </div>
                     </div>
                   </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </CardContent>
-      </Card>
+                ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        <Card className="border-0 shadow-sm">
+          <CardHeader className="flex flex-row items-center justify-between pb-2">
+            <CardTitle className="text-lg">Mes paiements</CardTitle>
+            <Link href="/proprietaire/paiement" className="text-sm font-medium text-black hover:underline">
+              Voir →
+            </Link>
+          </CardHeader>
+          <CardContent>
+            {(recentPayments ?? []).length === 0 ? (
+              <div className="flex flex-col items-center justify-center rounded-xl border border-dashed border-slate-200 py-12 text-center">
+                <Banknote className="mb-3 h-12 w-12 text-slate-300" />
+                <p className="text-slate-500">Aucun paiement pour le moment</p>
+                <Link href="/proprietaire/paiement" className="mt-3">
+                  <Button size="sm" className="bg-[#213398] hover:bg-[#1a2980]">
+                    Accéder à l&apos;espace paiement
+                  </Button>
+                </Link>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {(recentPayments ?? []).map((p) => (
+                  <div
+                    key={p.id}
+                    className="flex items-center justify-between rounded-lg border border-slate-200 bg-slate-50/50 px-4 py-3"
+                  >
+                    <div>
+                      <p className="font-medium text-black">
+                        {PRODUCT_LABEL[(p as { product_type?: string }).product_type ?? ""] ?? (p as { product_type?: string }).product_type ?? "—"}
+                      </p>
+                      <p className="text-sm text-slate-500">
+                        {format(new Date((p as { created_at: string }).created_at), "d MMM yyyy", { locale: fr })}
+                      </p>
+                    </div>
+                    <div className="text-right">
+                      <p className="font-semibold text-black">
+                        {(((p as { amount?: number }).amount ?? 0) / 100).toFixed(2)} €
+                      </p>
+                      <p className="text-sm text-emerald-600">
+                        {STATUS_PAIEMENT_LABEL[(p as { status?: string }).status ?? ""] ?? (p as { status?: string }).status}
+                      </p>
+                    </div>
+                  </div>
+                ))}
+                <Link href="/proprietaire/paiement" className="mt-2 block text-center text-sm font-medium text-[#213398] hover:underline">
+                  Voir tout l&apos;historique →
+                </Link>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      </div>
 
       <Card className="mt-6 border-0 shadow-sm">
         <CardHeader className="flex flex-row items-center justify-between pb-2">

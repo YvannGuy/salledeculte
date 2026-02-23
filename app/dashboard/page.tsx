@@ -2,12 +2,11 @@ import Image from "next/image";
 import Link from "next/link";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
-import { AlertTriangle, CheckCircle2, Clock, Crown, FileText, Heart, Inbox, Lock, MessageCircle } from "lucide-react";
+import { CheckCircle2, FileText, Heart, Inbox, MessageCircle } from "lucide-react";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { SearchModalButton } from "@/components/search/search-modal";
-import { getPlatformSettings } from "@/app/actions/admin-settings";
 import { createClient } from "@/lib/supabase/server";
 
 const STATUT_LABEL: Record<string, string> = {
@@ -35,14 +34,11 @@ export default async function DashboardPage() {
 
   const seekerId = user.id;
 
-  const settings = await getPlatformSettings();
   const [
     { count: demandesCount },
     { count: favorisCount },
     { data: demandesList },
     { data: favorisList },
-    { data: profile },
-    { data: payments },
   ] = await Promise.all([
     supabase.from("demandes").select("id", { count: "exact", head: true }).eq("seeker_id", seekerId),
     supabase.from("favoris").select("id", { count: "exact", head: true }).eq("user_id", seekerId),
@@ -56,18 +52,7 @@ export default async function DashboardPage() {
       .from("favoris")
       .select("salle_id")
       .eq("user_id", seekerId),
-    supabase.from("profiles").select("trial_activated_at, free_pass_credits").eq("id", seekerId).maybeSingle(),
-    supabase
-      .from("payments")
-      .select("product_type, status, amount, created_at")
-      .eq("user_id", seekerId)
-      .in("status", ["paid", "active"])
-      .order("created_at", { ascending: false })
-      .limit(20),
   ]);
-
-  const trialActivated = !!(profile as { trial_activated_at: string | null } | null)?.trial_activated_at;
-  const freePassCredits = (profile as { free_pass_credits?: number | null } | null)?.free_pass_credits ?? 0;
 
   const totalDemandes = demandesCount ?? 0;
   const totalFavoris = favorisCount ?? 0;
@@ -120,44 +105,7 @@ export default async function DashboardPage() {
     convsCount = convRows.filter((c) => !archivedOrDeleted.has((c as { id: string }).id)).length;
   }
 
-  const freeUsed = totalDemandes;
-  const baseTotal = settings?.pass?.demandes_gratuites ?? 2;
-  const freeTotal = baseTotal + freePassCredits;
-  const isTrialActive = trialActivated && freeUsed < freeTotal;
-
   const now = new Date();
-  const activePass = (payments ?? []).find((p) => {
-    const created = new Date(p.created_at);
-    const hoursAgo = (now.getTime() - created.getTime()) / (1000 * 60 * 60);
-    if (p.product_type === "abonnement") return true;
-    if (p.product_type === "pass_24h") return hoursAgo < 24;
-    if (p.product_type === "pass_48h") return hoursAgo < 48;
-    return false;
-  });
-
-  const passExpiryInfo =
-    activePass && activePass.product_type !== "abonnement"
-      ? (() => {
-          const created = new Date(activePass.created_at);
-          const durationHours = activePass.product_type === "pass_48h" ? 48 : 24;
-          const expiresAt = new Date(created.getTime() + durationHours * 60 * 60 * 1000);
-          const remainingMs = expiresAt.getTime() - now.getTime();
-          const remainingHours = remainingMs / (1000 * 60 * 60);
-          const threshold = activePass.product_type === "pass_48h" ? 6 : 4;
-          const isExpiringSoon = remainingHours > 0 && remainingHours < threshold;
-          const formatRemaining = () => {
-            if (remainingHours < 1) {
-              const mins = Math.floor((remainingMs / (1000 * 60)) % 60);
-              return `${mins} min`;
-            }
-            const h = Math.floor(remainingHours);
-            const m = Math.floor((remainingHours - h) * 60);
-            return m > 0 ? `${h}h ${m}min` : `${h}h`;
-          };
-          return { isExpiringSoon, remainingText: formatRemaining(), expiresAt };
-        })()
-      : null;
-
   const overviewCards = [
     { label: "Demandes envoyées", value: String(totalDemandes), icon: FileText, color: "text-black", bgColor: "bg-[#213398]/10" },
     { label: "Conversations actives", value: String(convsCount), icon: MessageCircle, color: "text-emerald-600", bgColor: "bg-emerald-100" },
@@ -230,25 +178,6 @@ export default async function DashboardPage() {
         <p className="mt-1 text-slate-500">Suivez vos recherches et demandes</p>
       </div>
 
-      {passExpiryInfo?.isExpiringSoon && (
-        <div className="mb-6 flex items-start gap-3 rounded-xl border border-amber-200 bg-amber-50/80 p-4">
-          <AlertTriangle className="h-6 w-6 shrink-0 text-amber-600" />
-          <div className="min-w-0 flex-1">
-            <p className="font-semibold text-amber-800">Votre Pass expire bientôt</p>
-            <p className="mt-1 text-sm text-amber-700">
-              Il vous reste environ <span className="font-medium">{passExpiryInfo.remainingText}</span> avant l&apos;expiration.
-              Prolongez votre accès pour continuer à envoyer des demandes illimitées.
-            </p>
-            <Link href="/dashboard/paiement" className="mt-3 inline-block">
-              <Button size="sm" className="bg-amber-600 hover:bg-amber-700">
-                <Clock className="mr-1.5 h-4 w-4" />
-                Prolonger maintenant
-              </Button>
-            </Link>
-          </div>
-        </div>
-      )}
-
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         {overviewCards.map((card) => {
           const Icon = card.icon;
@@ -266,191 +195,6 @@ export default async function DashboardPage() {
             </Card>
           );
         })}
-      </div>
-
-      <div className="mt-6 grid gap-6 lg:grid-cols-3">
-        <div className="lg:col-span-2 space-y-6">
-          {activePass ? (
-            <Card className="overflow-hidden border-0 bg-gradient-to-br from-[#213398] to-[#1a2980] shadow-md">
-              <CardContent className="p-4 sm:p-6">
-                <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-                  <div className="flex items-center gap-3">
-                    <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-white/20">
-                      <Crown className="h-6 w-6 text-white" />
-                    </div>
-                    <div>
-                      <p className="font-semibold text-white">
-                        {activePass.product_type === "pass_48h" ? "Pass 48h" : "Pass 24h"} actif
-                      </p>
-                      <p className="text-sm text-white/80">
-                        {passExpiryInfo
-                          ? `Expire dans ${passExpiryInfo.remainingText}`
-                          : activePass.product_type === "pass_48h"
-                            ? "Valide 48h"
-                            : "Valide 24h"}
-                      </p>
-                    </div>
-                  </div>
-                  <p className="text-sm text-white/90 sm:max-w-[200px] sm:text-right">
-                    Les Pass permettent d&apos;envoyer des demandes illimitées
-                  </p>
-                </div>
-                <Link href="/dashboard/paiement">
-                  <Button className="mt-4 flex items-center gap-2 bg-white text-black hover:bg-white/90">
-                    <Lock className="h-4 w-4" />
-                    Prolonger mon accès
-                  </Button>
-                </Link>
-              </CardContent>
-            </Card>
-          ) : !trialActivated ? (
-            <Card className="overflow-hidden border-0 border-emerald-100 bg-[#F8FDF9] shadow-sm">
-              <CardContent className="p-6">
-                <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-                  <div className="flex items-center gap-3">
-                    <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-[#D9F7E0]">
-                      <Crown className="h-6 w-6 text-[#189D52]" />
-                    </div>
-                    <div>
-                      <p className="font-semibold text-black">Activez votre essai gratuit</p>
-                      <p className="text-sm text-slate-600">
-                        Bénéficiez de demandes gratuites pour découvrir la plateforme
-                      </p>
-                    </div>
-                  </div>
-                  <Link href="/dashboard/paiement?trial=1" className="sm:ml-auto">
-                    <Button className="w-full sm:w-auto bg-[#1A3E92] hover:bg-[#15317a] font-semibold">
-                      Activez mon essai gratuit
-                    </Button>
-                  </Link>
-                </div>
-              </CardContent>
-            </Card>
-          ) : isTrialActive ? (
-            <Card className="overflow-hidden border-0 border-emerald-200 bg-emerald-50/80 shadow-sm">
-              <CardContent className="p-6">
-                <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-                  <div className="flex items-center gap-3">
-                    <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-[#D9F7E0]">
-                      <Crown className="h-6 w-6 text-[#189D52]" />
-                    </div>
-                    <div>
-                      <p className="font-semibold text-emerald-800">Essai actif</p>
-                      <p className="text-sm text-emerald-700">
-                        {freeTotal - freeUsed} demande{freeTotal - freeUsed > 1 ? "s" : ""} restante{freeTotal - freeUsed > 1 ? "s" : ""}
-                      </p>
-                    </div>
-                  </div>
-                  <Link href="/dashboard/paiement">
-                    <Button variant="outline" size="sm" className="border-emerald-300 text-emerald-700 hover:bg-emerald-50">
-                      Voir mon accès
-                    </Button>
-                  </Link>
-                </div>
-              </CardContent>
-            </Card>
-          ) : (
-            <Card className="overflow-hidden border-0 border-amber-200 bg-amber-50/80 shadow-sm">
-              <CardContent className="p-6">
-                <div className="flex items-center gap-3">
-                  <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-amber-100">
-                    <Crown className="h-6 w-6 text-amber-600" />
-                  </div>
-                  <div>
-                    <p className="font-semibold text-amber-800">Accès bloqué</p>
-                    <p className="text-sm text-amber-700">
-                      Vous n&apos;avez plus de demandes restantes. Choisissez un Pass pour continuer à contacter les propriétaires.
-                    </p>
-                  </div>
-                  <Link href="/dashboard/paiement" className="ml-auto">
-                    <Button className="bg-[#213398] hover:bg-[#1a2980]">
-                      Voir les offres
-                    </Button>
-                  </Link>
-                </div>
-              </CardContent>
-            </Card>
-          )}
-
-          <Card className="border-0 shadow-sm">
-            <CardHeader className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between sm:gap-0 pb-2">
-              <CardTitle className="text-lg">Paiement & accès</CardTitle>
-              <Link href="/dashboard/paiement" className="text-sm font-medium text-black hover:underline">
-                Voir tout
-              </Link>
-            </CardHeader>
-            <CardContent>
-              {(payments ?? []).length === 0 ? (
-                <div className="flex flex-col items-center justify-center rounded-lg border border-dashed border-slate-200 py-8 text-center">
-                  <Inbox className="mb-2 h-10 w-10 text-slate-300" />
-                  <p className="text-sm text-slate-500">Aucun paiement pour le moment</p>
-                  <Link href="/dashboard/paiement">
-                    <Button variant="outline" size="sm" className="mt-3">
-                      Découvrir les offres
-                    </Button>
-                  </Link>
-                </div>
-              ) : (
-                <div className="space-y-4">
-                  {(payments ?? []).slice(0, 3).map((p) => (
-                    <div
-                      key={p.created_at + p.product_type}
-                      className="flex items-center justify-between rounded-lg border border-slate-200 bg-slate-50 p-4"
-                    >
-                      <div>
-                        <p className="font-medium text-black">
-                          {p.product_type === "pass_24h"
-                            ? "Pass 24h"
-                            : p.product_type === "pass_48h"
-                              ? "Pass 48h"
-                              : p.product_type === "reservation"
-                                ? "Réservation"
-                                : "Abonnement"}
-                        </p>
-                        <p className="text-sm text-slate-500">
-                          {format(new Date(p.created_at), "d MMM yyyy", { locale: fr })}
-                        </p>
-                      </div>
-                      <div className="text-right">
-                        <p className="font-semibold text-black">{(p.amount / 100).toFixed(2)}€</p>
-                        <p className="text-sm text-emerald-600">Payé</p>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        </div>
-
-        {activePass && (
-          <Card className="h-fit border-0 shadow-sm">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-lg">Mon Pass</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="rounded-xl bg-gradient-to-br from-[#213398]/10 to-[#1a2980]/10 p-4">
-                <div className="flex items-center gap-3">
-                  <Crown className="h-8 w-8 text-black" />
-                  <div>
-                    <p className="font-semibold text-black">
-                      {activePass.product_type === "pass_48h" ? "Pass 48h" : "Pass 24h"} actif
-                    </p>
-                    <p className="text-sm text-slate-500">
-                      {passExpiryInfo ? `Expire dans ${passExpiryInfo.remainingText}` : "En cours"}
-                    </p>
-                  </div>
-                </div>
-                {passExpiryInfo?.isExpiringSoon && activePass && (
-                  <div className="mt-3 flex items-center gap-2 rounded-lg bg-amber-100/80 px-3 py-2 text-sm text-amber-800">
-                    <Clock className="h-4 w-4 shrink-0" />
-                    <span>Moins de {activePass.product_type === "pass_48h" ? "6h" : "4h"} restantes</span>
-                  </div>
-                )}
-              </div>
-            </CardContent>
-          </Card>
-        )}
       </div>
 
       <Card className="mt-6 border-0 shadow-sm">
