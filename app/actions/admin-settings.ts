@@ -18,6 +18,11 @@ const DEFAULT_SETTINGS = {
     validation_manuelle: true,
     mode_publication: "manual" as "manual" | "auto",
   },
+  commission: {
+    percent: 10,
+    ponctuel: true,
+    mensuel: false,
+  },
 };
 
 export type PlatformSettings = typeof DEFAULT_SETTINGS;
@@ -61,10 +66,18 @@ export async function savePlatformSettingsAction(formData: FormData) {
     mode_publication: (formData.get("validation_mode") as "manual" | "auto") || "manual",
   };
 
+  const percentRaw = parseFloat(String(formData.get("commission_percent") ?? "10"));
+  const commission = {
+    percent: Math.max(0, Math.min(100, Number.isFinite(percentRaw) ? percentRaw : 10)),
+    ponctuel: formData.get("commission_ponctuel") === "on",
+    mensuel: formData.get("commission_mensuel") === "on",
+  };
+
   try {
     for (const [key, value] of Object.entries({
       pass,
       validation,
+      commission,
     })) {
       const { error } = await (supabase as any)
         .from("platform_settings")

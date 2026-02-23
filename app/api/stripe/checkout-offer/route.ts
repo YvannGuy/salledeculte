@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import type Stripe from "stripe";
 
+import { getPlatformSettings } from "@/app/actions/admin-settings";
 import { siteConfig } from "@/config/site";
 import { getStripe } from "@/lib/stripe";
 import { createAdminClient } from "@/lib/supabase/admin";
@@ -29,7 +30,7 @@ export async function POST(request: Request) {
 
     const { data: offer, error: offerError } = await adminSupabase
       .from("offers")
-      .select("id, demande_id, owner_id, seeker_id, salle_id, amount_cents, expires_at, status")
+      .select("id, demande_id, owner_id, seeker_id, salle_id, amount_cents, expires_at, status, event_type")
       .eq("id", offerId)
       .single();
 
@@ -45,6 +46,7 @@ export async function POST(request: Request) {
       status: string;
       demande_id: string;
       salle_id: string;
+      event_type: string | null;
     };
 
     if (offerRow.seeker_id !== user.id) {
@@ -110,7 +112,12 @@ export async function POST(request: Request) {
       .single();
 
     const amountCents = offerRow.amount_cents;
-    const applicationFeeCents = Math.round(amountCents * 0.1);
+    const settings = await getPlatformSettings();
+    const { percent, ponctuel, mensuel } = settings.commission;
+    const applyFee =
+      (offerRow.event_type === "ponctuel" && ponctuel) ||
+      (offerRow.event_type === "mensuel" && mensuel);
+    const applicationFeeCents = applyFee ? Math.round(amountCents * (percent / 100)) : 0;
 
     const sessionConfig: Stripe.Checkout.SessionCreateParams = {
       mode: "payment",

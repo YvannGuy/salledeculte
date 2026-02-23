@@ -6,6 +6,7 @@ import {
   CreditCard,
   ExternalLink,
   Lock,
+  Percent,
   RefreshCw,
   Settings,
   Shield,
@@ -110,6 +111,9 @@ export function ParametresClient({
     fd.append("pass_abonnement_enabled", formState.pass.abonnement_enabled ? "on" : "");
     fd.append("validation_manuelle", formState.validation.validation_manuelle ? "on" : "");
     fd.append("validation_mode", formState.validation.mode_publication);
+    fd.append("commission_percent", String(formState.commission.percent));
+    fd.append("commission_ponctuel", formState.commission.ponctuel ? "on" : "");
+    fd.append("commission_mensuel", formState.commission.mensuel ? "on" : "");
 
     const res = await savePlatformSettingsAction(fd);
     setPending(false);
@@ -317,6 +321,66 @@ export function ParametresClient({
                   />
                   <span className="text-sm">Publier automatiquement</span>
                 </label>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-base">
+              <Percent className="h-4 w-4 text-slate-500" />
+              Commission réservations
+            </CardTitle>
+            <p className="text-sm text-slate-500">
+              Commission plateforme sur les paiements Connect (ponctuel / mensuel)
+            </p>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div>
+              <label className="text-sm font-medium text-slate-700">Taux de commission (%)</label>
+              <Input
+                type="number"
+                min={0}
+                max={100}
+                step={0.5}
+                value={formState.commission.percent}
+                onChange={(e) =>
+                  setFormState((s) => ({
+                    ...s,
+                    commission: {
+                      ...s.commission,
+                      percent: Math.max(0, Math.min(100, parseFloat(e.target.value || "0") || 0)),
+                    },
+                  }))
+                }
+                className="mt-1 w-24"
+              />
+            </div>
+            <div className="space-y-3 pt-2">
+              <div className="flex items-center justify-between">
+                <span className="text-sm text-slate-700">Appliquer sur événement ponctuel</span>
+                <Toggle
+                  checked={formState.commission.ponctuel}
+                  onChange={(v) =>
+                    setFormState((s) => ({
+                      ...s,
+                      commission: { ...s.commission, ponctuel: v },
+                    }))
+                  }
+                />
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-sm text-slate-700">Appliquer sur événement mensuel</span>
+                <Toggle
+                  checked={formState.commission.mensuel}
+                  onChange={(v) =>
+                    setFormState((s) => ({
+                      ...s,
+                      commission: { ...s.commission, mensuel: v },
+                    }))
+                  }
+                />
               </div>
             </div>
           </CardContent>
