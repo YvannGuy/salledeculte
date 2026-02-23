@@ -4,6 +4,8 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 import { randomUUID } from "crypto";
 
+import { sendNewMessageNotification } from "@/lib/email";
+
 const BUCKET_MESSAGE_ATTACHMENTS = "message-attachments";
 const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10 MB
 const ALLOWED_MIME_TYPES = [
@@ -115,6 +117,10 @@ export async function sendMessage(
     })
     .eq("id", conversationId);
 
+  sendNewMessageNotificationEmail(conversationId, user.id, preview).catch(
+    (e) => console.error("[messagerie] notification email:", e)
+  );
+
   return { success: true };
 }
 
@@ -220,7 +226,57 @@ export async function sendMessageWithAttachments(formData: FormData): Promise<{
     })
     .eq("id", conversationId);
 
+  sendNewMessageNotificationEmail(conversationId, user.id, preview).catch(
+    (e) => console.error("[messagerie] notification email:", e)
+  );
+
   return { success: true };
+}
+
+async function sendNewMessageNotificationEmail(
+  conversationId: string,
+  senderId: string,
+  preview: string
+) {
+  const supabase = await createClient();
+  const admin = createAdminClient();
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
+
+  const { data: conv } = await supabase
+    .from("conversations")
+    .select("seeker_id, owner_id, demande_id")
+    .eq("id", conversationId)
+    .single();
+  if (!conv) return;
+  const recipientId =
+    conv.seeker_id === senderId ? conv.owner_id : conv.seeker_id;
+  const isRecipientSeeker = conv.seeker_id === recipientId;
+  const demandeId = (conv as { demande_id?: string }).demande_id;
+  const messagerieBase = isRecipientSeeker
+    ? `${siteUrl}/dashboard/messagerie`
+    : `${siteUrl}/proprietaire/messagerie`;
+  const messagerieUrl = demandeId
+    ? `${messagerieBase}?demandeId=${demandeId}`
+    : messagerieBase;
+
+  const { data: senderProfile } = await supabase
+    .from("profiles")
+    .select("full_name")
+    .eq("id", senderId)
+    .maybeSingle();
+  const senderName =
+    (senderProfile as { full_name?: string } | null)?.full_name || "Un membre";
+
+  const { data: recipientUser } = await admin.auth.admin.getUserById(recipientId);
+  const recipientEmail = recipientUser?.user?.email;
+  if (!recipientEmail) return;
+
+  await sendNewMessageNotification(
+    recipientEmail,
+    senderName,
+    preview,
+    messagerieUrl
+  );
 }
 
 export async function getAttachmentSignedUrl(storagePath: string): Promise<string | null> {

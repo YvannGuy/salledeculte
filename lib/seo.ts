@@ -15,7 +15,7 @@ const defaultOgImage = `${baseUrl}/og-image.png`;
 export const defaultMetadata: Metadata = {
   metadataBase: new URL(baseUrl),
   title: {
-    default: `${siteName} - Salledeculte.com`,
+    default: `${siteName} - Trouvez et réservez une salle pour vos événements cultuels`,
     template: `%s | ${siteName}`,
   },
   description:
@@ -57,12 +57,13 @@ export const defaultMetadata: Metadata = {
   // Note: alternates.canonical doit être défini par page (generateMetadata) pour éviter le contenu dupliqué
   icons: {
     icon: [
-      { url: "/favicon/icon0.svg", sizes: "any", type: "image/svg+xml" },
-      { url: "/favicon/favicon.ico", sizes: "48x48", type: "image/x-icon" },
+      { url: "/favicon/favicon.ico", sizes: "any", type: "image/x-icon" },
+      { url: "/favicon/favicon-16x16.png", sizes: "16x16", type: "image/png" },
+      { url: "/favicon/favicon-32x32.png", sizes: "32x32", type: "image/png" },
     ],
-    apple: "/favicon/apple-icon.png",
+    apple: "/favicon/apple-touch-icon.png",
   },
-  manifest: "/favicon/manifest.json",
+  manifest: "/favicon/site.webmanifest",
 };
 
 /** Construit les alternates.canonical pour une URL de page */

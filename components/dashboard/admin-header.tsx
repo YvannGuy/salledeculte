@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect, useLayoutEffect } from "react";
 import Link from "next/link";
-import { Bell, Building2, ChevronDown, CreditCard, LogOut, Settings, Trash2, User, Users, X } from "lucide-react";
+import { ArrowLeft, Bell, Building2, ChevronDown, CreditCard, LogOut, Settings, Trash2, User, Users, X } from "lucide-react";
 
 import { signOutAdminAction } from "@/app/actions/auth-admin";
 import { formatDistanceToNow } from "date-fns";
@@ -90,6 +90,13 @@ export function AdminHeader({ title, subtitle, pendingCount = 0, notifications =
   return (
     <header className="flex items-center justify-between border-b border-slate-200 bg-white px-4 py-4 pl-16 lg:pl-6">
       <div>
+        <Link
+          href="/"
+          className="mb-1 inline-flex items-center gap-1.5 text-sm font-medium text-slate-600 transition hover:text-[#213398]"
+        >
+          <ArrowLeft className="h-4 w-4" />
+          Retour vers le site
+        </Link>
         <h1 className="text-xl font-bold text-black">{title ?? "Dashboard Admin"}</h1>
         <p className="text-sm text-slate-600">
           {subtitle ?? "Vue d'ensemble de votre plateforme"}

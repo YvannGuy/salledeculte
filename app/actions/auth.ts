@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
 import type { EffectiveUserType } from "@/lib/auth-utils";
+import { sendWelcomeOwnerEmail, sendWelcomeSeekerEmail } from "@/lib/email";
 import { getDashboardHref, getEffectiveUserType } from "@/lib/auth-utils";
 import { createClient } from "@/lib/supabase/server";
 
@@ -97,10 +98,16 @@ export async function signupAction(_: AuthFormState, formData: FormData): Promis
   const hasSession = !!data.session;
 
   if (hasSession && userType === "owner" && !redirectedFrom) {
+    sendWelcomeOwnerEmail(email, fullName).catch((e) =>
+      console.error("[auth] welcome owner email:", e)
+    );
     return { success: "Compte créé.", redirectTo: "/onboarding/salle" };
   }
 
   if (hasSession && userType === "seeker") {
+    sendWelcomeSeekerEmail(email, fullName).catch((e) =>
+      console.error("[auth] welcome seeker email:", e)
+    );
     return {
       success: "Compte créé.",
       redirectTo: redirectedFrom && redirectedFrom.startsWith("/") ? redirectedFrom : "/dashboard",
@@ -108,6 +115,9 @@ export async function signupAction(_: AuthFormState, formData: FormData): Promis
   }
 
   if (hasSession && userType === "owner" && redirectedFrom) {
+    sendWelcomeOwnerEmail(email, fullName).catch((e) =>
+      console.error("[auth] welcome owner email:", e)
+    );
     return {
       success: "Compte créé.",
       redirectTo: resolveRedirectForUser(redirectedFrom, "owner"),

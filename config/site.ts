@@ -12,6 +12,8 @@ export const siteConfig = {
   name: "salledeculte.com",
   description: "Trouvez et réservez une salle adaptée à vos événements cultuels en Île-de-France.",
   url: process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000",
+  instagram: "https://www.instagram.com/salledeculte/",
+  facebook: "#",
 };
 
 export const pricingPlans: PricingPlan[] = [

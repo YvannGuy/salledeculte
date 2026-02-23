@@ -12,7 +12,7 @@ export function SiteFooter() {
         <div className="grid gap-8 md:grid-cols-4 md:items-start">
           <div>
             <Link href="/" className="flex items-center text-xl font-semibold leading-none text-white hover:text-white">
-              <Image src="/loheadb.png" alt="" width={60} height={60} className="h-[60px] w-[60px] shrink-0 object-contain -mr-3" />
+              <Image src="/logosdcbl.png" alt="" width={60} height={60} className="h-[60px] w-[60px] shrink-0 object-contain -mr-3" />
               {siteConfig.name}
             </Link>
             <p className="mt-3 max-w-[240px] text-[12px] leading-[1.6] text-slate-300">
@@ -97,15 +97,24 @@ export function SiteFooter() {
         <div className="mt-6 flex flex-col items-center justify-between gap-4 md:flex-row">
           <p className="text-[13px] text-slate-300">© 2025 {siteConfig.name}. Tous droits réservés.</p>
           <div className="flex items-center gap-3">
-            {[Facebook, Instagram].map((Icon, index) => (
-              <a
-                key={index}
-                href="#"
-                className="flex h-8 w-8 items-center justify-center rounded-full bg-white/10 text-slate-200 hover:bg-white/20"
-              >
-                <Icon className="h-4 w-4" />
-              </a>
-            ))}
+            <a
+              href={siteConfig.facebook}
+              target="_blank"
+              rel="noopener noreferrer"
+              aria-label="Facebook"
+              className="flex h-8 w-8 items-center justify-center rounded-full bg-white/10 text-slate-200 hover:bg-white/20"
+            >
+              <Facebook className="h-4 w-4" />
+            </a>
+            <a
+              href={siteConfig.instagram}
+              target="_blank"
+              rel="noopener noreferrer"
+              aria-label="Instagram"
+              className="flex h-8 w-8 items-center justify-center rounded-full bg-white/10 text-slate-200 hover:bg-white/20"
+            >
+              <Instagram className="h-4 w-4" />
+            </a>
           </div>
         </div>
       </div>

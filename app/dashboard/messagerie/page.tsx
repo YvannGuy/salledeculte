@@ -17,7 +17,7 @@ function formatTime(t: string | null): string {
 export default async function MessageriePage({
   searchParams,
 }: {
-  searchParams: Promise<{ page?: string }>;
+  searchParams: Promise<{ page?: string; demandeId?: string }>;
 }) {
   const supabase = await createClient();
   const {
@@ -200,17 +200,26 @@ export default async function MessageriePage({
     return String(bTime).localeCompare(String(aTime));
   });
 
-  const pageParam = (await searchParams).page;
+  const params = await searchParams;
+  const pageParam = params.page;
+  const demandeIdParam = params.demandeId ?? undefined;
   const page = Math.max(1, parseInt(String(pageParam || "1"), 10) || 1);
   const totalPages = Math.ceil(threads.length / PAGE_SIZE) || 1;
   const currentPage = Math.min(page, totalPages);
   const from = (currentPage - 1) * PAGE_SIZE;
-  const paginatedThreads = threads.slice(from, from + PAGE_SIZE);
+  let paginatedThreads = threads.slice(from, from + PAGE_SIZE);
+  if (demandeIdParam) {
+    const targetThread = threads.find((t) => t.demandeId === demandeIdParam);
+    if (targetThread && !paginatedThreads.some((t) => t.demandeId === demandeIdParam)) {
+      paginatedThreads = [targetThread, ...paginatedThreads];
+    }
+  }
 
   return (
     <div className="flex h-full min-h-0 flex-1 flex-col overflow-hidden">
       <MessagerieClient
         threads={paginatedThreads}
+        initialDemandeId={demandeIdParam}
         currentUserId={user.id}
         currentUserFullName={(profile as { full_name?: string } | null)?.full_name ?? user.user_metadata?.full_name}
         userType="seeker"
