@@ -13,6 +13,11 @@ const nextConfig = {
   turbopack: {
     root: __dirname,
   },
+  async redirects() {
+    return [
+      { source: "/coming-soon", destination: "/", permanent: true },
+    ];
+  },
   images: {
     remotePatterns: [
       {
