@@ -22,6 +22,7 @@ import {
 import { signOutAction } from "@/app/actions/auth";
 import { siteConfig } from "@/config/site";
 import { cn } from "@/lib/utils";
+import { SwitchToSeekerView } from "@/components/dashboard/dashboard-view-switch";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 
@@ -43,6 +44,7 @@ function NavContent({
   messageCount,
   collapsed = false,
   onItemClick,
+  canAccessSeeker = false,
 }: {
   pathname: string;
   displayName: string;
@@ -51,6 +53,7 @@ function NavContent({
   messageCount: number;
   collapsed?: boolean;
   onItemClick?: () => void;
+  canAccessSeeker?: boolean;
 }) {
   return (
     <>
@@ -68,6 +71,7 @@ function NavContent({
           <ArrowLeft className="h-5 w-5 shrink-0" />
           {!collapsed && <span className="flex-1 truncate">Revenir à l&apos;accueil</span>}
         </Link>
+        {canAccessSeeker && <SwitchToSeekerView collapsed={collapsed} />}
         <div className="my-2 border-t border-slate-100" />
         {navItems.map((item) => {
           const isActive = pathname === item.href;
@@ -164,10 +168,12 @@ export function OwnerSidebar({
   user,
   demandeCount = 0,
   messageCount = 0,
+  canAccessSeeker = false,
 }: {
   user: { email?: string | null; displayName?: string };
   demandeCount?: number;
   messageCount?: number;
+  canAccessSeeker?: boolean;
 }) {
   const pathname = usePathname();
   const [collapsed, setCollapsed] = useState(false);
@@ -211,6 +217,7 @@ export function OwnerSidebar({
             demandeCount={demandeCount}
             messageCount={messageCount}
             onItemClick={() => setMobileOpen(false)}
+            canAccessSeeker={canAccessSeeker}
           />
         </SheetContent>
       </Sheet>
@@ -249,6 +256,7 @@ export function OwnerSidebar({
           demandeCount={demandeCount}
           messageCount={messageCount}
           collapsed={collapsed}
+          canAccessSeeker={canAccessSeeker}
         />
       </aside>
     </>

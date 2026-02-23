@@ -2,13 +2,13 @@ import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 
 import { OwnerSidebar } from "@/components/dashboard/owner-sidebar";
+import { canAccessOwnerDashboard, getEffectiveUserType } from "@/lib/auth-utils";
+import { getUserOrNull } from "@/lib/supabase/server";
 
 export const metadata: Metadata = {
   title: "Espace propriétaire",
   robots: { index: false, follow: false },
 };
-import { getEffectiveUserType } from "@/lib/auth-utils";
-import { getUserOrNull } from "@/lib/supabase/server";
 
 export default async function ProprietaireLayout({
   children,
@@ -41,7 +41,14 @@ export default async function ProprietaireLayout({
   };
   const userType = await getEffectiveUserType(user, getProfile);
   if (userType === "admin") redirect("/admin");
-  if (userType === "seeker") redirect("/dashboard");
+
+  const { data: mySalles } = await supabase
+    .from("salles")
+    .select("id")
+    .eq("owner_id", user.id);
+  const hasSalles = (mySalles ?? []).length > 0;
+  const canAccessOwner = canAccessOwnerDashboard(userType, hasSalles);
+  if (!canAccessOwner) redirect("/dashboard");
 
   const { data: profile } = await supabase
     .from("profiles")
@@ -50,11 +57,6 @@ export default async function ProprietaireLayout({
     .maybeSingle();
 
   const displayName = profile?.full_name ?? user.user_metadata?.full_name ?? "Utilisateur";
-
-  const { data: mySalles } = await supabase
-    .from("salles")
-    .select("id")
-    .eq("owner_id", user.id);
   const salleIds = (mySalles ?? []).map((s) => s.id);
   const [{ count: demandeCount }, { data: demandesForMessagerie }] = await Promise.all([
     salleIds.length > 0
@@ -96,6 +98,7 @@ export default async function ProprietaireLayout({
         user={{ ...user, displayName }}
         demandeCount={demandeCount ?? 0}
         messageCount={messageCount}
+        canAccessSeeker={true}
       />
       <main className="flex-1 overflow-auto">{children}</main>
     </div>

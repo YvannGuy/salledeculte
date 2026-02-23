@@ -3,12 +3,13 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
-import { ArrowLeft, ChevronLeft, ChevronRight, CreditCard, FileText, Heart, Home, LogOut, Menu, MessageCircle, Search, Settings, User } from "lucide-react";
+import { ArrowLeft, Building2, ChevronLeft, ChevronRight, CreditCard, FileText, Heart, Home, LogOut, Menu, MessageCircle, Search, Settings, User } from "lucide-react";
 
 import { signOutAction } from "@/app/actions/auth";
 import { siteConfig } from "@/config/site";
 import { cn } from "@/lib/utils";
 import { SearchModal } from "@/components/search/search-modal";
+import { SwitchToOwnerView } from "@/components/dashboard/dashboard-view-switch";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 
@@ -32,6 +33,7 @@ function NavContent({
   onItemClick,
   searchModalOpen,
   setSearchModalOpen,
+  canAccessOwner = false,
 }: {
   pathname: string;
   displayName: string;
@@ -42,6 +44,7 @@ function NavContent({
   onItemClick?: () => void;
   searchModalOpen?: boolean;
   setSearchModalOpen?: (open: boolean) => void;
+  canAccessOwner?: boolean;
 }) {
   return (
     <>
@@ -59,6 +62,22 @@ function NavContent({
           <ArrowLeft className="h-5 w-5 shrink-0" />
           {!collapsed && <span className="flex-1 truncate">Revenir à l&apos;accueil</span>}
         </Link>
+        {canAccessOwner && <SwitchToOwnerView collapsed={collapsed} />}
+        {!canAccessOwner && (
+          <Link
+            href="/onboarding/salle"
+            onClick={onItemClick}
+            className={cn(
+              "relative flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left text-sm font-medium transition-colors",
+              collapsed ? "justify-center px-2" : "",
+              "text-slate-600 hover:bg-slate-100 hover:text-black"
+            )}
+            title={collapsed ? "Proposer une salle" : undefined}
+          >
+            <Building2 className="h-5 w-5 shrink-0" />
+            {!collapsed && <span className="flex-1 truncate">Proposer une salle</span>}
+          </Link>
+        )}
         <div className="my-2 border-t border-slate-100" />
         {navItems.map((item) => {
           const isActive = pathname === item.href && !(item as { opensSearchModal?: boolean }).opensSearchModal;
@@ -156,10 +175,12 @@ export function DashboardSidebar({
   user,
   demandeCount = 0,
   messageCount = 0,
+  canAccessOwner = false,
 }: {
   user: { email?: string | null; displayName?: string };
   demandeCount?: number;
   messageCount?: number;
+  canAccessOwner?: boolean;
 }) {
   const pathname = usePathname();
   const [collapsed, setCollapsed] = useState(false);
@@ -209,6 +230,7 @@ export function DashboardSidebar({
               setSearchModalOpen(open);
               if (!open) setMobileOpen(false);
             }}
+            canAccessOwner={canAccessOwner}
           />
         </SheetContent>
       </Sheet>
@@ -251,6 +273,7 @@ export function DashboardSidebar({
           collapsed={collapsed}
           searchModalOpen={searchModalOpen}
           setSearchModalOpen={setSearchModalOpen}
+          canAccessOwner={canAccessOwner}
         />
       </aside>
     </>

@@ -2,17 +2,13 @@
 
 import { useMemo, useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import {
   AlertCircle,
-  Ban,
-  BatteryPlus,
   Check,
   Clock,
   CreditCard,
   Eye,
   ExternalLink,
-  Gift,
   RotateCcw,
   Search,
   XCircle,
@@ -20,11 +16,8 @@ import {
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { ClientPagination } from "@/components/ui/pagination";
 import { Input } from "@/components/ui/input";
 import { PaymentDetailModal } from "./payment-detail-modal";
-import { revokeTrialForUser, rechargeTrialForUser } from "@/app/actions/admin-trial";
-import type { TrialStats } from "@/lib/admin-trial-stats";
 
 type Transaction = {
   id: string;
@@ -48,7 +41,6 @@ type Props = {
     failed: number;
     conversionRate: number;
   };
-  trialStats: TrialStats;
 };
 
 function formatProduct(type: string) {
@@ -83,81 +75,6 @@ function formatStatus(status: string) {
   }
 }
 
-type TrialUser = TrialStats["usersWithClicksLeft"][number];
-
-function TrialUserRow({ user }: { user: TrialUser }) {
-  const router = useRouter();
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
-  const handleRevoke = async () => {
-    if (loading || !confirm("Révoquer le pass gratuit pour cet utilisateur ?")) return;
-    setLoading(true);
-    setError(null);
-    const res = await revokeTrialForUser(user.id);
-    setLoading(false);
-    if (res.success) router.refresh();
-    else setError(res.error);
-  };
-
-  const handleRecharge = async (credits: number) => {
-    if (loading) return;
-    setLoading(true);
-    setError(null);
-    const res = await rechargeTrialForUser(user.id, credits);
-    setLoading(false);
-    if (res.success) router.refresh();
-    else setError(res.error);
-  };
-
-  return (
-    <tr className="border-b border-slate-100 hover:bg-slate-50">
-      <td className="px-3 py-2">
-        <Link
-          href={`/admin/utilisateurs?userId=${user.id}`}
-          className="font-medium text-blue-600 hover:underline"
-        >
-          {user.full_name || user.email || "—"}
-        </Link>
-      </td>
-      <td className="px-3 py-2">
-        {user.user_type === "seeker" ? "Organisateur" : user.user_type === "owner" ? "Propriétaire" : user.user_type ?? "—"}
-      </td>
-      <td className="px-3 py-2 text-right">{user.used}</td>
-      <td className="px-3 py-2 text-right">{user.total}</td>
-      <td className="px-3 py-2 text-right font-medium text-teal-600">{user.remaining}</td>
-      <td className="px-3 py-2">
-        <div className="flex flex-wrap items-center gap-1">
-          <Button
-            size="sm"
-            variant="outline"
-            className="h-7 gap-1 border-red-200 text-red-700 hover:bg-red-50"
-            onClick={handleRevoke}
-            disabled={loading}
-          >
-            <Ban className="h-3 w-3" />
-            Révoquer
-          </Button>
-          {[1, 2, 3].map((n) => (
-            <Button
-              key={n}
-              size="sm"
-              variant="outline"
-              className="h-7 gap-1 border-teal-200 text-teal-700 hover:bg-teal-50"
-              onClick={() => handleRecharge(n)}
-              disabled={loading}
-            >
-              <BatteryPlus className="h-3 w-3" />
-              +{n}
-            </Button>
-          ))}
-        </div>
-        {error && <p className="mt-1 text-xs text-red-600">{error}</p>}
-      </td>
-    </tr>
-  );
-}
-
 function formatDate(d: string) {
   return new Date(d).toLocaleDateString("fr-FR", {
     day: "2-digit",
@@ -166,16 +83,13 @@ function formatDate(d: string) {
   });
 }
 
-const TRIAL_USERS_PAGE_SIZE = 4;
-
-export function PaiementsClient({ transactions, stats, trialStats }: Props) {
+export function PaiementsClient({ transactions, stats }: Props) {
   const [search, setSearch] = useState("");
   const [productFilter, setProductFilter] = useState("all");
   const [statusFilter, setStatusFilter] = useState("all");
   const [periodFilter, setPeriodFilter] = useState("30");
   const [viewTransaction, setViewTransaction] = useState<Transaction | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
-  const [trialUsersPage, setTrialUsersPage] = useState(1);
 
   const filtered = useMemo(() => {
     const periodMs = parseInt(periodFilter, 10) * 24 * 60 * 60 * 1000;
@@ -212,11 +126,6 @@ export function PaiementsClient({ transactions, stats, trialStats }: Props) {
 
   const maxRevenue = Math.max(...revenueData, 1);
   const pieData = [
-    {
-      label: "Pass gratuit",
-      count: trialStats.totalUsersOnTrial ?? 0,
-      color: "bg-emerald-500",
-    },
     {
       label: "Pass 24h",
       count: filtered.filter((t) => t.product_type === "pass_24h" && (t.status === "paid" || t.status === "active")).length,
@@ -318,75 +227,6 @@ export function PaiementsClient({ transactions, stats, trialStats }: Props) {
         </CardContent>
       </Card>
 
-      <div className="mb-6 rounded-lg border border-teal-200 bg-teal-50/50 p-4">
-        <h3 className="mb-4 flex items-center gap-2 font-semibold text-teal-800">
-          <Gift className="h-5 w-5" />
-          Pass gratuit
-        </h3>
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          <Card>
-            <CardContent className="p-4">
-              <p className="text-xs font-medium text-slate-500">Utilisateurs en pass gratuit</p>
-              <p className="text-xl font-bold text-black">{trialStats.totalUsersOnTrial}</p>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="p-4">
-              <p className="text-xs font-medium text-slate-500">Organisateurs</p>
-              <p className="text-xl font-bold text-black">{trialStats.organisateursOnTrial}</p>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="p-4">
-              <p className="text-xs font-medium text-slate-500">Propriétaires</p>
-              <p className="text-xl font-bold text-black">{trialStats.proprietairesOnTrial}</p>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="p-4">
-              <p className="text-xs font-medium text-slate-500">Clics restants (total)</p>
-              <p className="text-xl font-bold text-black">{trialStats.totalClicksRemaining}</p>
-            </CardContent>
-          </Card>
-        </div>
-        {trialStats.usersWithClicksLeft.length > 0 && (
-          <div className="mt-4">
-            <p className="mb-2 text-sm font-medium text-slate-600">Détail par utilisateur</p>
-            <div className="overflow-x-auto rounded-md border border-slate-200 bg-white">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="border-b bg-slate-50 text-left text-xs font-medium text-slate-500">
-                    <th className="px-3 py-2">Utilisateur</th>
-                    <th className="px-3 py-2">Type</th>
-                    <th className="px-3 py-2 text-right">Utilisés</th>
-                    <th className="px-3 py-2 text-right">Total</th>
-                    <th className="px-3 py-2 text-right">Restants</th>
-                    <th className="px-3 py-2">Actions</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {trialStats.usersWithClicksLeft
-                    .slice(
-                      (trialUsersPage - 1) * TRIAL_USERS_PAGE_SIZE,
-                      (trialUsersPage - 1) * TRIAL_USERS_PAGE_SIZE + TRIAL_USERS_PAGE_SIZE
-                    )
-                    .map((u) => (
-                      <TrialUserRow key={u.id} user={u} />
-                    ))}
-                </tbody>
-              </table>
-            </div>
-            <ClientPagination
-              currentPage={trialUsersPage}
-              totalPages={Math.ceil(trialStats.usersWithClicksLeft.length / TRIAL_USERS_PAGE_SIZE) || 1}
-              totalItems={trialStats.usersWithClicksLeft.length}
-              pageSize={TRIAL_USERS_PAGE_SIZE}
-              onPageChange={setTrialUsersPage}
-            />
-          </div>
-        )}
-      </div>
-
       <div className="mb-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
         <Card>
           <CardContent className="p-4">
@@ -462,10 +302,9 @@ export function PaiementsClient({ transactions, stats, trialStats }: Props) {
                 className="h-24 w-24 flex-shrink-0 rounded-full"
                 style={{
                   background: `conic-gradient(
-                    #10b981 0deg ${pieTotal > 0 ? (pieData[0].count / pieTotal) * 360 : 0}deg,
-                    #3b82f6 ${pieTotal > 0 ? (pieData[0].count / pieTotal) * 360 : 0}deg ${pieTotal > 0 ? ((pieData[0].count + pieData[1].count) / pieTotal) * 360 : 0}deg,
-                    #8b5cf6 ${pieTotal > 0 ? ((pieData[0].count + pieData[1].count) / pieTotal) * 360 : 0}deg ${pieTotal > 0 ? ((pieData[0].count + pieData[1].count + pieData[2].count) / pieTotal) * 360 : 0}deg,
-                    #f59e0b ${pieTotal > 0 ? ((pieData[0].count + pieData[1].count + pieData[2].count) / pieTotal) * 360 : 0}deg 360deg
+                    #3b82f6 0deg ${pieTotal > 0 ? (pieData[0].count / pieTotal) * 360 : 0}deg,
+                    #8b5cf6 ${pieTotal > 0 ? (pieData[0].count / pieTotal) * 360 : 0}deg ${pieTotal > 0 ? ((pieData[0].count + pieData[1].count) / pieTotal) * 360 : 0}deg,
+                    #f59e0b ${pieTotal > 0 ? ((pieData[0].count + pieData[1].count) / pieTotal) * 360 : 0}deg 360deg
                   )`,
                 }}
               />

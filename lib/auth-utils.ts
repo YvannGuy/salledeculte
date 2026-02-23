@@ -45,3 +45,16 @@ export function getDashboardHref(type: EffectiveUserType): string {
       return "/dashboard";
   }
 }
+
+/**
+ * L'utilisateur peut accéder à l'espace propriétaire si :
+ * - user_type = 'owner' OU
+ * - il possède au moins une salle (owner_id)
+ */
+export function canAccessOwnerDashboard(
+  userType: EffectiveUserType | null,
+  hasSalles: boolean
+): boolean {
+  if (!userType || userType === "admin") return false;
+  return userType === "owner" || hasSalles;
+}

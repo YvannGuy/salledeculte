@@ -1,14 +1,15 @@
 import type { Metadata } from "next";
+import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 
 import { DashboardSidebar } from "@/components/dashboard/dashboard-sidebar";
+import { canAccessOwnerDashboard, getEffectiveUserType } from "@/lib/auth-utils";
+import { getUserOrNull } from "@/lib/supabase/server";
 
 export const metadata: Metadata = {
   title: "Tableau de bord",
   robots: { index: false, follow: false },
 };
-import { getEffectiveUserType } from "@/lib/auth-utils";
-import { getUserOrNull } from "@/lib/supabase/server";
 
 export default async function DashboardLayout({
   children,
@@ -41,7 +42,21 @@ export default async function DashboardLayout({
   };
   const userType = await getEffectiveUserType(user, getProfile);
   if (userType === "admin") redirect("/admin");
-  if (userType === "owner") redirect("/proprietaire");
+
+  const { data: mySalles } = await supabase
+    .from("salles")
+    .select("id")
+    .eq("owner_id", user.id);
+  const hasSalles = (mySalles ?? []).length > 0;
+  const canAccessOwner = canAccessOwnerDashboard(userType, hasSalles);
+
+  if (userType === "owner") {
+    const cookieStore = await cookies();
+    const dashboardView = cookieStore.get("dashboard_view")?.value;
+    if (dashboardView !== "seeker") {
+      redirect("/proprietaire");
+    }
+  }
 
   const displayName = (profile as { full_name?: string | null } | null)?.full_name ?? user.user_metadata?.full_name ?? "Utilisateur";
 
@@ -79,6 +94,7 @@ export default async function DashboardLayout({
         user={{ ...user, displayName }}
         demandeCount={demandeCount ?? 0}
         messageCount={messageCount}
+        canAccessOwner={canAccessOwner}
       />
       <main className="flex-1 overflow-auto">{children}</main>
     </div>
