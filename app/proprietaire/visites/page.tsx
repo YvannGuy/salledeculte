@@ -197,6 +197,9 @@ export default async function VisitesPage({
             id: s.id,
             name: s.name,
             city: s.city ?? null,
+            horaires_par_jour:
+              (s as { horaires_par_jour?: Record<string, { debut: string; fin: string }> | null }).horaires_par_jour ??
+              null,
             jours_visite: (s as { jours_visite?: string[] | null }).jours_visite ?? null,
             visite_dates: (s as { visite_dates?: string[] | null }).visite_dates ?? null,
             visite_heure_debut: (s as { visite_heure_debut?: string | null }).visite_heure_debut ?? null,

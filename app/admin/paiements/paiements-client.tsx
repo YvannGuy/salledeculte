@@ -26,6 +26,7 @@ type Transaction = {
   user_id: string;
   user_name: string | null;
   user_email: string;
+  offer_id: string | null;
   product_type: string;
   amount: number;
   status: string;

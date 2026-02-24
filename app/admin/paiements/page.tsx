@@ -9,6 +9,7 @@ type TransactionRow = {
   user_id: string;
   user_name: string | null;
   user_email: string;
+  offer_id: string | null;
   product_type: string;
   amount: number;
   status: string;
@@ -39,7 +40,7 @@ export default async function AdminPaiementsPage({
   const [{ data: payments }, { data: profiles }, { data: depositClaims }] = await Promise.all([
     supabase
       .from("payments")
-      .select("id, user_id, amount, product_type, status, stripe_session_id, created_at")
+      .select("id, user_id, offer_id, amount, product_type, status, stripe_session_id, created_at")
       .order("created_at", { ascending: false })
       .limit(500),
     supabase.from("profiles").select("id, email, full_name").limit(500),
@@ -64,6 +65,7 @@ export default async function AdminPaiementsPage({
       user_id: p.user_id,
       user_name: profile?.full_name ?? null,
       user_email: profile?.email ?? "",
+      offer_id: p.offer_id ?? null,
       product_type: p.product_type ?? "autre",
       amount: p.amount ?? 0,
       status: p.status ?? "pending",

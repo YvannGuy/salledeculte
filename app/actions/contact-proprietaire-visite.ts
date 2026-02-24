@@ -3,7 +3,7 @@
 import { redirect } from "next/navigation";
 import { getOrCreateConversationForVisite } from "./messagerie";
 
-const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
+const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "https://salledeculte.com";
 
 /** Crée ou ouvre la conversation pour une demande de visite, puis redirige vers la messagerie */
 export async function contactProprietaireVisiteAction(demandeVisiteId: string) {

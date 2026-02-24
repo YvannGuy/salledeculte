@@ -325,7 +325,7 @@ async function sendNewMessageNotificationEmail(
 ) {
   const supabase = await createClient();
   const admin = createAdminClient();
-  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "https://salledeculte.com";
 
   const { data: conv } = await supabase
     .from("conversations")

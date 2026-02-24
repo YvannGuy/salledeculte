@@ -18,7 +18,7 @@ export default function CGUPage() {
     <LegalPageLayout title="Conditions générales d'utilisation (CGU)">
       <p className="lead text-[16px] text-slate-600">
         Les présentes Conditions Générales d&apos;Utilisation (ci-après « CGU ») régissent l&apos;accès et
-        l&apos;utilisation de la plateforme {siteConfig.name}, éditée par {editeur.nom}. En accédant au site et en
+        l&apos;utilisation de la plateforme {siteConfig.name}, éditée par salledeculte.com. En accédant au site et en
         l&apos;utilisant, vous acceptez sans réserve les présentes CGU.
       </p>
 
@@ -35,12 +35,12 @@ export default function CGUPage() {
         <h2 className="text-xl font-semibold text-black">Article 2 – Définitions</h2>
         <ul className="mt-3 space-y-2 text-slate-600">
           <li>
-            <strong className="text-black">Plateforme</strong> : le site {siteConfig.url} et l&apos;ensemble des
+            <strong className="text-black">Plateforme</strong> : le site salledeculte.com et l&apos;ensemble des
             services proposés.
           </li>
           <li>
             <strong className="text-black">Organisateur</strong> : toute personne physique ou morale recherchant une
-            salle pour organiser un événement à caractère cultuel.
+            salle pour organiser un événement à caractère cultuel et pour baptêmes, célébrations, retraites, concerts.
           </li>
           <li>
             <strong className="text-black">Propriétaire</strong> : toute personne physique ou morale mettant en location
@@ -64,7 +64,7 @@ export default function CGUPage() {
           cas de désaccord, vous ne devez pas utiliser la plateforme.
         </p>
         <p className="mt-3 text-slate-600">
-          {editeur.nom} se réserve le droit de modifier les CGU à tout moment. Les utilisateurs seront informés des
+          salledeculte.com se réserve le droit de modifier les CGU à tout moment. Les utilisateurs seront informés des
           modifications par tout moyen approprié. L&apos;utilisation de la plateforme après modification vaut acceptation
           des nouvelles CGU.
         </p>
@@ -85,7 +85,7 @@ export default function CGUPage() {
           <li>La gestion des annonces pour les propriétaires</li>
         </ul>
         <p className="mt-3 text-slate-600">
-          {editeur.nom} opère une place de marché et met à disposition des outils techniques. Les conditions financières
+          salledeculte.com opère une place de marché et met à disposition des outils techniques. Les conditions financières
           détaillées applicables aux transactions sont définies dans les{" "}
           <a href="/cgv" className="text-[#213398] hover:underline">
             CGV
@@ -132,7 +132,7 @@ export default function CGUPage() {
       <section className="mt-10">
         <h2 className="text-xl font-semibold text-black">Article 7 – Modération et conformité des annonces</h2>
         <p className="mt-3 text-slate-600">
-          {editeur.nom} peut contrôler, suspendre, refuser ou retirer toute annonce non conforme aux présentes CGU, à la
+          salledeculte.com peut contrôler, suspendre, refuser ou retirer toute annonce non conforme aux présentes CGU, à la
           loi, ou à la ligne éditoriale de la plateforme.
         </p>
         <p className="mt-3 text-slate-600">
@@ -145,12 +145,12 @@ export default function CGUPage() {
         <h2 className="text-xl font-semibold text-black">Article 8 – Propriété intellectuelle</h2>
         <p className="mt-3 text-slate-600">
           La plateforme, sa structure, son design, son contenu (sauf contributions des utilisateurs) et les marques
-          associées sont la propriété exclusive de {editeur.nom}. Toute reproduction, exploitation ou utilisation non
+          associées sont la propriété exclusive de salledeculte.com. Toute reproduction, exploitation ou utilisation non
           autorisée constitue une contrefaçon passible de poursuites.
         </p>
         <p className="mt-3 text-slate-600">
           Les utilisateurs conservent la propriété de leurs contributions (photos, textes d&apos;annonces). Ils
-          accordent à {editeur.nom} une licence non exclusive pour les afficher et les utiliser dans le cadre du
+          accordent à salledeculte.com une licence non exclusive pour les afficher et les utiliser dans le cadre du
           service.
         </p>
       </section>
@@ -158,12 +158,12 @@ export default function CGUPage() {
       <section className="mt-10">
         <h2 className="text-xl font-semibold text-black">Article 9 – Responsabilité</h2>
         <p className="mt-3 text-slate-600">
-          {editeur.nom} s&apos;efforce d&apos;assurer le fonctionnement continu de la plateforme mais ne peut garantir
-          une disponibilité ininterrompue. La responsabilité de {editeur.nom} est limitée au préjudice direct et
+          salledeculte.com s&apos;efforce d&apos;assurer le fonctionnement continu de la plateforme mais ne peut garantir
+          une disponibilité ininterrompue. La responsabilité de salledeculte.com est limitée au préjudice direct et
           prévisible résultant d&apos;un manquement à ses obligations.
         </p>
         <p className="mt-3 text-slate-600">
-          {editeur.nom} n&apos;est pas responsable du contenu des annonces, de la conformité du bien loué, ni de
+          salledeculte.com n&apos;est pas responsable du contenu des annonces, de la conformité du bien loué, ni de
           l&apos;exécution matérielle de la location entre utilisateurs. Les litiges liés à l&apos;usage de la salle
           demeurent en premier lieu de la responsabilité des parties concernées.
         </p>
@@ -183,7 +183,7 @@ export default function CGUPage() {
       <section className="mt-10">
         <h2 className="text-xl font-semibold text-black">Article 11 – Résiliation et suspension</h2>
         <p className="mt-3 text-slate-600">
-          L&apos;utilisateur peut fermer son compte à tout moment depuis les paramètres. {editeur.nom} peut suspendre ou
+          L&apos;utilisateur peut fermer son compte à tout moment depuis les paramètres. salledeculte.com peut suspendre ou
           résilier un compte en cas de manquement aux présentes CGU, sans indemnité.
         </p>
       </section>

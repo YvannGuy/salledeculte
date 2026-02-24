@@ -13,7 +13,7 @@ import {
   sendVisiteRescheduleNotification,
 } from "@/lib/email";
 
-const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
+const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "https://salledeculte.com";
 
 function formatTime(t: string | null): string {
   if (!t) return "";

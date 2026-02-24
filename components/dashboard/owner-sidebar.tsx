@@ -6,6 +6,7 @@ import { useState } from "react";
 import {
   ArrowLeft,
   Building2,
+  Camera,
   ChevronLeft,
   ChevronRight,
   CreditCard,
@@ -31,8 +32,10 @@ const navItems = [
   { href: "/proprietaire", label: "Tableau de bord", icon: Home },
   { href: "/proprietaire/annonces", label: "Mes annonces", icon: Building2 },
   { href: "/proprietaire/visites", label: "Mes visites", icon: Calendar, badgeKey: "visites" },
+  { href: "/proprietaire/reservations", label: "Réservations", icon: FileText, badgeKey: "paiement" },
   { href: "/proprietaire/messagerie", label: "Messagerie", icon: MessageCircle, badgeKey: "messagerie" },
   { href: "/proprietaire/paiement", label: "Paiement", icon: CreditCard, badgeKey: "paiement" },
+  { href: "/proprietaire/etats-des-lieux", label: "États des lieux", icon: Camera },
   { href: "/proprietaire/cautions", label: "Cautions", icon: FolderOpen },
   { href: "/proprietaire/contrat", label: "Contrat & facture", icon: FileText, badgeKey: "contrat" },
   { href: "/proprietaire/parametres", label: "Paramètres", icon: Settings },

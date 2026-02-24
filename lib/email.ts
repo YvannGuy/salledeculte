@@ -3,7 +3,7 @@ import { Resend } from "resend";
 const resend = new Resend(process.env.RESEND_API_KEY);
 const from =
   process.env.RESEND_FROM_EMAIL ?? "salledeculte.com <onboarding@resend.dev>";
-const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
+const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "https://salledeculte.com";
 
 export async function sendWelcomeSeekerEmail(to: string, fullName: string) {
   if (!process.env.RESEND_API_KEY) {

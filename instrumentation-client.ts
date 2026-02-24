@@ -1,7 +1,7 @@
 const useSentry =
   process.env.NODE_ENV === "production" && process.env.NEXT_PUBLIC_SENTRY_DSN;
 
-let onRouterTransitionStart = () => {};
+let onRouterTransitionStart: (href: string, navigationType: string) => void = () => {};
 
 if (useSentry) {
   const Sentry = await import("@sentry/nextjs");

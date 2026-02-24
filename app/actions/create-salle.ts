@@ -225,7 +225,7 @@ export async function createSalleFromOnboarding(formData: FormData): Promise<Cre
       .map((e) => e.trim().toLowerCase())
       .filter(Boolean);
     if (adminEmails.length > 0) {
-      const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
+      const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "https://salledeculte.com";
       const validationUrl = `${siteUrl}/admin/annonces-a-valider`;
       sendNewSallePendingAdminNotification(
         adminEmails,

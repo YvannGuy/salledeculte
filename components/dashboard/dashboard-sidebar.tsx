@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
-import { ArrowLeft, Building2, ChevronLeft, ChevronRight, CreditCard, FileText, Heart, Home, LogOut, Menu, MessageCircle, Search, Settings, User } from "lucide-react";
+import { ArrowLeft, Building2, Camera, ChevronLeft, ChevronRight, CreditCard, FileText, Heart, Home, LogOut, Menu, MessageCircle, Search, Settings, User } from "lucide-react";
 
 import { signOutAction } from "@/app/actions/auth";
 import { siteConfig } from "@/config/site";
@@ -17,7 +17,9 @@ const navItems = [
   { href: "/dashboard", label: "Tableau de bord", icon: Home },
   { href: "/dashboard/rechercher", label: "Rechercher une salle", icon: Search, opensSearchModal: true },
   { href: "/dashboard/demandes", label: "Mes visites", icon: FileText, badgeKey: "demandes" },
+  { href: "/dashboard/reservations", label: "Réservations", icon: FileText, badgeKey: "paiement" },
   { href: "/dashboard/paiement", label: "Paiement", icon: CreditCard, badgeKey: "paiement" },
+  { href: "/dashboard/etats-des-lieux", label: "États des lieux", icon: Camera },
   { href: "/dashboard/messagerie", label: "Messagerie", icon: MessageCircle, badgeKey: "messagerie" },
   { href: "/dashboard/favoris", label: "Favoris", icon: Heart },
   { href: "/dashboard/parametres", label: "Paramètres", icon: Settings },

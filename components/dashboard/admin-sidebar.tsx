@@ -6,6 +6,7 @@ import { useState } from "react";
 import {
   Bell,
   Building2,
+  Camera,
   ChevronLeft,
   ChevronRight,
   CreditCard,
@@ -37,8 +38,10 @@ const navItems = (
   { href: "/admin/annonces", label: "Annonces", icon: Building2 },
   { href: "/admin/signalements", label: "Signalements", icon: Flag, badge: reportsCount },
   { href: "/admin/demandes", label: "Demandes de visites", icon: FileText },
+  { href: "/admin/reservations", label: "Réservations", icon: FileText },
   { href: "/admin/utilisateurs", label: "Utilisateurs", icon: Users },
   { href: "/admin/paiements", label: "Paiements", icon: CreditCard },
+  { href: "/admin/etats-des-lieux", label: "États des lieux", icon: Camera },
   { href: "/admin/parametres", label: "Paramètres", icon: Settings },
 ];
 

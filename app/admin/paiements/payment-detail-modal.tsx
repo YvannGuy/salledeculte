@@ -1,8 +1,10 @@
 "use client";
 
+import { useState, useTransition } from "react";
 import Link from "next/link";
-import { ArrowLeft, ExternalLink } from "lucide-react";
+import { ArrowLeft } from "lucide-react";
 
+import { openAdminRefundCaseAction } from "@/app/actions/etats-des-lieux";
 import {
   Dialog,
   DialogContent,
@@ -15,6 +17,7 @@ type Transaction = {
   user_id: string;
   user_name: string | null;
   user_email: string;
+  offer_id: string | null;
   product_type: string;
   amount: number;
   status: string;
@@ -71,7 +74,16 @@ function formatDate(d: string) {
 }
 
 export function PaymentDetailModal({ transaction, open, onOpenChange }: Props) {
+  const [isPending, startTransition] = useTransition();
+  const [caseType, setCaseType] = useState<"refund_full" | "refund_partial" | "dispute">("refund_full");
+  const [side, setSide] = useState<"owner" | "seeker" | "none">("none");
+  const [reason, setReason] = useState("");
+  const [amountEur, setAmountEur] = useState("");
+  const [feedback, setFeedback] = useState<string | null>(null);
+
   if (!transaction) return null;
+
+  const canOpenCase = transaction.product_type === "reservation" && !!transaction.offer_id;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -119,6 +131,121 @@ export function PaymentDetailModal({ transaction, open, onOpenChange }: Props) {
               <ArrowLeft className="h-4 w-4" />
               Voir le profil utilisateur
             </Link>
+          </div>
+
+          <div className="pt-4 border-t space-y-3">
+            <p className="text-sm font-semibold text-black">Actions admin remboursement / litige</p>
+            {!canOpenCase ? (
+              <p className="text-xs text-slate-500">
+                Disponible uniquement pour une réservation liée à une offre.
+              </p>
+            ) : (
+              <form
+                className="space-y-2"
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  const form = e.currentTarget;
+                  const fd = new FormData(form);
+                  fd.set("paymentId", transaction.id);
+                  fd.set("offerId", transaction.offer_id ?? "");
+                  fd.set("caseType", caseType);
+                  fd.set("side", side);
+                  fd.set("reason", reason);
+                  if (caseType === "refund_partial") fd.set("amountEur", amountEur);
+                  setFeedback(null);
+                  startTransition(async () => {
+                    const res = await openAdminRefundCaseAction(fd);
+                    if (!res.success) {
+                      setFeedback(res.error ?? "Erreur lors de la création du dossier.");
+                      return;
+                    }
+                    setFeedback("Dossier traité avec succès.");
+                    setReason("");
+                    setAmountEur("");
+                    form.reset();
+                  });
+                }}
+              >
+                <div>
+                  <label className="mb-1 block text-xs font-medium text-slate-600">Type</label>
+                  <select
+                    value={caseType}
+                    onChange={(e) =>
+                      setCaseType(e.target.value as "refund_full" | "refund_partial" | "dispute")
+                    }
+                    className="h-9 w-full rounded border border-slate-300 px-2 text-sm"
+                  >
+                    <option value="refund_full">Remboursement total</option>
+                    <option value="refund_partial">Remboursement partiel</option>
+                    <option value="dispute">Litige</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="mb-1 block text-xs font-medium text-slate-600">Partie concernée</label>
+                  <select
+                    value={side}
+                    onChange={(e) => setSide(e.target.value as "owner" | "seeker" | "none")}
+                    className="h-9 w-full rounded border border-slate-300 px-2 text-sm"
+                  >
+                    <option value="none">Aucune (général)</option>
+                    <option value="seeker">Locataire</option>
+                    <option value="owner">Propriétaire</option>
+                  </select>
+                </div>
+                {caseType === "refund_partial" && (
+                  <div>
+                    <label className="mb-1 block text-xs font-medium text-slate-600">
+                      Montant à rembourser (EUR)
+                    </label>
+                    <input
+                      value={amountEur}
+                      onChange={(e) => setAmountEur(e.target.value)}
+                      placeholder="Ex: 45.50"
+                      className="h-9 w-full rounded border border-slate-300 px-2 text-sm"
+                    />
+                  </div>
+                )}
+                <div>
+                  <label className="mb-1 block text-xs font-medium text-slate-600">Motif</label>
+                  <textarea
+                    value={reason}
+                    onChange={(e) => setReason(e.target.value)}
+                    rows={3}
+                    required
+                    placeholder="Expliquez la décision, le contexte et les preuves."
+                    className="w-full rounded border border-slate-300 px-2 py-2 text-sm"
+                  />
+                </div>
+                <div>
+                  <label className="mb-1 block text-xs font-medium text-slate-600">
+                    Photos / preuves (obligatoire pour litige)
+                  </label>
+                  <input
+                    type="file"
+                    name="photos"
+                    accept="image/*"
+                    multiple
+                    required={caseType === "dispute"}
+                    className="block w-full text-xs"
+                  />
+                  <p className="mt-1 text-[11px] text-slate-500">
+                    Maximum 10 photos, nettes, bien éclairées, zones clés visibles.
+                  </p>
+                </div>
+                <button
+                  type="submit"
+                  disabled={isPending}
+                  className="rounded bg-blue-600 px-3 py-2 text-xs font-medium text-white hover:bg-blue-700 disabled:opacity-60"
+                >
+                  {isPending ? "Traitement..." : "Valider l'action admin"}
+                </button>
+                {feedback && (
+                  <p className={`text-xs ${feedback.includes("succès") ? "text-emerald-700" : "text-red-600"}`}>
+                    {feedback}
+                  </p>
+                )}
+              </form>
+            )}
           </div>
         </div>
       </DialogContent>
