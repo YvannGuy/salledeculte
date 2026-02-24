@@ -25,6 +25,8 @@ export async function createOfferAction(formData: FormData): Promise<{ success: 
   const salleId = formData.get("salleId") as string | null;
   const seekerId = formData.get("seekerId") as string | null;
   const amountStr = formData.get("amount") as string | null;
+  const paymentModeRaw = (formData.get("paymentMode") as string | null) ?? "full";
+  const upfrontAmountStr = formData.get("upfrontAmount") as string | null;
   const depositAmountStr = formData.get("depositAmount") as string | null;
   const eventType = (formData.get("eventType") as string | null) || "ponctuel";
   const dateDebut = formData.get("dateDebut") as string | null;
@@ -44,6 +46,29 @@ export async function createOfferAction(formData: FormData): Promise<{ success: 
   if (amountCents <= 0 || !Number.isFinite(amountCents)) {
     return { success: false, error: "Montant invalide." };
   }
+  const paymentMode = paymentModeRaw === "split" ? "split" : "full";
+  const upfrontAmountCents = Math.round(
+    parseFloat((upfrontAmountStr || amountStr).replace(",", ".")) * 100
+  );
+  if (!Number.isFinite(upfrontAmountCents) || upfrontAmountCents <= 0) {
+    return { success: false, error: "Acompte invalide." };
+  }
+  if (paymentMode === "split" && upfrontAmountCents >= amountCents) {
+    return {
+      success: false,
+      error: "L'acompte doit être inférieur au montant total pour un paiement fractionné.",
+    };
+  }
+  if (paymentMode === "full" && upfrontAmountCents !== amountCents) {
+    return { success: false, error: "En paiement complet, l'acompte doit être égal au montant." };
+  }
+  const balanceAmountCents = Math.max(0, amountCents - upfrontAmountCents);
+  const baseDate = new Date(`${validDateDebut}T10:00:00.000Z`);
+  baseDate.setUTCDate(baseDate.getUTCDate() - 1);
+  const balanceDueAt =
+    paymentMode === "split"
+      ? (Number.isNaN(baseDate.getTime()) ? null : baseDate.toISOString())
+      : null;
   const depositAmountCents = Math.round(parseFloat((depositAmountStr || "0").replace(",", ".")) * 100);
   if (!Number.isFinite(depositAmountCents) || depositAmountCents < 0) {
     return { success: false, error: "Caution invalide." };
@@ -96,6 +121,11 @@ export async function createOfferAction(formData: FormData): Promise<{ success: 
       seeker_id: seekerId,
       salle_id: salleId,
       amount_cents: amountCents,
+      payment_mode: paymentMode,
+      upfront_amount_cents: upfrontAmountCents,
+      balance_amount_cents: balanceAmountCents,
+      balance_due_at: balanceDueAt,
+      payment_plan_status: "pending_deposit",
       deposit_amount_cents: depositAmountCents,
       service_fee_cents: 1500,
       deposit_refunded_cents: 0,

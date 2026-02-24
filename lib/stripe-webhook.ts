@@ -20,13 +20,19 @@ export async function handleStripeWebhook(event: Stripe.Event) {
         const supabase = createAdminClient();
         const offerId = metadata.offer_id;
         const amount = session.amount_total ?? 0;
-        const amountEur = ((amount ?? 0) / 100).toFixed(2);
+        const reservationTotalCents = Number(metadata?.reservation_total_cents ?? metadata?.amount_cents ?? "0");
+        const amountEur = ((reservationTotalCents > 0 ? reservationTotalCents : amount ?? 0) / 100).toFixed(2);
         const stripe = getStripe();
         const paymentIntentId =
           typeof session.payment_intent === "string"
             ? session.payment_intent
             : session.payment_intent?.id ?? null;
         const depositAmountCents = Number(metadata?.deposit_amount_cents ?? "0");
+        const paymentMode = metadata?.payment_mode === "split" ? "split" : "full";
+        const paymentStage = metadata?.payment_stage === "deposit" ? "deposit" : "full";
+        const paidNowCents = Number(metadata?.amount_cents ?? String(amount ?? 0));
+        const now = new Date().toISOString();
+        const nextPlanStatus = paymentMode === "split" ? "balance_scheduled" : "fully_paid";
 
         // Mise à jour atomique : un seul webhook "gagne" (idempotence)
         const { data: updatedOffer, error: updateError } = await supabase
@@ -37,7 +43,12 @@ export async function handleStripeWebhook(event: Stripe.Event) {
             stripe_payment_intent_id: paymentIntentId,
             deposit_status: depositAmountCents > 0 ? "held" : "none",
             deposit_hold_status: "none",
-            updated_at: new Date().toISOString(),
+            payment_plan_status: nextPlanStatus,
+            upfront_paid_at: now,
+            balance_paid_at: paymentMode === "split" ? null : now,
+            balance_retry_count: 0,
+            balance_last_error: null,
+            updated_at: now,
           })
           .eq("id", offerId)
           .eq("status", "pending")
@@ -117,6 +128,7 @@ export async function handleStripeWebhook(event: Stripe.Event) {
               currency: session.currency ?? "eur",
               product_type: "reservation",
               status: "paid",
+              payment_type: paymentStage === "deposit" ? "deposit" : "full",
               offer_id: offerId,
             })
             .select("id")
@@ -127,7 +139,10 @@ export async function handleStripeWebhook(event: Stripe.Event) {
             console.log("[webhook] Payment insert OK: reservation", offerId);
           }
 
-          const msgContent = `A payé l'offre de ${amountEur} €.`;
+          const msgContent =
+            paymentStage === "deposit"
+              ? `A payé l'acompte de ${(paidNowCents / 100).toFixed(2)} € (solde prévu J-1).`
+              : `A payé l'offre de ${amountEur} €.`;
           const { error: msgError } = await supabase.from("messages").insert({
             conversation_id: convId,
             sender_id: metadata.user_id,

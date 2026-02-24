@@ -166,6 +166,18 @@ type OfferItem = {
   owner_id: string;
   salle_id?: string;
   amount_cents: number;
+  payment_mode?: "full" | "split";
+  upfront_amount_cents?: number;
+  balance_amount_cents?: number;
+  balance_due_at?: string | null;
+  payment_plan_status?:
+    | "pending_deposit"
+    | "deposit_paid"
+    | "balance_scheduled"
+    | "balance_paid"
+    | "balance_failed"
+    | "fully_paid"
+    | "expired_unpaid";
   deposit_amount_cents?: number;
   service_fee_cents?: number;
   deposit_refunded_cents?: number;
@@ -300,7 +312,7 @@ export function MessagerieClient({
 
     const { data: offersData } = await supabase
       .from("offers")
-      .select("id, owner_id, salle_id, amount_cents, deposit_amount_cents, service_fee_cents, deposit_refunded_cents, deposit_status, deposit_hold_status, expires_at, status, message, event_type, date_debut, date_fin, created_at, contract_path")
+      .select("id, owner_id, salle_id, amount_cents, payment_mode, upfront_amount_cents, balance_amount_cents, balance_due_at, payment_plan_status, deposit_amount_cents, service_fee_cents, deposit_refunded_cents, deposit_status, deposit_hold_status, expires_at, status, message, event_type, date_debut, date_fin, created_at, contract_path")
       .eq("conversation_id", convId)
       .order("created_at", { ascending: true });
     setOffers((offersData ?? []) as OfferItem[]);

@@ -21,6 +21,18 @@ import type { OfferStatus } from "@/lib/types/offer";
 type Offer = {
   id: string;
   amount_cents: number;
+  payment_mode?: "full" | "split";
+  upfront_amount_cents?: number;
+  balance_amount_cents?: number;
+  balance_due_at?: string | null;
+  payment_plan_status?:
+    | "pending_deposit"
+    | "deposit_paid"
+    | "balance_scheduled"
+    | "balance_paid"
+    | "balance_failed"
+    | "fully_paid"
+    | "expired_unpaid";
   deposit_amount_cents?: number;
   service_fee_cents?: number;
   deposit_refunded_cents?: number;
@@ -111,9 +123,21 @@ export function OfferCard({
   };
 
   const amountEur = (offer.amount_cents / 100).toFixed(2);
+  const paymentMode = offer.payment_mode === "split" ? "split" : "full";
+  const upfrontCents =
+    paymentMode === "split"
+      ? Math.max(0, offer.upfront_amount_cents ?? 0)
+      : offer.amount_cents;
+  const balanceCents =
+    paymentMode === "split"
+      ? Math.max(0, offer.balance_amount_cents ?? offer.amount_cents - upfrontCents)
+      : 0;
   const depositCents = offer.deposit_amount_cents ?? 0;
   const serviceFeeCents = offer.service_fee_cents ?? 1500;
-  const totalToPayEur = ((offer.amount_cents + serviceFeeCents) / 100).toFixed(2);
+  const totalToPayNowEur = ((upfrontCents + serviceFeeCents) / 100).toFixed(2);
+  const balanceDueLabel = offer.balance_due_at
+    ? format(new Date(offer.balance_due_at), "d MMM yyyy", { locale: fr })
+    : null;
   const expiresFormatted = format(new Date(offer.expires_at), "d MMM yyyy", { locale: fr });
   const hasDateRange = offer.date_debut && offer.date_fin;
   const dateRangeFormatted =
@@ -144,6 +168,30 @@ export function OfferCard({
           <p className="font-medium text-black">
             Montant : <span className="tabular-nums">{amountEur} €</span>
           </p>
+          {paymentMode === "split" ? (
+            <>
+              <p className="text-slate-600">
+                Acompte à payer maintenant :{" "}
+                <span className="tabular-nums">{(upfrontCents / 100).toFixed(2)} €</span>
+              </p>
+              <p className="text-slate-600">
+                Solde : <span className="tabular-nums">{(balanceCents / 100).toFixed(2)} €</span>
+                {balanceDueLabel ? ` (prélèvement prévu le ${balanceDueLabel})` : " (prélèvement prévu J-1)"}
+              </p>
+              {offer.status === "paid" && (
+                <p className="text-xs text-slate-500">
+                  Statut solde :{" "}
+                  {offer.payment_plan_status === "fully_paid"
+                    ? "Payé"
+                    : offer.payment_plan_status === "balance_failed"
+                      ? "Échec de prélèvement"
+                      : offer.payment_plan_status === "balance_scheduled" || offer.payment_plan_status === "deposit_paid"
+                        ? "Planifié (J-1)"
+                        : "En attente"}
+                </p>
+              )}
+            </>
+          ) : null}
           {depositCents > 0 && (
             <p className="text-slate-600">
               Caution (empreinte) : <span className="tabular-nums">{(depositCents / 100).toFixed(2)} €</span>
@@ -153,7 +201,8 @@ export function OfferCard({
             Frais de service : <span className="tabular-nums">{(serviceFeeCents / 100).toFixed(2)} €</span>
           </p>
           <p className="font-medium text-black">
-            Total à payer : <span className="tabular-nums">{totalToPayEur} €</span>
+            {paymentMode === "split" ? "Total à payer maintenant" : "Total à payer"} :{" "}
+            <span className="tabular-nums">{totalToPayNowEur} €</span>
           </p>
           {depositCents > 0 && (
             <p className="text-xs text-slate-500">
@@ -189,7 +238,7 @@ export function OfferCard({
           </span>
           {canAccept && (
             <Button size="sm" onClick={handleAccept} className="bg-[#213398] hover:bg-[#1a2980]">
-              Voir le contrat et payer
+              {paymentMode === "split" ? "Voir le contrat et payer l'acompte" : "Voir le contrat et payer"}
             </Button>
           )}
           {canRefuse && (

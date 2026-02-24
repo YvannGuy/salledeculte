@@ -29,7 +29,7 @@ export async function POST(request: Request) {
 
     const { data: offer, error: offerError } = await adminSupabase
       .from("offers")
-      .select("id, demande_id, owner_id, seeker_id, salle_id, amount_cents, deposit_amount_cents, service_fee_cents, expires_at, status, event_type")
+      .select("id, demande_id, owner_id, seeker_id, salle_id, amount_cents, payment_mode, upfront_amount_cents, balance_amount_cents, balance_due_at, deposit_amount_cents, service_fee_cents, expires_at, status, event_type")
       .eq("id", offerId)
       .single();
 
@@ -41,6 +41,10 @@ export async function POST(request: Request) {
       seeker_id: string;
       owner_id: string;
       amount_cents: number;
+      payment_mode?: "full" | "split" | null;
+      upfront_amount_cents?: number | null;
+      balance_amount_cents?: number | null;
+      balance_due_at?: string | null;
       deposit_amount_cents?: number | null;
       service_fee_cents?: number | null;
       expires_at: string;
@@ -112,11 +116,27 @@ export async function POST(request: Request) {
       .eq("id", user.id)
       .single();
 
+    const paymentMode = offerRow.payment_mode === "split" ? "split" : "full";
     const amountCents = offerRow.amount_cents;
+    const upfrontAmountCents =
+      paymentMode === "split"
+        ? Math.max(0, offerRow.upfront_amount_cents ?? 0)
+        : amountCents;
+    const balanceAmountCents =
+      paymentMode === "split"
+        ? Math.max(0, offerRow.balance_amount_cents ?? Math.max(0, amountCents - upfrontAmountCents))
+        : 0;
+    const chargeNowCents = paymentMode === "split" ? upfrontAmountCents : amountCents;
+    if (chargeNowCents <= 0) {
+      return NextResponse.json(
+        { error: "Configuration de paiement invalide sur cette offre." },
+        { status: 400 }
+      );
+    }
     const depositAmountCents = Math.max(0, offerRow.deposit_amount_cents ?? 0);
     const serviceFeeCents = Math.max(0, offerRow.service_fee_cents ?? 1500);
     const applicationFeeCents = serviceFeeCents;
-    const checkoutTotalCents = amountCents + serviceFeeCents;
+    const checkoutTotalCents = chargeNowCents + serviceFeeCents;
 
     const sessionConfig: Stripe.Checkout.SessionCreateParams = {
       mode: "payment",
@@ -128,6 +148,8 @@ export async function POST(request: Request) {
           offer_id: offerId,
           seeker_id: user.id,
           owner_id: offerRow.owner_id,
+          payment_stage: paymentMode === "split" ? "deposit" : "full",
+          payment_mode: paymentMode,
         },
       },
       line_items: [
@@ -136,9 +158,12 @@ export async function POST(request: Request) {
             currency: "eur",
             product_data: {
               name: `Réservation - ${salleName}`,
-              description: "Montant de location",
+              description:
+                paymentMode === "split"
+                  ? "Acompte de réservation"
+                  : "Montant de location",
             },
-            unit_amount: amountCents,
+            unit_amount: chargeNowCents,
           },
           quantity: 1,
         },
@@ -160,7 +185,13 @@ export async function POST(request: Request) {
         offer_id: offerId,
         user_id: user.id,
         product_type: "reservation",
-        amount_cents: String(amountCents),
+        amount_cents: String(chargeNowCents),
+        reservation_total_cents: String(amountCents),
+        upfront_amount_cents: String(upfrontAmountCents),
+        balance_amount_cents: String(balanceAmountCents),
+        balance_due_at: String(offerRow.balance_due_at ?? ""),
+        payment_mode: paymentMode,
+        payment_stage: paymentMode === "split" ? "deposit" : "full",
         deposit_amount_cents: String(depositAmountCents),
         service_fee_cents: String(serviceFeeCents),
         checkout_total_cents: String(checkoutTotalCents),

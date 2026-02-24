@@ -12,6 +12,23 @@ export type Offer = {
   seeker_id: string;
   salle_id: string;
   amount_cents: number;
+  payment_mode: "full" | "split";
+  upfront_amount_cents: number;
+  balance_amount_cents: number;
+  balance_due_at: string | null;
+  payment_plan_status:
+    | "pending_deposit"
+    | "deposit_paid"
+    | "balance_scheduled"
+    | "balance_paid"
+    | "balance_failed"
+    | "fully_paid"
+    | "expired_unpaid";
+  upfront_paid_at: string | null;
+  balance_payment_intent_id: string | null;
+  balance_last_error: string | null;
+  balance_retry_count: number;
+  balance_paid_at: string | null;
   deposit_amount_cents: number;
   service_fee_cents: number;
   deposit_refunded_cents: number;
@@ -40,6 +57,23 @@ export type OfferRow = {
   seeker_id: string;
   salle_id: string;
   amount_cents: number;
+  payment_mode: "full" | "split";
+  upfront_amount_cents: number;
+  balance_amount_cents: number;
+  balance_due_at: string | null;
+  payment_plan_status:
+    | "pending_deposit"
+    | "deposit_paid"
+    | "balance_scheduled"
+    | "balance_paid"
+    | "balance_failed"
+    | "fully_paid"
+    | "expired_unpaid";
+  upfront_paid_at: string | null;
+  balance_payment_intent_id: string | null;
+  balance_last_error: string | null;
+  balance_retry_count: number;
+  balance_paid_at: string | null;
   deposit_amount_cents: number;
   service_fee_cents: number;
   deposit_refunded_cents: number;

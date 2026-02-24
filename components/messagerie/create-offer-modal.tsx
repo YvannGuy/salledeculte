@@ -35,6 +35,8 @@ export function CreateOfferModal({
   onSuccess,
 }: CreateOfferModalProps) {
   const [amount, setAmount] = useState("");
+  const [paymentMode, setPaymentMode] = useState<"full" | "split">("full");
+  const [upfrontAmount, setUpfrontAmount] = useState("");
   const [depositAmount, setDepositAmount] = useState("");
   const [eventType, setEventType] = useState<"ponctuel" | "mensuel">("ponctuel");
   const [dateDebut, setDateDebut] = useState(today());
@@ -48,6 +50,17 @@ export function CreateOfferModal({
     e.preventDefault();
     setError(null);
     const amt = parseFloat(amount.replace(",", "."));
+    const upfront = paymentMode === "split"
+      ? parseFloat(upfrontAmount.replace(",", "."))
+      : amt;
+    if (!Number.isFinite(upfront) || upfront <= 0) {
+      setError("Montant d'acompte invalide.");
+      return;
+    }
+    if (paymentMode === "split" && upfront >= amt) {
+      setError("L'acompte doit être inférieur au montant total.");
+      return;
+    }
     if (!amt || amt <= 0) {
       setError("Montant invalide.");
       return;
@@ -75,6 +88,8 @@ export function CreateOfferModal({
     formData.set("salleId", salleId);
     formData.set("seekerId", seekerId);
     formData.set("amount", String(amt));
+    formData.set("paymentMode", paymentMode);
+    formData.set("upfrontAmount", String(upfront));
     formData.set("depositAmount", String(deposit));
     formData.set("eventType", eventType);
     formData.set("dateDebut", dateDebut);
@@ -89,6 +104,8 @@ export function CreateOfferModal({
       onSuccess();
       onOpenChange(false);
       setAmount("");
+      setPaymentMode("full");
+      setUpfrontAmount("");
       setDepositAmount("");
       setEventType("ponctuel");
       setDateDebut(today());
@@ -167,6 +184,52 @@ export function CreateOfferModal({
             />
             <p className="mt-1 text-xs text-slate-500">Prix proposé pour cette réservation</p>
           </div>
+          <div>
+            <label className="text-sm font-medium text-black">Mode de paiement</label>
+            <div className="mt-1.5 flex gap-4">
+              <label className="flex cursor-pointer items-center gap-2">
+                <input
+                  type="radio"
+                  name="paymentMode"
+                  value="full"
+                  checked={paymentMode === "full"}
+                  onChange={() => setPaymentMode("full")}
+                  className="h-4 w-4"
+                />
+                <span className="text-sm">Paiement en 1 fois</span>
+              </label>
+              <label className="flex cursor-pointer items-center gap-2">
+                <input
+                  type="radio"
+                  name="paymentMode"
+                  value="split"
+                  checked={paymentMode === "split"}
+                  onChange={() => setPaymentMode("split")}
+                  className="h-4 w-4"
+                />
+                <span className="text-sm">Acompte + solde J-1</span>
+              </label>
+            </div>
+          </div>
+          {paymentMode === "split" && (
+            <div>
+              <label htmlFor="offer-upfront" className="text-sm font-medium text-black">
+                Acompte à payer maintenant (€)
+              </label>
+              <Input
+                id="offer-upfront"
+                type="text"
+                inputMode="decimal"
+                placeholder="Ex: 90"
+                value={upfrontAmount}
+                onChange={(e) => setUpfrontAmount(e.target.value)}
+                className="mt-1.5"
+              />
+              <p className="mt-1 text-xs text-slate-500">
+                Le solde sera prélevé automatiquement à J-1 de l&apos;événement.
+              </p>
+            </div>
+          )}
           <div>
             <label htmlFor="offer-deposit" className="text-sm font-medium text-black">
               Caution (€) (optionnel)
