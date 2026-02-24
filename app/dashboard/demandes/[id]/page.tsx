@@ -83,7 +83,7 @@ export default async function DemandeDetailPage({
         className="mb-6 inline-flex items-center gap-2 text-sm font-medium text-slate-600 hover:text-black"
       >
         <ArrowLeft className="h-4 w-4" />
-        Retour aux demandes
+        Retour aux visites
       </Link>
 
       <div className="mb-6 flex flex-wrap items-center justify-between gap-4 rounded-xl border border-slate-200 bg-white p-5 shadow-sm">

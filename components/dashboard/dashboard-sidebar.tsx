@@ -16,7 +16,7 @@ import { Button } from "@/components/ui/button";
 const navItems = [
   { href: "/dashboard", label: "Tableau de bord", icon: Home },
   { href: "/dashboard/rechercher", label: "Rechercher une salle", icon: Search, opensSearchModal: true },
-  { href: "/dashboard/demandes", label: "Mes demandes", icon: FileText, badgeKey: "demandes" },
+  { href: "/dashboard/demandes", label: "Mes visites", icon: FileText, badgeKey: "demandes" },
   { href: "/dashboard/paiement", label: "Paiement", icon: CreditCard },
   { href: "/dashboard/messagerie", label: "Messagerie", icon: MessageCircle, badgeKey: "messagerie" },
   { href: "/dashboard/favoris", label: "Favoris", icon: Heart },

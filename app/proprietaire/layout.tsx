@@ -58,18 +58,10 @@ export default async function ProprietaireLayout({
 
   const displayName = profile?.full_name ?? user.user_metadata?.full_name ?? "Utilisateur";
   const salleIds = (mySalles ?? []).map((s) => s.id);
-  const [{ count: demandeCount }, { data: demandesForMessagerie }] = await Promise.all([
+  const { data: demandesForMessagerie } =
     salleIds.length > 0
-      ? supabase
-          .from("demandes")
-          .select("id", { count: "exact", head: true })
-          .in("salle_id", salleIds)
-          .eq("status", "sent")
-      : { count: 0 },
-    salleIds.length > 0
-      ? supabase.from("demandes").select("id").in("salle_id", salleIds)
-      : { data: [] },
-  ]);
+      ? await supabase.from("demandes").select("id").in("salle_id", salleIds)
+      : { data: [] };
 
   let visiteCount = 0;
   if (salleIds.length > 0) {
@@ -110,7 +102,7 @@ export default async function ProprietaireLayout({
     <div className="flex h-screen flex-col overflow-hidden bg-slate-50 lg:flex-row">
       <OwnerSidebar
         user={{ ...user, displayName }}
-        demandeCount={demandeCount ?? 0}
+        demandeCount={0}
         visiteCount={visiteCount ?? 0}
         messageCount={messageCount}
         canAccessSeeker={true}

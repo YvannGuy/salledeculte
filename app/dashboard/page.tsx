@@ -15,6 +15,9 @@ const STATUT_LABEL: Record<string, string> = {
   replied: "Répondue",
   accepted: "Acceptée",
   rejected: "Refusée",
+  pending: "En attente",
+  refused: "Refusée",
+  reschedule_proposed: "Reprogrammation proposée",
 };
 
 const STATUT_COLOR: Record<string, string> = {
@@ -23,7 +26,16 @@ const STATUT_COLOR: Record<string, string> = {
   replied: "text-black",
   accepted: "text-emerald-600",
   rejected: "text-red-600",
+  pending: "text-amber-600",
+  refused: "text-red-600",
+  reschedule_proposed: "text-sky-600",
 };
+
+function formatTime(t: string | null): string {
+  if (!t) return "";
+  const m = String(t).match(/(\d{1,2}):(\d{2})/);
+  return m ? `${m[1]}h${m[2]}` : "";
+}
 
 export default async function DashboardPage() {
   const supabase = await createClient();
@@ -33,6 +45,19 @@ export default async function DashboardPage() {
   if (!user) return null;
 
   const seekerId = user.id;
+
+  let demandesVisiteList: { id: string; salle_id: string; date_visite: string; heure_debut: string; heure_fin: string; status: string; created_at: string }[] = [];
+  try {
+    const res = await supabase
+      .from("demandes_visite")
+      .select("id, salle_id, date_visite, heure_debut, heure_fin, status, created_at")
+      .eq("seeker_id", seekerId)
+      .order("created_at", { ascending: false })
+      .limit(5);
+    demandesVisiteList = res.data ?? [];
+  } catch {
+    // Table peut ne pas exister
+  }
 
   const [
     { count: demandesCount },
@@ -58,11 +83,15 @@ export default async function DashboardPage() {
   const totalFavoris = favorisCount ?? 0;
 
   const salleIdsDemandes = [...new Set((demandesList ?? []).map((d) => d.salle_id).filter(Boolean))];
+  const salleIdsVisites = [...new Set(demandesVisiteList.map((d) => d.salle_id).filter(Boolean))];
   const salleIdsFavoris = (favorisList ?? []).map((r) => r.salle_id);
 
-  const [sallesDemandes, sallesFavoris, convsData] = await Promise.all([
+  const [sallesDemandes, sallesVisites, sallesFavoris, convsData] = await Promise.all([
     salleIdsDemandes.length > 0
       ? supabase.from("salles").select("id, name, city, images").in("id", salleIdsDemandes)
+      : { data: [] },
+    salleIdsVisites.length > 0
+      ? supabase.from("salles").select("id, name, city, images").in("id", salleIdsVisites)
       : { data: [] },
     salleIdsFavoris.length > 0
       ? supabase.from("salles").select("id, slug, name, city, images").in("id", salleIdsFavoris)
@@ -76,6 +105,7 @@ export default async function DashboardPage() {
   ]);
 
   const salleMapDemandes = new Map((sallesDemandes.data ?? []).map((s) => [s.id, s]));
+  const salleMapVisites = new Map((sallesVisites.data ?? []).map((s) => [s.id, s]));
   const salleMapFavoris = new Map((sallesFavoris.data ?? []).map((s) => [s.id, s]));
   const convByDemande = new Map((convsData.data ?? []).map((c) => [c.demande_id, c]));
   const convRows = convsData.data ?? [];
@@ -113,15 +143,21 @@ export default async function DashboardPage() {
     { label: "Réponses reçues", value: String(totalReplied), icon: CheckCircle2, color: "text-black", bgColor: "bg-[#213398]/10" },
   ];
 
-  const recentRequests = (demandesList ?? []).map((d) => {
-    const salle = d.salle_id ? salleMapDemandes.get(d.salle_id) : undefined;
+  const recentVisitRequests = demandesVisiteList.map((d) => {
+    const salle = d.salle_id ? salleMapVisites.get(d.salle_id) : undefined;
     const img = salle && Array.isArray(salle.images) && salle.images[0] ? salle.images[0] : "/img.png";
+    const dateStr = d.date_visite
+      ? format(new Date(d.date_visite + "T12:00:00"), "d MMMM yyyy", { locale: fr })
+      : "";
+    const horaires =
+      d.heure_debut && d.heure_fin
+        ? `${formatTime(d.heure_debut)}–${formatTime(d.heure_fin)}`
+        : "";
     return {
       id: d.id,
       salle: salle?.name ?? "Salle",
       location: salle?.city ?? "",
-      type: d.type_evenement ?? "Événement",
-      date: d.date_debut ? format(new Date(d.date_debut), "d MMMM yyyy", { locale: fr }) : "",
+      date: horaires ? `${dateStr}, ${horaires}` : dateStr,
       status: STATUT_LABEL[d.status] ?? d.status,
       statusColor: STATUT_COLOR[d.status] ?? "text-slate-600",
       image: img,
@@ -199,16 +235,16 @@ export default async function DashboardPage() {
 
       <Card className="mt-6 border-0 shadow-sm">
         <CardHeader className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between sm:gap-0 pb-2">
-          <CardTitle className="text-lg">Demandes récentes</CardTitle>
+          <CardTitle className="text-lg">Mes demandes de visites récentes</CardTitle>
           <Link href="/dashboard/demandes" className="text-sm font-medium text-black hover:underline">
             Voir tout →
           </Link>
         </CardHeader>
         <CardContent>
-          {recentRequests.length === 0 ? (
+          {recentVisitRequests.length === 0 ? (
             <div className="flex flex-col items-center justify-center rounded-xl border border-dashed border-slate-200 py-12 text-center">
               <Inbox className="mb-3 h-12 w-12 text-slate-300" />
-              <p className="text-slate-500">Aucune demande envoyée</p>
+              <p className="text-slate-500">Aucune demande de visite</p>
               <SearchModalButton className="mt-3 inline-flex">
                 <Button className="bg-[#213398] hover:bg-[#1a2980]">
                   Rechercher une salle
@@ -221,14 +257,13 @@ export default async function DashboardPage() {
                 <thead>
                   <tr className="border-b border-slate-200 text-left text-xs font-medium uppercase tracking-wider text-slate-500">
                     <th className="pb-3 pr-3 sm:pr-4">Salle</th>
-                    <th className="pb-3 pr-3 sm:pr-4">Type</th>
                     <th className="pb-3 pr-3 sm:pr-4">Date</th>
                     <th className="pb-3 pr-3 sm:pr-4">Statut</th>
                     <th className="pb-3">Action</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
-                  {recentRequests.map((req) => (
+                  {recentVisitRequests.map((req) => (
                     <tr key={req.id} className="group">
                       <td className="py-3 pr-3 sm:py-4 sm:pr-4">
                         <div className="flex items-center gap-2 sm:gap-3">
@@ -241,14 +276,13 @@ export default async function DashboardPage() {
                           </div>
                         </div>
                       </td>
-                      <td className="py-3 pr-3 text-sm text-slate-600 sm:py-4 sm:pr-4">{req.type}</td>
                       <td className="py-3 pr-3 text-sm text-slate-600 sm:py-4 sm:pr-4">{req.date}</td>
                       <td className="py-3 pr-3 sm:py-4 sm:pr-4">
                         <span className={`text-sm font-medium ${req.statusColor}`}>• {req.status}</span>
                       </td>
                       <td className="py-3 sm:py-4">
                         <Link
-                          href={`/dashboard/demandes`}
+                          href={`/dashboard/demandes/visite/${req.id}`}
                           className="text-sm font-medium text-black hover:underline"
                         >
                           Voir la demande

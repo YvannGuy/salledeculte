@@ -131,7 +131,7 @@ export default async function SalleDetailPage({
       <main className="container max-w-[1120px] py-8">
         <div className="grid gap-8 lg:grid-cols-[1fr_340px]">
           <div>
-            <SalleGallery images={salle.images} videoUrl={salle.videoUrl} name={salle.name} />
+            <SalleGallery images={salle.images} name={salle.name} slug={slug} />
             <SalleActionsBar
               salleId={salle.id}
               salleName={salle.name}
@@ -294,7 +294,7 @@ export default async function SalleDetailPage({
               <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
                 <h3 className="text-lg font-semibold text-black">Intéressé par cette salle ?</h3>
                 <p className="mt-2 text-[14px] text-slate-600">
-                  Envoyez une demande au propriétaire pour vérifier la disponibilité.
+                  Organisez une visite pour la découvrir sur place.
                 </p>
                 <Link href={`/salles/${salle.slug}/disponibilite`}>
                   <Button className="mt-4 h-12 w-full rounded-lg bg-[#213398] font-semibold hover:bg-[#1a2980]">

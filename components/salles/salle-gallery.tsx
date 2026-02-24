@@ -1,17 +1,18 @@
 "use client";
 
 import Image from "next/image";
+import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
-import { ChevronLeft, ChevronRight, X } from "lucide-react";
+import { ChevronLeft, ChevronRight, LayoutGrid, X } from "lucide-react";
 
 export function SalleGallery({
   images,
-  videoUrl,
   name,
+  slug,
 }: {
   images: string[];
-  videoUrl?: string | null;
   name: string;
+  slug?: string;
 }) {
   const preventSave = useCallback((e: React.MouseEvent) => e.preventDefault(), []);
   const [open, setOpen] = useState(false);
@@ -39,22 +40,11 @@ export function SalleGallery({
     return () => window.removeEventListener("keydown", onKey);
   }, [open, goPrev, goNext]);
 
+  const previewImgs = imgs.slice(0, 4);
+  const hasMorePhotos = imgs.length > 4;
+
   return (
     <>
-      {videoUrl && (
-        <div className="mb-6 overflow-hidden rounded-xl bg-slate-900">
-          <video
-            src={videoUrl}
-            controls
-            playsInline
-            className="aspect-video w-full object-contain"
-            preload="metadata"
-            poster={imgs[0]}
-          >
-            Votre navigateur ne supporte pas la lecture vidéo.
-          </video>
-        </div>
-      )}
       <div
         className="mb-8 grid gap-3 md:grid-cols-[1fr_120px] select-none"
         onContextMenu={preventSave}
@@ -76,9 +66,31 @@ export function SalleGallery({
             sizes="(max-width: 768px) 100vw, 65vw"
             draggable={false}
           />
+          {hasMorePhotos && slug ? (
+            <Link
+              href={`/salles/${slug}/photos`}
+              className="absolute bottom-2 right-2 flex items-center gap-2 rounded-2xl border border-slate-300 bg-white px-4 py-2.5 text-sm font-medium text-black shadow-sm transition-colors hover:bg-slate-50"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <LayoutGrid className="h-4 w-4" />
+              Afficher toutes les photos
+            </Link>
+          ) : hasMorePhotos ? (
+            <div
+              className="absolute bottom-2 right-2 flex items-center gap-2 rounded-2xl border border-slate-300 bg-white px-4 py-2.5 text-sm font-medium text-black shadow-sm transition-colors hover:bg-slate-50"
+              onClick={(e) => {
+                e.stopPropagation();
+                setIndex(0);
+                setOpen(true);
+              }}
+            >
+              <LayoutGrid className="h-4 w-4" />
+              Afficher toutes les photos
+            </div>
+          ) : null}
         </button>
         <div className="hidden flex-col gap-3 md:flex">
-          {imgs.slice(1, 4).map((img, i) => (
+          {previewImgs.slice(1, 4).map((img, i) => (
             <button
               key={`${img}-${i}`}
               type="button"

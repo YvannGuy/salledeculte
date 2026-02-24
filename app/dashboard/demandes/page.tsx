@@ -3,7 +3,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
-import { MessageCircle, TrendingUp, Users } from "lucide-react";
+import { Calendar, MessageCircle, TrendingUp } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Pagination } from "@/components/ui/pagination";
@@ -19,14 +19,9 @@ const STATUT_LABEL: Record<string, string> = {
   replied: "Répondue",
   accepted: "Acceptée",
   rejected: "Refusée",
-};
-
-const STATUT_COLOR: Record<string, string> = {
-  sent: "text-emerald-600",
-  viewed: "text-amber-600",
-  replied: "text-black",
-  accepted: "text-emerald-600",
-  rejected: "text-red-600",
+  pending: "En attente",
+  refused: "Refusée",
+  reschedule_proposed: "Reprogrammation proposée",
 };
 
 const STATUT_BADGE: Record<string, string> = {
@@ -35,12 +30,25 @@ const STATUT_BADGE: Record<string, string> = {
   replied: "bg-[#213398]/10 text-black",
   accepted: "bg-[#213398]/10 text-black",
   rejected: "bg-red-100 text-red-700",
+  pending: "bg-amber-100 text-amber-700",
+  refused: "bg-red-100 text-red-700",
+  reschedule_proposed: "bg-sky-100 text-sky-700",
 };
 
 function formatTime(t: string | null): string {
   if (!t) return "";
   const m = String(t).match(/(\d{1,2}):(\d{2})/);
   return m ? `${m[1]}h${m[2]}` : "";
+}
+
+type DemandeFilterStatus = "viewed" | "replied" | "rejected";
+function matchesFilter(status: string, filter: StatusFilter): boolean {
+  if (filter === "all") return true;
+  if (filter === "viewed")
+    return ["sent", "viewed", "pending", "reschedule_proposed"].includes(status);
+  if (filter === "replied") return ["replied", "accepted"].includes(status);
+  if (filter === "rejected") return ["rejected", "refused"].includes(status);
+  return false;
 }
 
 export default async function DemandesPage({
@@ -61,82 +69,107 @@ export default async function DemandesPage({
   } = await supabase.auth.getUser();
   if (!user) redirect("/auth");
 
-  let demandesQuery = supabase
+  const { data: demandesData } = await supabase
     .from("demandes")
     .select(
-      "id, salle_id, date_debut, date_fin, nb_personnes, type_evenement, status, created_at, replied_at, heure_debut_souhaitee, heure_fin_souhaitee",
-      { count: "exact" }
+      "id, salle_id, date_debut, date_fin, nb_personnes, type_evenement, status, created_at, replied_at, heure_debut_souhaitee, heure_fin_souhaitee"
     )
     .eq("seeker_id", user.id)
     .order("created_at", { ascending: false });
 
-  if (statusFilter === "replied") {
-    demandesQuery = demandesQuery.in("status", ["replied", "accepted"]);
-  } else if (statusFilter !== "all") {
-    demandesQuery = demandesQuery.eq("status", statusFilter);
+  let demandesVisiteData: { id: string; salle_id: string; date_visite: string; heure_debut: string; heure_fin: string; status: string; created_at: string }[] | null = null;
+  try {
+    const res = await supabase
+      .from("demandes_visite")
+      .select("id, salle_id, date_visite, heure_debut, heure_fin, status, created_at")
+      .eq("seeker_id", user.id)
+      .order("created_at", { ascending: false });
+    demandesVisiteData = res.data;
+  } catch {
+    // Table demandes_visite peut ne pas exister si migration non exécutée
   }
 
-  const from = (page - 1) * PAGE_SIZE;
-  const to = from + PAGE_SIZE - 1;
-  const { data: demandesData, count: totalCount } = await demandesQuery.range(from, to);
-
-  const total = totalCount ?? 0;
-  const totalPages = Math.ceil(total / PAGE_SIZE) || 1;
-  const currentPage = Math.min(page, totalPages);
-
-  const { data: allDemandes } = await supabase
-    .from("demandes")
-    .select("id, status, replied_at")
-    .eq("seeker_id", user.id);
-
-  const all = allDemandes ?? [];
-  const repliedCount = all.filter((d) => ["replied", "accepted", "rejected"].includes(d.status)).length;
-  const totalWithReply = all.length;
-  const tauxReponse = totalWithReply > 0 ? Math.round((repliedCount / totalWithReply) * 100) : 0;
-
-  const counts = {
-    all: all.length,
-    sent: all.filter((d) => d.status === "sent").length,
-    viewed: all.filter((d) => d.status === "viewed").length,
-    replied: all.filter((d) => ["replied", "accepted"].includes(d.status)).length,
-    rejected: all.filter((d) => d.status === "rejected").length,
-  };
-
-  const salleIds = [...new Set((demandesData ?? []).map((d) => d.salle_id).filter(Boolean))];
+  const demandes = demandesData ?? [];
+  const demandesVisite = demandesVisiteData ?? [];
+  const allSalleIds = [
+    ...new Set([
+      ...demandes.map((d) => d.salle_id).filter(Boolean),
+      ...demandesVisite.map((d) => d.salle_id).filter(Boolean),
+    ]),
+  ];
 
   const { data: sallesData } =
-    salleIds.length > 0
+    allSalleIds.length > 0
       ? await supabase
           .from("salles")
           .select("id, name, city, images, capacity, slug")
-          .in("id", salleIds)
+          .in("id", allSalleIds)
       : { data: [] };
-
   const salleMap = new Map((sallesData ?? []).map((s) => [s.id, s]));
 
+  const demandeIds = demandes.map((d) => d.id);
   const { data: convsData } =
-    (demandesData ?? []).length > 0
+    demandeIds.length > 0
       ? await supabase
           .from("conversations")
           .select("demande_id, id")
-          .in("demande_id", (demandesData ?? []).map((d) => d.id))
+          .in("demande_id", demandeIds)
       : { data: [] };
-
   const convByDemande = new Map((convsData ?? []).map((c) => [c.demande_id, c]));
 
-  const list = (demandesData ?? []).map((d) => {
-    const salle = d.salle_id ? salleMap.get(d.salle_id) : undefined;
-    const conv = convByDemande.get(d.id);
-    return {
-      ...d,
-      salle,
-      conversationId: conv?.id ?? null,
-    };
-  });
+  type ListItem =
+    | { kind: "demande"; id: string; salle_id: string; status: string; created_at: string; salle?: { id: string; name: string; city: string; images?: unknown; capacity?: number; slug: string } | undefined; conversationId: string | null } & Record<string, unknown>
+    | { kind: "visite"; id: string; salle_id: string; status: string; created_at: string; date_visite: string; heure_debut: string; heure_fin: string; salle?: { id: string; name: string; city: string; images?: unknown; capacity?: number; slug: string } | undefined };
+
+  const demandesWithSalle: ListItem[] = demandes.map((d) => ({
+    kind: "demande" as const,
+    ...d,
+    salle: salleMap.get(d.salle_id),
+    conversationId: convByDemande.get(d.id)?.id ?? null,
+  }));
+
+  const visitesWithSalle: ListItem[] = demandesVisite.map((d) => ({
+    kind: "visite" as const,
+    id: d.id,
+    salle_id: d.salle_id,
+    status: d.status,
+    created_at: d.created_at,
+    date_visite: d.date_visite,
+    heure_debut: d.heure_debut ?? "",
+    heure_fin: d.heure_fin ?? "",
+    salle: salleMap.get(d.salle_id),
+  }));
+
+  const merged = [...demandesWithSalle, ...visitesWithSalle].sort(
+    (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+  );
+
+  const filtered = merged.filter((d) => matchesFilter(d.status, statusFilter));
+  const total = filtered.length;
+  const totalPages = Math.ceil(total / PAGE_SIZE) || 1;
+  const currentPage = Math.min(page, totalPages);
+  const from = (page - 1) * PAGE_SIZE;
+  const list = filtered.slice(from, from + PAGE_SIZE);
+
+  const counts = {
+    all: merged.length,
+    sent: merged.filter((d) => d.status === "sent").length,
+    viewed: merged.filter((d) =>
+      ["sent", "viewed", "pending", "reschedule_proposed"].includes(d.status)
+    ).length,
+    replied: merged.filter((d) => ["replied", "accepted"].includes(d.status)).length,
+    rejected: merged.filter((d) => ["rejected", "refused"].includes(d.status)).length,
+  };
+
+  const totalWithReply = merged.filter((d) =>
+    ["replied", "accepted", "rejected", "refused"].includes(d.status)
+  ).length;
+  const tauxReponse =
+    merged.length > 0 ? Math.round((totalWithReply / merged.length) * 100) : 0;
 
   const tabs = [
     { key: "all" as const, label: "Toutes", count: counts.all },
-    { key: "viewed" as const, label: "En attente", count: counts.sent + counts.viewed },
+    { key: "viewed" as const, label: "En attente", count: counts.viewed },
     { key: "replied" as const, label: "Répondues", count: counts.replied },
     { key: "rejected" as const, label: "Refusées", count: counts.rejected },
   ];
@@ -144,8 +177,8 @@ export default async function DemandesPage({
   return (
     <div className="p-4 sm:p-6 lg:p-8">
       <div className="mb-6">
-        <h1 className="text-2xl font-bold text-black">Mes demandes</h1>
-        <p className="mt-1 text-slate-500">Suivez l&apos;état de vos demandes</p>
+        <h1 className="text-2xl font-bold text-black">Mes visites</h1>
+        <p className="mt-1 text-slate-500">Suivez l&apos;état de vos visites</p>
       </div>
 
       <div className="mb-6 flex items-center gap-4 rounded-xl border border-emerald-200 bg-emerald-50/80 p-4">
@@ -219,7 +252,6 @@ export default async function DemandesPage({
                   <th className="px-4 py-3">Salle</th>
                   <th className="px-4 py-3">Type d&apos;événement</th>
                   <th className="px-4 py-3">Date</th>
-                  <th className="px-4 py-3">Participants</th>
                   <th className="px-4 py-3">Ville</th>
                   <th className="px-4 py-3">Statut</th>
                   <th className="px-4 py-3">Actions</th>
@@ -232,16 +264,26 @@ export default async function DemandesPage({
                     salle?.images && Array.isArray(salle.images) && salle.images[0]
                       ? String(salle.images[0])
                       : "/img.png";
-                  const hDebut = formatTime(d.heure_debut_souhaitee ?? null);
-                  const hFin = formatTime(d.heure_fin_souhaitee ?? null);
+                  const isVisite = d.kind === "visite";
+                  const hDebut = isVisite
+                    ? formatTime((d as { heure_debut: string }).heure_debut ?? null)
+                    : formatTime((d as { heure_debut_souhaitee?: string }).heure_debut_souhaitee ?? null);
+                  const hFin = isVisite
+                    ? formatTime((d as { heure_fin: string }).heure_fin ?? null)
+                    : formatTime((d as { heure_fin_souhaitee?: string }).heure_fin_souhaitee ?? null);
                   const horaires = hDebut && hFin ? `${hDebut}-${hFin}` : hDebut || "";
-                  const dateStr = d.date_debut
-                    ? format(new Date(d.date_debut), "d MMMM yyyy", { locale: fr })
+                  const dateRaw = isVisite
+                    ? (d as { date_visite: string }).date_visite
+                    : (d as { date_debut?: string }).date_debut;
+                  const dateStr = dateRaw
+                    ? format(new Date(dateRaw + (isVisite ? "T12:00:00" : "")), "d MMMM yyyy", {
+                        locale: fr,
+                      })
                     : "—";
                   const dateDisplay = horaires ? `${dateStr}, ${horaires}` : dateStr;
 
                   return (
-                    <tr key={d.id} className="hover:bg-slate-50">
+                    <tr key={`${d.kind}-${d.id}`} className="hover:bg-slate-50">
                       <td className="px-4 py-4">
                         <div className="flex items-center gap-3">
                           <div className="relative h-12 w-12 shrink-0 overflow-hidden rounded-lg bg-slate-100">
@@ -250,21 +292,22 @@ export default async function DemandesPage({
                           <div>
                             <p className="font-medium text-black">{salle?.name ?? "—"}</p>
                             <p className="text-xs text-slate-500">
-                              Capacité {salle?.capacity ?? "—"} pers.
+                              {isVisite ? "Visite" : `Capacité ${salle?.capacity ?? "—"} pers.`}
                             </p>
                           </div>
                         </div>
                       </td>
                       <td className="px-4 py-4 text-sm text-slate-600">
-                        {d.type_evenement ?? "—"}
+                        {isVisite ? (
+                          <span className="inline-flex items-center gap-1">
+                            <Calendar className="h-4 w-4 text-slate-400" />
+                            Visite
+                          </span>
+                        ) : (
+                          (d as { type_evenement?: string }).type_evenement ?? "—"
+                        )}
                       </td>
                       <td className="px-4 py-4 text-sm text-slate-600">{dateDisplay}</td>
-                      <td className="px-4 py-4">
-                        <span className="flex items-center gap-1.5 text-sm text-slate-700">
-                          <Users className="h-4 w-4 text-slate-400" />
-                          {d.nb_personnes ?? "—"}
-                        </span>
-                      </td>
                       <td className="px-4 py-4 text-sm text-slate-600">
                         {salle?.city ?? "—"}
                       </td>
@@ -276,11 +319,11 @@ export default async function DemandesPage({
                         >
                           <span
                             className={`h-1.5 w-1.5 rounded-full ${
-                              d.status === "sent"
+                              ["sent", "pending"].includes(d.status)
                                 ? "bg-emerald-500"
-                                : d.status === "viewed"
+                                : ["viewed", "reschedule_proposed"].includes(d.status)
                                   ? "bg-amber-500"
-                                  : d.status === "replied" || d.status === "accepted"
+                                  : ["replied", "accepted"].includes(d.status)
                                     ? "bg-[#213398]"
                                     : "bg-red-500"
                             }`}
@@ -291,12 +334,16 @@ export default async function DemandesPage({
                       <td className="px-4 py-4">
                         <div className="flex items-center gap-2">
                           <Link
-                            href={`/dashboard/demandes/${d.id}`}
+                            href={
+                              isVisite
+                                ? `/dashboard/demandes/visite/${d.id}`
+                                : `/dashboard/demandes/${d.id}`
+                            }
                             className="text-sm font-medium text-black hover:underline"
                           >
                             Voir la demande
                           </Link>
-                          {d.conversationId && (
+                          {!isVisite && (d as { conversationId?: string }).conversationId && (
                             <Link
                               href="/dashboard/messagerie"
                               className="rounded p-1.5 text-slate-500 hover:bg-slate-100 hover:text-black"
