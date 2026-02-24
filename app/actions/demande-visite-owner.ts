@@ -1,7 +1,21 @@
 "use server";
 
+import { format } from "date-fns";
+import { fr } from "date-fns/locale";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
+
+import { getOrCreateConversationForVisite } from "./messagerie";
+import { sendVisiteAcceptedNotification } from "@/lib/email";
+
+const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
+
+function formatTime(t: string | null): string {
+  if (!t) return "";
+  const m = String(t).match(/(\d{1,2}):(\d{2})/);
+  return m ? `${m[1]}h${m[2]}` : "";
+}
 
 export async function accepterDemandeVisite(demandeVisiteId: string) {
   const supabase = await createClient();
@@ -10,15 +24,16 @@ export async function accepterDemandeVisite(demandeVisiteId: string) {
 
   const { data: dv } = await supabase
     .from("demandes_visite")
-    .select("salle_id")
+    .select("salle_id, seeker_id, date_visite, heure_debut, heure_fin")
     .eq("id", demandeVisiteId)
     .single();
   if (!dv) return { success: false, error: "Demande introuvable" };
 
+  const dvRow = dv as { salle_id: string; seeker_id: string; date_visite?: string; heure_debut?: string; heure_fin?: string };
   const { data: salle } = await supabase
     .from("salles")
-    .select("id")
-    .eq("id", (dv as { salle_id: string }).salle_id)
+    .select("id, name, address")
+    .eq("id", dvRow.salle_id)
     .eq("owner_id", user.id)
     .single();
   if (!salle) return { success: false, error: "Non autorisé" };
@@ -29,6 +44,35 @@ export async function accepterDemandeVisite(demandeVisiteId: string) {
     .eq("id", demandeVisiteId);
 
   if (error) return { success: false, error: error.message };
+
+  const salleRow = salle as { name: string; address?: string | null };
+  const dateStr = dvRow.date_visite
+    ? format(new Date(dvRow.date_visite + "T12:00:00"), "EEEE d MMMM yyyy", { locale: fr })
+    : "";
+  const horairesStr =
+    dvRow.heure_debut && dvRow.heure_fin
+      ? `${formatTime(dvRow.heure_debut)} – ${formatTime(dvRow.heure_fin)}`
+      : formatTime(dvRow.heure_debut ?? null);
+
+  const res = await getOrCreateConversationForVisite(demandeVisiteId);
+  const messagerieUrl = res.conversationId
+    ? `${siteUrl}/dashboard/messagerie?conversationId=${res.conversationId}`
+    : `${siteUrl}/dashboard/messagerie`;
+
+  const admin = createAdminClient();
+  const { data: seekerUser } = await admin.auth.admin.getUserById(dvRow.seeker_id);
+  const seekerEmail = seekerUser?.user?.email;
+  if (seekerEmail) {
+    sendVisiteAcceptedNotification(
+      seekerEmail,
+      salleRow.name,
+      salleRow.address ?? "",
+      dateStr,
+      horairesStr,
+      messagerieUrl
+    ).catch((e) => console.error("[accepterDemandeVisite] email:", e));
+  }
+
   revalidatePath("/proprietaire/visites");
   return { success: true };
 }

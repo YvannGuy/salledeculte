@@ -62,6 +62,54 @@ export async function getOrCreateConversation(demandeId: string) {
   return { conversationId: newConv.id, error: null };
 }
 
+/** Crée ou récupère une conversation pour une demande de visite (seeker ↔ propriétaire) */
+export async function getOrCreateConversationForVisite(demandeVisiteId: string) {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { error: "Non connecté", conversationId: null };
+
+  const { data: conv } = await supabase
+    .from("conversations")
+    .select("id")
+    .eq("demande_visite_id", demandeVisiteId)
+    .maybeSingle();
+
+  if (conv) return { conversationId: conv.id, error: null };
+
+  const { data: dv } = await supabase
+    .from("demandes_visite")
+    .select("seeker_id, salle_id")
+    .eq("id", demandeVisiteId)
+    .maybeSingle();
+
+  if (!dv) return { error: "Demande de visite introuvable", conversationId: null };
+
+  const { data: salle } = await supabase
+    .from("salles")
+    .select("owner_id")
+    .eq("id", (dv as { salle_id: string }).salle_id)
+    .maybeSingle();
+
+  if (!salle) return { error: "Salle introuvable", conversationId: null };
+
+  const dvRow = dv as { seeker_id: string; salle_id: string };
+  const salleRow = salle as { owner_id: string };
+  const { data: newConv, error } = await supabase
+    .from("conversations")
+    .insert({
+      demande_id: null,
+      demande_visite_id: demandeVisiteId,
+      seeker_id: dvRow.seeker_id,
+      owner_id: salleRow.owner_id,
+      salle_id: dvRow.salle_id,
+    })
+    .select("id")
+    .single();
+
+  if (error) return { error: error.message, conversationId: null };
+  return { conversationId: newConv.id, error: null };
+}
+
 async function clearRecipientArchiveOnNewMessage(conversationId: string, senderId: string) {
   const supabase = await createClient();
   const admin = createAdminClient();
@@ -244,20 +292,22 @@ async function sendNewMessageNotificationEmail(
 
   const { data: conv } = await supabase
     .from("conversations")
-    .select("seeker_id, owner_id, demande_id")
+    .select("seeker_id, owner_id, demande_id, demande_visite_id")
     .eq("id", conversationId)
     .single();
   if (!conv) return;
   const recipientId =
     conv.seeker_id === senderId ? conv.owner_id : conv.seeker_id;
   const isRecipientSeeker = conv.seeker_id === recipientId;
-  const demandeId = (conv as { demande_id?: string }).demande_id;
+  const convRow = conv as { demande_id?: string | null; demande_visite_id?: string | null };
   const messagerieBase = isRecipientSeeker
     ? `${siteUrl}/dashboard/messagerie`
     : `${siteUrl}/proprietaire/messagerie`;
-  const messagerieUrl = demandeId
-    ? `${messagerieBase}?demandeId=${demandeId}`
-    : messagerieBase;
+  const messagerieUrl = convRow.demande_visite_id
+    ? `${messagerieBase}?conversationId=${conversationId}`
+    : convRow.demande_id
+      ? `${messagerieBase}?demandeId=${convRow.demande_id}`
+      : messagerieBase;
 
   const { data: senderProfile } = await supabase
     .from("profiles")

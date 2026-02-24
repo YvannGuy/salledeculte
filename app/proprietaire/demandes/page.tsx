@@ -4,6 +4,7 @@ import { format } from "date-fns";
 import { fr } from "date-fns/locale";
 import { Zap, Users } from "lucide-react";
 
+import { ContactLocataireDemandeButton } from "@/components/demandes/contact-locataire-demande-button";
 import { Button } from "@/components/ui/button";
 import { Pagination } from "@/components/ui/pagination";
 import { createClient } from "@/lib/supabase/server";
@@ -312,11 +313,14 @@ export default async function DemandesPage({
                       </span>
                     </td>
                     <td className="px-4 py-4">
-                      <Link href={`/proprietaire/demandes/${d.id}`}>
-                        <Button size="sm" className="bg-[#213398] hover:bg-[#1a2980]">
-                          Voir
-                        </Button>
-                      </Link>
+                      <div className="flex flex-wrap gap-2">
+                        <Link href={`/proprietaire/demandes/${d.id}`}>
+                          <Button variant="outline" size="sm">
+                            Voir
+                          </Button>
+                        </Link>
+                        <ContactLocataireDemandeButton demandeId={d.id} />
+                      </div>
                     </td>
                   </tr>
                 );

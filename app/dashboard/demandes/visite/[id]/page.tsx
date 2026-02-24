@@ -3,8 +3,9 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
-import { ArrowLeft, Calendar, Clock } from "lucide-react";
+import { ArrowLeft, Calendar, Clock, MapPin } from "lucide-react";
 
+import { ContactVisiteSeekerButton } from "@/components/demandes/contact-visite-seeker-button";
 import { Button } from "@/components/ui/button";
 import { createClient } from "@/lib/supabase/server";
 
@@ -152,6 +153,29 @@ export default async function DemandeVisiteDetailPage({
                 <dd className="mt-0.5 whitespace-pre-wrap text-slate-700">{demande.message}</dd>
               </div>
             )}
+          </dl>
+        </div>
+
+        <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+          <h2 className="mb-4 text-sm font-semibold uppercase tracking-wider text-slate-500">
+            Infos pratiques
+          </h2>
+          <dl className="space-y-4">
+            {demande.status === "accepted" && salle.address && (
+              <div>
+                <dt className="flex items-center gap-1.5 text-xs font-medium text-slate-500">
+                  <MapPin className="h-4 w-4" />
+                  Adresse de la salle
+                </dt>
+                <dd className="mt-0.5 text-black">{salle.address}</dd>
+              </div>
+            )}
+            <div>
+              <dt className="text-xs font-medium text-slate-500">Contacter le propriétaire</dt>
+              <dd className="mt-2">
+                <ContactVisiteSeekerButton demandeVisiteId={demande.id} />
+              </dd>
+            </div>
           </dl>
         </div>
       </div>

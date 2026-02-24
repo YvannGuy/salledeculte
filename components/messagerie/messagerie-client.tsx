@@ -17,6 +17,7 @@ import {
   editMessage,
   getLastMessagePreviews,
   getOrCreateConversation,
+  getOrCreateConversationForVisite,
   markConversationAsRead,
   sendMessage,
   sendMessageWithAttachments,
@@ -35,6 +36,8 @@ import { createClient } from "@/lib/supabase/client";
 
 export type Thread = {
   demandeId: string;
+  /** Pour les threads issus d'une demande de visite (synthetic demandeId = "visite-{id}") */
+  demandeVisiteId?: string;
   conversationId: string | null;
   seekerId: string;
   seekerName: string;
@@ -134,6 +137,8 @@ type Props = {
   pagination?: PaginationInfo | null;
   /** Quand défini, ouvre automatiquement la conversation correspondante */
   initialDemandeId?: string | null;
+  /** Ouvre directement le thread ayant cette conversationId (priorité sur initialDemandeId) */
+  initialConversationId?: string | null;
   /** Propriétaire : peut envoyer des offres (Connect activé) */
   hasConnectAccount?: boolean;
   /** offer=paid ou offer=cancel au retour de Stripe */
@@ -178,6 +183,7 @@ export function MessagerieClient({
   userType,
   pagination,
   initialDemandeId,
+  initialConversationId,
   hasConnectAccount = false,
   offerReturnStatus,
 }: Props) {
@@ -309,11 +315,14 @@ export function MessagerieClient({
   }, [selected?.demandeId, userType, detailsClosedDefinitively]);
 
   useEffect(() => {
-    if (initialDemandeId) {
+    if (initialConversationId) {
+      const t = threads.find((x) => x.conversationId === initialConversationId);
+      if (t) setSelected(t);
+    } else if (initialDemandeId) {
       const t = threads.find((x) => x.demandeId === initialDemandeId);
       if (t) setSelected(t);
     }
-  }, [initialDemandeId, threads]);
+  }, [initialDemandeId, initialConversationId, threads]);
 
   useEffect(() => {
     const fromThreads = new Map<string, string>();
@@ -361,7 +370,9 @@ export function MessagerieClient({
     const open = async () => {
       let convId = selected.conversationId;
       if (!convId) {
-        const res = await getOrCreateConversation(selected.demandeId);
+        const res = selected.demandeVisiteId
+          ? await getOrCreateConversationForVisite(selected.demandeVisiteId)
+          : await getOrCreateConversation(selected.demandeId);
         if (res.conversationId) {
           convId = res.conversationId;
           setConversationId(convId);
@@ -377,7 +388,7 @@ export function MessagerieClient({
       setMobileShowChat(true);
     };
     open();
-  }, [selected?.demandeId, selected?.conversationId, loadMessages]);
+  }, [selected?.demandeId, selected?.demandeVisiteId, selected?.conversationId, loadMessages]);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -390,7 +401,9 @@ export function MessagerieClient({
 
     let convId: string | null = conversationId;
     if (!convId) {
-      const cres = await getOrCreateConversation(selected.demandeId);
+      const cres = selected.demandeVisiteId
+        ? await getOrCreateConversationForVisite(selected.demandeVisiteId)
+        : await getOrCreateConversation(selected.demandeId);
       if (!cres.conversationId) {
         alert(cres.error ?? "Impossible de créer la conversation.");
         return;
@@ -467,7 +480,9 @@ export function MessagerieClient({
   const handleArchiveConversation = async (t: Thread) => {
     let convId = t.conversationId;
     if (!convId) {
-      const cres = await getOrCreateConversation(t.demandeId);
+      const cres = t.demandeVisiteId
+        ? await getOrCreateConversationForVisite(t.demandeVisiteId)
+        : await getOrCreateConversation(t.demandeId);
       if (!cres.conversationId) {
         alert(cres.error ?? "Impossible de créer la conversation.");
         return;
@@ -484,7 +499,9 @@ export function MessagerieClient({
   const handleUnarchiveConversation = async (t: Thread) => {
     let convId = t.conversationId;
     if (!convId) {
-      const cres = await getOrCreateConversation(t.demandeId);
+      const cres = t.demandeVisiteId
+        ? await getOrCreateConversationForVisite(t.demandeVisiteId)
+        : await getOrCreateConversation(t.demandeId);
       if (!cres.conversationId) return;
       convId = cres.conversationId;
     }
@@ -499,7 +516,9 @@ export function MessagerieClient({
   const handleDeleteConversation = async (t: Thread) => {
     let convId = t.conversationId;
     if (!convId) {
-      const cres = await getOrCreateConversation(t.demandeId);
+      const cres = t.demandeVisiteId
+        ? await getOrCreateConversationForVisite(t.demandeVisiteId)
+        : await getOrCreateConversation(t.demandeId);
       if (!cres.conversationId) return;
       convId = cres.conversationId;
     }

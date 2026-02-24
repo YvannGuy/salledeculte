@@ -3,8 +3,10 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
-import { Calendar, MessageCircle, TrendingUp } from "lucide-react";
+import { Calendar } from "lucide-react";
 
+import { ContactProprietaireDemandeButton } from "@/components/demandes/contact-proprietaire-demande-button";
+import { ContactVisiteSeekerButton } from "@/components/demandes/contact-visite-seeker-button";
 import { Button } from "@/components/ui/button";
 import { Pagination } from "@/components/ui/pagination";
 import { createClient } from "@/lib/supabase/server";
@@ -107,25 +109,14 @@ export default async function DemandesPage({
       : { data: [] };
   const salleMap = new Map((sallesData ?? []).map((s) => [s.id, s]));
 
-  const demandeIds = demandes.map((d) => d.id);
-  const { data: convsData } =
-    demandeIds.length > 0
-      ? await supabase
-          .from("conversations")
-          .select("demande_id, id")
-          .in("demande_id", demandeIds)
-      : { data: [] };
-  const convByDemande = new Map((convsData ?? []).map((c) => [c.demande_id, c]));
-
   type ListItem =
-    | { kind: "demande"; id: string; salle_id: string; status: string; created_at: string; salle?: { id: string; name: string; city: string; images?: unknown; capacity?: number; slug: string } | undefined; conversationId: string | null } & Record<string, unknown>
+    | { kind: "demande"; id: string; salle_id: string; status: string; created_at: string; salle?: { id: string; name: string; city: string; images?: unknown; capacity?: number; slug: string } | undefined } & Record<string, unknown>
     | { kind: "visite"; id: string; salle_id: string; status: string; created_at: string; date_visite: string; heure_debut: string; heure_fin: string; salle?: { id: string; name: string; city: string; images?: unknown; capacity?: number; slug: string } | undefined };
 
   const demandesWithSalle: ListItem[] = demandes.map((d) => ({
     kind: "demande" as const,
     ...d,
     salle: salleMap.get(d.salle_id),
-    conversationId: convByDemande.get(d.id)?.id ?? null,
   }));
 
   const visitesWithSalle: ListItem[] = demandesVisite.map((d) => ({
@@ -161,12 +152,6 @@ export default async function DemandesPage({
     rejected: merged.filter((d) => ["rejected", "refused"].includes(d.status)).length,
   };
 
-  const totalWithReply = merged.filter((d) =>
-    ["replied", "accepted", "rejected", "refused"].includes(d.status)
-  ).length;
-  const tauxReponse =
-    merged.length > 0 ? Math.round((totalWithReply / merged.length) * 100) : 0;
-
   const tabs = [
     { key: "all" as const, label: "Toutes", count: counts.all },
     { key: "viewed" as const, label: "En attente", count: counts.viewed },
@@ -179,23 +164,6 @@ export default async function DemandesPage({
       <div className="mb-6">
         <h1 className="text-2xl font-bold text-black">Mes visites</h1>
         <p className="mt-1 text-slate-500">Suivez l&apos;état de vos visites</p>
-      </div>
-
-      <div className="mb-6 flex items-center gap-4 rounded-xl border border-emerald-200 bg-emerald-50/80 p-4">
-        <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-emerald-100">
-          <TrendingUp className="h-6 w-6 text-emerald-600" />
-        </div>
-        <div>
-          <p className="text-sm font-medium text-slate-600">Taux de réponse</p>
-          <p className="text-2xl font-bold text-emerald-700">{tauxReponse}%</p>
-        </div>
-        <p className="ml-auto max-w-[240px] text-right text-sm text-slate-600">
-          {tauxReponse >= 80
-            ? "Excellente performance sur la plateforme"
-            : tauxReponse >= 50
-              ? "Bonne réactivité des propriétaires"
-              : "Les propriétaires prennent le temps de répondre"}
-        </p>
       </div>
 
       <div className="mb-6 flex flex-wrap gap-2 border-b border-slate-200 pb-4">
@@ -290,7 +258,16 @@ export default async function DemandesPage({
                             <Image src={img} alt="" fill className="object-cover" sizes="48px" />
                           </div>
                           <div>
-                            <p className="font-medium text-black">{salle?.name ?? "—"}</p>
+                            <Link
+                              href={
+                                isVisite
+                                  ? `/dashboard/demandes/visite/${d.id}`
+                                  : `/dashboard/demandes/${d.id}`
+                              }
+                              className="font-medium text-black hover:underline"
+                            >
+                              {salle?.name ?? "—"}
+                            </Link>
                             <p className="text-xs text-slate-500">
                               {isVisite ? "Visite" : `Capacité ${salle?.capacity ?? "—"} pers.`}
                             </p>
@@ -332,27 +309,11 @@ export default async function DemandesPage({
                         </span>
                       </td>
                       <td className="px-4 py-4">
-                        <div className="flex items-center gap-2">
-                          <Link
-                            href={
-                              isVisite
-                                ? `/dashboard/demandes/visite/${d.id}`
-                                : `/dashboard/demandes/${d.id}`
-                            }
-                            className="text-sm font-medium text-black hover:underline"
-                          >
-                            Voir la demande
-                          </Link>
-                          {!isVisite && (d as { conversationId?: string }).conversationId && (
-                            <Link
-                              href="/dashboard/messagerie"
-                              className="rounded p-1.5 text-slate-500 hover:bg-slate-100 hover:text-black"
-                              title="Ouvrir la conversation"
-                            >
-                              <MessageCircle className="h-4 w-4" />
-                            </Link>
-                          )}
-                        </div>
+                        {isVisite ? (
+                          <ContactVisiteSeekerButton demandeVisiteId={d.id} />
+                        ) : (
+                          <ContactProprietaireDemandeButton demandeId={d.id} />
+                        )}
                       </td>
                     </tr>
                   );

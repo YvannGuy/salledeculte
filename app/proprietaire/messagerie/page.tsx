@@ -17,7 +17,7 @@ function formatTime(t: string | null): string {
 export default async function MessageriePage({
   searchParams,
 }: {
-  searchParams: Promise<{ page?: string; demandeId?: string }>;
+  searchParams: Promise<{ page?: string; demandeId?: string; conversationId?: string }>;
 }) {
   const supabase = await createClient();
   const {
@@ -37,22 +37,32 @@ export default async function MessageriePage({
     .eq("owner_id", user.id);
   const salleIds = (mySalles ?? []).map((s) => s.id);
 
-  const demandesRes =
+  const [demandesRes, demandesVisiteRes] = await Promise.all([
     salleIds.length > 0
-      ? await supabase
+      ? supabase
           .from("demandes")
           .select("id, seeker_id, salle_id, date_debut, type_evenement, status, nb_personnes, message, heure_debut_souhaitee, heure_fin_souhaitee, created_at")
           .in("salle_id", salleIds)
           .order("created_at", { ascending: false })
-      : { data: [] };
-  const demandes = demandesRes.data ?? [];
+      : { data: [] },
+    salleIds.length > 0
+      ? supabase
+          .from("demandes_visite")
+          .select("id, seeker_id, salle_id, date_visite, heure_debut, heure_fin, status, message, created_at")
+          .in("salle_id", salleIds)
+          .order("created_at", { ascending: false })
+      : { data: [] },
+  ]);
+  const demandes = (demandesRes.data ?? []) as { id: string; seeker_id: string; salle_id: string; date_debut?: string; type_evenement?: string; status?: string; nb_personnes?: number; message?: string; heure_debut_souhaitee?: string; heure_fin_souhaitee?: string; created_at?: string }[];
+  const demandesVisite = (demandesVisiteRes.data ?? []) as { id: string; seeker_id: string; salle_id: string; date_visite?: string; heure_debut?: string; heure_fin?: string; status?: string; message?: string; created_at?: string }[];
 
-  const demandeIds = (demandes ?? []).map((d) => d.id);
-  const seekerIds = [...new Set((demandes ?? []).map((d) => d.seeker_id))];
-  const salleIdsDem = [...new Set((demandes ?? []).map((d) => d.salle_id))];
+  const demandeIds = demandes.map((d) => d.id);
+  const demandeVisiteIds = demandesVisite.map((d) => d.id);
+  const seekerIds = [...new Set([...demandes.map((d) => d.seeker_id), ...demandesVisite.map((d) => d.seeker_id)])];
+  const salleIdsDem = [...new Set([...demandes.map((d) => d.salle_id), ...demandesVisite.map((d) => d.salle_id)])];
 
   const adminSupabase = createAdminClient();
-  const [profilesRes, sallesRes, convsResRaw] = await Promise.all([
+  const [profilesRes, sallesRes, convsResRaw, convsVisiteResRaw] = await Promise.all([
     seekerIds.length > 0
       ? adminSupabase.from("profiles").select("id, full_name, email").in("id", seekerIds)
       : { data: [] },
@@ -65,18 +75,29 @@ export default async function MessageriePage({
           .select("id, demande_id, last_message_at, last_message_preview")
           .in("demande_id", demandeIds)
       : { data: [] },
+    demandeVisiteIds.length > 0
+      ? supabase
+          .from("conversations")
+          .select("id, demande_visite_id, last_message_at, last_message_preview")
+          .in("demande_visite_id", demandeVisiteIds)
+      : { data: [] },
   ]);
 
   const convsData =
     demandeIds.length > 0 && !("error" in convsResRaw && convsResRaw.error)
-      ? convsResRaw.data ?? []
+      ? (convsResRaw.data ?? []) as { id: string; demande_id: string; last_message_at: string | null; last_message_preview: string | null }[]
+      : [];
+  const convsVisiteData =
+    demandeVisiteIds.length > 0 && !("error" in convsVisiteResRaw && convsVisiteResRaw.error)
+      ? (convsVisiteResRaw.data ?? []).filter((c: { demande_visite_id?: string }) => c.demande_visite_id) as { id: string; demande_visite_id: string; last_message_at: string | null; last_message_preview: string | null }[]
       : [];
 
   const profileMap = new Map((profilesRes.data ?? []).map((p) => [p.id, p]));
   const salleMap = new Map((sallesRes.data ?? []).map((s) => [s.id, s]));
   const convByDemande = new Map(convsData.map((c) => [c.demande_id, c]));
+  const convByDemandeVisite = new Map(convsVisiteData.map((c) => [c.demande_visite_id, c]));
 
-  const convIds = convsData.map((c) => c.id);
+  const convIds = [...new Set([...convsData.map((c) => c.id), ...convsVisiteData.map((c) => c.id)])];
 
   const { data: prefsData } =
     convIds.length > 0
@@ -150,13 +171,8 @@ export default async function MessageriePage({
     });
   }
 
-  const demandeToConvId = new Map<string, string>();
-  convsData.forEach((c) => {
-    demandeToConvId.set(c.demande_id, c.id);
-  });
-
-  const threads: Thread[] = (demandes ?? []).map((d) => {
-    const conv = convByDemande.get(d.id);
+  const threadsDemande: Thread[] = demandes.map((d) => {
+    const conv = convByDemande.get(d.id) as { id: string; last_message_at: string | null; last_message_preview: string | null } | undefined;
     const profile = profileMap.get(d.seeker_id);
     const salle = salleMap.get(d.salle_id);
     const convId = conv?.id ?? null;
@@ -204,6 +220,54 @@ export default async function MessageriePage({
     };
   });
 
+  const threadsVisite: Thread[] = demandesVisite.map((dv) => {
+    const conv = convByDemandeVisite.get(dv.id);
+    const profile = profileMap.get(dv.seeker_id);
+    const salle = salleMap.get(dv.salle_id);
+    const convId = conv?.id ?? null;
+    const unreadCount = convId ? unreadByConv.get(convId) ?? 0 : 0;
+    const dateStr = dv.date_visite
+      ? new Date(dv.date_visite + "T12:00:00").toLocaleDateString("fr-FR", {
+          day: "numeric",
+          month: "long",
+          year: "numeric",
+        })
+      : "";
+    const salleRow = salle as { images?: string[]; city?: string; capacity?: number; slug?: string } | undefined;
+    const salleImage = salleRow?.images && Array.isArray(salleRow.images) && salleRow.images[0] ? String(salleRow.images[0]) : "/img.png";
+    const horaires = dv.heure_debut && dv.heure_fin ? `${formatTime(dv.heure_debut)} - ${formatTime(dv.heure_fin)}` : "";
+    return {
+      demandeId: `visite-${dv.id}`,
+      demandeVisiteId: dv.id,
+      conversationId: convId,
+      seekerId: dv.seeker_id,
+      seekerName: profile?.full_name ?? "Visiteur",
+      seekerEmail: profile?.email ?? "",
+      salleId: dv.salle_id,
+      salleName: salle?.name ?? "Salle",
+      salleImage,
+      salleCity: salleRow?.city ?? "",
+      salleCapacity: salleRow?.capacity ?? null,
+      salleSlug: salleRow?.slug ?? "",
+      typeEvenement: null,
+      dateDebut: dateStr,
+      dateDebutHeure: horaires || undefined,
+      demandeStatus: dv.status ?? "pending",
+      contactRole: "Visiteur",
+      nbPersonnes: null,
+      message: dv.message ?? null,
+      lastMessageAt: conv?.last_message_at ?? null,
+      createdAt: dv.created_at ?? null,
+      lastMessagePreview: (convId ? lastMsgByConv.get(convId) : null) ?? conv?.last_message_preview ?? null,
+      lastMessageSenderId: null,
+      unreadCount,
+      archivedAt: convId ? prefsByConv.get(convId)?.archivedAt ?? null : null,
+      deletedAt: convId ? prefsByConv.get(convId)?.deletedAt ?? null : null,
+    };
+  });
+
+  const threads: Thread[] = [...threadsDemande, ...threadsVisite];
+
   const visibleThreads = threads.filter((t) => !t.deletedAt);
 
   visibleThreads.sort((a, b) => {
@@ -214,17 +278,20 @@ export default async function MessageriePage({
 
   const params = await searchParams;
   const demandeIdParam = params.demandeId ?? null;
+  const conversationIdParam = params.conversationId ?? null;
   const pageParam = params.page;
   const page = Math.max(1, parseInt(String(pageParam || "1"), 10) || 1);
   const totalPages = Math.ceil(threads.length / PAGE_SIZE) || 1;
   const currentPage = Math.min(page, totalPages);
   const from = (currentPage - 1) * PAGE_SIZE;
   let paginatedThreads = threads.slice(from, from + PAGE_SIZE);
-  if (demandeIdParam) {
-    const targetThread = threads.find((t) => t.demandeId === demandeIdParam);
-    if (targetThread && !paginatedThreads.some((t) => t.demandeId === demandeIdParam)) {
-      paginatedThreads = [targetThread, ...paginatedThreads];
-    }
+  const targetThread = conversationIdParam
+    ? threads.find((t) => t.conversationId === conversationIdParam)
+    : demandeIdParam
+      ? threads.find((t) => t.demandeId === demandeIdParam)
+      : null;
+  if (targetThread && !paginatedThreads.some((t) => t.demandeId === targetThread.demandeId)) {
+    paginatedThreads = [targetThread, ...paginatedThreads];
   }
 
   return (
@@ -232,6 +299,7 @@ export default async function MessageriePage({
       <MessagerieClient
         threads={paginatedThreads}
         initialDemandeId={demandeIdParam}
+        initialConversationId={conversationIdParam}
         currentUserId={user.id}
         currentUserFullName={(profile as { full_name?: string } | null)?.full_name ?? user.user_metadata?.full_name}
         userType="owner"

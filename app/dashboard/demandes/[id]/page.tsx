@@ -3,8 +3,9 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
-import { ArrowLeft, MapPin, MessageCircle } from "lucide-react";
+import { ArrowLeft } from "lucide-react";
 
+import { ContactProprietaireDemandeButton } from "@/components/demandes/contact-proprietaire-demande-button";
 import { Button } from "@/components/ui/button";
 import { createClient } from "@/lib/supabase/server";
 
@@ -112,14 +113,7 @@ export default async function DemandeDetailPage({
               Voir la salle
             </Button>
           </Link>
-          {conv && (
-            <Link href="/dashboard/messagerie">
-              <Button size="sm" className="bg-[#213398] hover:bg-[#1a2980]">
-                <MessageCircle className="mr-2 h-4 w-4" />
-                Messagerie
-              </Button>
-            </Link>
-          )}
+          <ContactProprietaireDemandeButton demandeId={demande.id} />
         </div>
       </div>
 

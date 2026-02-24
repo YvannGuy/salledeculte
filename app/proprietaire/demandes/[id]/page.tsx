@@ -12,6 +12,7 @@ import {
   Zap,
 } from "lucide-react";
 
+import { ContactLocataireDemandeButton } from "@/components/demandes/contact-locataire-demande-button";
 import { Button } from "@/components/ui/button";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
@@ -293,17 +294,9 @@ export default async function DemandeDetailPage({
           </div>
 
           {/* Actions */}
-          {!["replied", "accepted", "rejected"].includes(demande.status) && (
-            <div>
-              <Link
-                href={`/proprietaire/messagerie?demandeId=${demande.id}`}
-                className="inline-flex h-11 w-full items-center justify-center rounded-md bg-[#213398] px-8 text-sm font-medium text-white transition-all hover:bg-[#1a2980] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-400 focus-visible:ring-offset-2"
-              >
-                <MessageSquareText className="mr-2 h-4 w-4" />
-                Voir dans la messagerie
-              </Link>
-            </div>
-          )}
+          <div>
+            <ContactLocataireDemandeButton demandeId={demande.id} />
+          </div>
 
           {demande.reply_message && (
             <div className="rounded-xl border border-sky-100 bg-sky-50 p-4">

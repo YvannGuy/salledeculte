@@ -355,6 +355,44 @@ export async function sendNewVisiteRequestNotification(
   return { success: !error, error: error?.message };
 }
 
+/** Confirmation au seeker quand sa demande de visite est acceptée */
+export async function sendVisiteAcceptedNotification(
+  to: string,
+  salleName: string,
+  address: string,
+  dateStr: string,
+  horairesStr: string,
+  messagerieUrl: string
+) {
+  if (!process.env.RESEND_API_KEY) {
+    return { success: false };
+  }
+  const { error } = await resend.emails.send({
+    from,
+    to,
+    subject: `Visite acceptée pour ${salleName} — salledeculte.com`,
+    html: `
+<!DOCTYPE html>
+<html>
+<head><meta charset="utf-8">
+<style>body{font-family:system-ui,sans-serif;line-height:1.6;color:#333;max-width:560px;margin:0 auto;padding:24px;}a{color:#213398;text-decoration:none;}.btn{display:inline-block;background:#213398;color:#fff!important;padding:12px 24px;border-radius:8px;margin:16px 0;}p{margin:0 0 1em;}.info{background:#f5f5f5;padding:12px;border-radius:8px;margin:16px 0;font-weight:500;}</style></head>
+<body>
+  <h1>Votre visite a été acceptée</h1>
+  <p>Le propriétaire de <strong>${escapeHtml(salleName)}</strong> a accepté votre demande de visite.</p>
+  <div class="info">
+    <p><strong>Date :</strong> ${escapeHtml(dateStr)}</p>
+    <p><strong>Créneau :</strong> ${escapeHtml(horairesStr)}</p>
+    <p><strong>Adresse :</strong> ${escapeHtml(address)}</p>
+  </div>
+  <p>Vous pouvez contacter le propriétaire pour organiser la visite :</p>
+  <p><a href="${messagerieUrl}" class="btn">Ouvrir la messagerie</a></p>
+  <p>Cordialement,<br>L'équipe salledeculte.com</p>
+</body>
+</html>`,
+  });
+  return { success: !error, error: error?.message };
+}
+
 /** Notifie les admins quand une nouvelle annonce est soumise et doit être validée */
 export async function sendNewSallePendingAdminNotification(
   adminEmails: string[],
