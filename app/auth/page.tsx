@@ -72,10 +72,21 @@ function AuthPageContent() {
             <ArrowLeft className="h-4 w-4" />
             Retour à l&apos;accueil
           </Link>
-          <p className="mt-6 text-lg font-semibold text-black">{siteConfig.name}</p>
-          <div className="mt-1 h-0.5 w-12 bg-[#213398]" />
-          <h2 className="mt-6 text-2xl font-bold text-black">
-            Bienvenue sur {siteConfig.name}
+          <h2 className="mt-6 flex flex-wrap items-center gap-0 text-2xl font-bold text-black">
+            <span>Bienvenue sur</span>
+            <Link
+              href="/"
+              className="-ml-1 inline-flex items-center leading-none text-[#213398] hover:text-[#1a2980]"
+            >
+              <Image
+                src="/logopleinsdc.png"
+                alt=""
+                width={60}
+                height={60}
+                className="h-[60px] w-[60px] shrink-0 object-contain -mr-3"
+              />
+              {siteConfig.name}
+            </Link>
           </h2>
           <p className="mt-3 text-sm leading-relaxed text-slate-600">
             Trouvez et réservez des salles adaptées à vos événements cultuels.
