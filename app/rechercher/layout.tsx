@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import "leaflet/dist/leaflet.css";
 
 import { SiteFooter } from "@/components/layout/site-footer";
 import { SiteHeader } from "@/components/layout/site-header";

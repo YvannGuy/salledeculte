@@ -25,7 +25,8 @@ export async function loginAction(_: AuthFormState, formData: FormData): Promise
   const { data, error } = await supabase.auth.signInWithPassword({ email, password });
 
   if (error) {
-    return { error: error.message || defaultError };
+    const msg = error.message === "Invalid login credentials" ? "Identifiants incorrects." : error.message || defaultError;
+    return { error: msg };
   }
 
   const user = data.user;

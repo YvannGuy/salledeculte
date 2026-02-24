@@ -25,7 +25,8 @@ export async function loginAdminAction(_: AuthFormState, formData: FormData): Pr
   const { data, error } = await supabase.auth.signInWithPassword({ email, password });
 
   if (error) {
-    return { error: error.message || "Identifiants incorrects." };
+    const msg = error.message === "Invalid login credentials" ? "Identifiants incorrects." : error.message || "Une erreur est survenue.";
+    return { error: msg };
   }
 
   // Vérifier ADMIN_EMAILS (env) OU user_type = 'admin' (profiles)
