@@ -114,6 +114,36 @@ Optionnel pour upload automatique des sourcemaps en CI/CD :
 - `SENTRY_ORG`
 - `SENTRY_PROJECT`
 
+## Cron solde J-1 (acompte / paiement fractionné)
+
+Le cron appelle l'endpoint `POST /api/stripe/process-balance` pour tenter le prélèvement du solde des réservations à J-1.
+
+1. Ajouter les variables d'environnement sur Vercel :
+   - `CRON_SECRET`
+   - `STRIPE_BALANCE_CRON_SECRET`
+   - Utiliser **la même valeur** pour les deux.
+2. Garder `vercel.json` avec le cron :
+
+```json
+{
+  "crons": [
+    {
+      "path": "/api/stripe/process-balance",
+      "schedule": "*/15 * * * *"
+    }
+  ]
+}
+```
+
+3. Test manuel (commande correcte) :
+
+```bash
+curl -X POST "https://salledeculte.com/api/stripe/process-balance" \
+  -H "Authorization: Bearer TA_VALEUR_SECRETE"
+```
+
+> Important: le header doit contenir `Bearer` (avec un espace), sinon l'API renvoie `401 Unauthorized`.
+
 ## Admin Dashboard
 
 1. Ajoutez `ADMIN_EMAILS` dans `.env.local` : liste d'emails séparés par des virgules (ex: `admin@example.com,autre@example.com`)
