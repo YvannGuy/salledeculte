@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 
 import { OwnerSidebar } from "@/components/dashboard/owner-sidebar";
 import { canAccessOwnerDashboard, getEffectiveUserType } from "@/lib/auth-utils";
+import { getOwnerBadgeCounts } from "@/lib/notification-counts";
 import { getUserOrNull } from "@/lib/supabase/server";
 
 export const metadata: Metadata = {
@@ -57,46 +58,7 @@ export default async function ProprietaireLayout({
     .maybeSingle();
 
   const displayName = profile?.full_name ?? user.user_metadata?.full_name ?? "Utilisateur";
-  const salleIds = (mySalles ?? []).map((s) => s.id);
-  const { data: demandesForMessagerie } =
-    salleIds.length > 0
-      ? await supabase.from("demandes").select("id").in("salle_id", salleIds)
-      : { data: [] };
-
-  let visiteCount = 0;
-  if (salleIds.length > 0) {
-    try {
-      const { count } = await supabase
-        .from("demandes_visite")
-        .select("id", { count: "exact", head: true })
-        .in("salle_id", salleIds)
-        .eq("status", "pending");
-      visiteCount = count ?? 0;
-    } catch {
-      // Table demandes_visite peut ne pas exister si migration non exécutée
-    }
-  }
-
-  let messageCount = 0;
-  const demandeIdsForConv = (demandesForMessagerie ?? []).map((d) => d.id);
-  if (demandeIdsForConv.length > 0) {
-    const convsRes = await supabase
-      .from("conversations")
-      .select("id")
-      .in("demande_id", demandeIdsForConv);
-    if (!convsRes.error) {
-      const convIds = (convsRes.data ?? []).map((c) => c.id);
-      if (convIds.length > 0) {
-        const msgRes = await supabase
-          .from("messages")
-          .select("id", { count: "exact", head: true })
-          .in("conversation_id", convIds)
-          .neq("sender_id", user.id)
-          .is("read_at", null);
-        if (!msgRes.error) messageCount = msgRes.count ?? 0;
-      }
-    }
-  }
+  const { visiteCount, messageCount, paymentCount, contractCount } = await getOwnerBadgeCounts(supabase, user.id);
 
   return (
     <div className="flex h-screen flex-col overflow-hidden bg-slate-50 lg:flex-row">
@@ -105,6 +67,8 @@ export default async function ProprietaireLayout({
         demandeCount={0}
         visiteCount={visiteCount ?? 0}
         messageCount={messageCount}
+        paymentCount={paymentCount}
+        contractCount={contractCount}
         canAccessSeeker={true}
       />
       <main className="flex-1 overflow-auto">{children}</main>

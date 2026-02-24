@@ -129,3 +129,89 @@ export async function updateSalleOwnerAction(
   revalidatePath("/proprietaire/annonces");
   return { success: true };
 }
+
+const JOUR_TO_DOW: Record<string, number> = {
+  dimanche: 0,
+  lundi: 1,
+  mardi: 2,
+  mercredi: 3,
+  jeudi: 4,
+  vendredi: 5,
+  samedi: 6,
+};
+
+function toYmd(d: Date): string {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${y}-${m}-${day}`;
+}
+
+export async function updateSalleVisitesCalendarAction(params: {
+  salleId: string;
+  joursVisite: string[];
+  heureDebut: string;
+  heureFin: string;
+}): Promise<{ success: boolean; error?: string }> {
+  const { salleId, joursVisite, heureDebut, heureFin } = params;
+  if (!salleId) return { success: false, error: "Salle manquante" };
+  if (!heureDebut || !heureFin) return { success: false, error: "Horaires requis" };
+  if (heureDebut >= heureFin) return { success: false, error: "L'heure de fin doit être après l'heure de début" };
+
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { success: false, error: "Non connecté" };
+
+  const { data: salle } = await supabase
+    .from("salles")
+    .select("id")
+    .eq("id", salleId)
+    .eq("owner_id", user.id)
+    .maybeSingle();
+  if (!salle) return { success: false, error: "Salle introuvable" };
+
+  const selectedDows = new Set(
+    joursVisite
+      .map((j) => JOUR_TO_DOW[j])
+      .filter((v): v is number => typeof v === "number")
+  );
+
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const generatedDates: string[] = [];
+  for (let i = 0; i < 7 * 12; i++) {
+    const d = new Date(today);
+    d.setDate(today.getDate() + i);
+    if (selectedDows.has(d.getDay())) {
+      generatedDates.push(toYmd(d));
+    }
+  }
+
+  const horairesParDate: Record<string, { debut: string; fin: string }> = {};
+  for (const date of generatedDates) {
+    horairesParDate[date] = { debut: heureDebut, fin: heureFin };
+  }
+
+  const { error } = await supabase
+    .from("salles")
+    .update({
+      jours_visite: joursVisite.length > 0 ? joursVisite : null,
+      visite_dates: generatedDates.length > 0 ? generatedDates : null,
+      visite_heure_debut: `${heureDebut}:00`,
+      visite_heure_fin: `${heureFin}:00`,
+      visite_horaires_par_date:
+        generatedDates.length > 0 ? (horairesParDate as unknown as object) : null,
+      updated_at: new Date().toISOString(),
+    })
+    .eq("id", salleId)
+    .eq("owner_id", user.id);
+
+  if (error) return { success: false, error: error.message };
+
+  revalidatePath("/proprietaire/calendrier-visites");
+  revalidatePath("/proprietaire/visites");
+  revalidatePath("/proprietaire");
+  return { success: true };
+}

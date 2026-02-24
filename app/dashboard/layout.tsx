@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 
 import { DashboardSidebar } from "@/components/dashboard/dashboard-sidebar";
 import { canAccessOwnerDashboard, getEffectiveUserType } from "@/lib/auth-utils";
+import { getSeekerBadgeCounts } from "@/lib/notification-counts";
 import { getUserOrNull } from "@/lib/supabase/server";
 
 export const metadata: Metadata = {
@@ -60,33 +61,7 @@ export default async function DashboardLayout({
 
   const displayName = (profile as { full_name?: string | null } | null)?.full_name ?? user.user_metadata?.full_name ?? "Utilisateur";
 
-  const [{ count: demandeCount }, { data: demandesForMessagerie }] = await Promise.all([
-    supabase
-      .from("demandes")
-      .select("id", { count: "exact", head: true })
-      .eq("seeker_id", user.id)
-      .in("status", ["sent", "viewed"]),
-    supabase.from("demandes").select("id").eq("seeker_id", user.id),
-  ]);
-
-  let messageCount = 0;
-  const demandeIds = (demandesForMessagerie ?? []).map((d) => d.id);
-  if (demandeIds.length > 0) {
-    const convsRes = await supabase
-      .from("conversations")
-      .select("id")
-      .in("demande_id", demandeIds);
-    if (!convsRes.error && (convsRes.data ?? []).length > 0) {
-      const convIds = (convsRes.data ?? []).map((c) => c.id);
-      const msgRes = await supabase
-        .from("messages")
-        .select("id", { count: "exact", head: true })
-        .in("conversation_id", convIds)
-        .neq("sender_id", user.id)
-        .is("read_at", null);
-      if (!msgRes.error) messageCount = msgRes.count ?? 0;
-    }
-  }
+  const { demandeCount, messageCount, paymentCount } = await getSeekerBadgeCounts(supabase, user.id);
 
   return (
     <div className="flex h-screen flex-col overflow-hidden bg-slate-50 lg:flex-row">
@@ -94,6 +69,7 @@ export default async function DashboardLayout({
         user={{ ...user, displayName }}
         demandeCount={demandeCount ?? 0}
         messageCount={messageCount}
+        paymentCount={paymentCount}
         canAccessOwner={canAccessOwner}
       />
       <main className="flex-1 overflow-auto">{children}</main>

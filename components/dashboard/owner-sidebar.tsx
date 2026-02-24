@@ -30,10 +30,10 @@ import { Button } from "@/components/ui/button";
 const navItems = [
   { href: "/proprietaire", label: "Tableau de bord", icon: Home },
   { href: "/proprietaire/annonces", label: "Mes annonces", icon: Building2 },
-  { href: "/proprietaire/visites", label: "Demandes de visites", icon: Calendar, badgeKey: "visites" },
+  { href: "/proprietaire/visites", label: "Mes visites", icon: Calendar, badgeKey: "visites" },
   { href: "/proprietaire/messagerie", label: "Messagerie", icon: MessageCircle, badgeKey: "messagerie" },
-  { href: "/proprietaire/paiement", label: "Paiement", icon: CreditCard },
-  { href: "/proprietaire/contrat", label: "Contrat & facture", icon: FileText },
+  { href: "/proprietaire/paiement", label: "Paiement", icon: CreditCard, badgeKey: "paiement" },
+  { href: "/proprietaire/contrat", label: "Contrat & facture", icon: FileText, badgeKey: "contrat" },
   { href: "/proprietaire/parametres", label: "Paramètres", icon: Settings },
 ];
 
@@ -44,6 +44,8 @@ function NavContent({
   demandeCount,
   visiteCount,
   messageCount,
+  paymentCount,
+  contractCount,
   collapsed = false,
   onItemClick,
   canAccessSeeker = false,
@@ -54,6 +56,8 @@ function NavContent({
   demandeCount: number;
   visiteCount: number;
   messageCount: number;
+  paymentCount: number;
+  contractCount: number;
   collapsed?: boolean;
   onItemClick?: () => void;
   canAccessSeeker?: boolean;
@@ -107,6 +111,16 @@ function NavContent({
                       {demandeCount}
                     </span>
                   )}
+                  {item.badgeKey === "visites" && visiteCount > 0 && (
+                    <span
+                      className={cn(
+                        "flex h-5 min-w-[20px] items-center justify-center rounded-full px-1.5 text-xs font-semibold",
+                        isActive ? "bg-white/20 text-white" : "bg-violet-100 text-violet-700"
+                      )}
+                    >
+                      {visiteCount > 99 ? "99+" : visiteCount}
+                    </span>
+                  )}
                   {item.badgeKey === "messagerie" && messageCount > 0 && (
                     <span
                       className={cn(
@@ -115,6 +129,26 @@ function NavContent({
                       )}
                     >
                       {messageCount}
+                    </span>
+                  )}
+                  {item.badgeKey === "paiement" && paymentCount > 0 && (
+                    <span
+                      className={cn(
+                        "flex h-5 min-w-[20px] items-center justify-center rounded-full px-1.5 text-xs font-semibold",
+                        isActive ? "bg-white/20 text-white" : "bg-amber-100 text-amber-700"
+                      )}
+                    >
+                      {paymentCount > 99 ? "99+" : paymentCount}
+                    </span>
+                  )}
+                  {item.badgeKey === "contrat" && contractCount > 0 && (
+                    <span
+                      className={cn(
+                        "flex h-5 min-w-[20px] items-center justify-center rounded-full px-1.5 text-xs font-semibold",
+                        isActive ? "bg-white/20 text-white" : "bg-orange-100 text-orange-700"
+                      )}
+                    >
+                      {contractCount > 99 ? "99+" : contractCount}
                     </span>
                   )}
                 </>
@@ -132,6 +166,16 @@ function NavContent({
               {collapsed && item.badgeKey === "messagerie" && messageCount > 0 && (
                 <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-[#213398] px-1 text-[10px] font-semibold text-white">
                   {messageCount > 99 ? "99+" : messageCount}
+                </span>
+              )}
+              {collapsed && item.badgeKey === "paiement" && paymentCount > 0 && (
+                <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-amber-500 px-1 text-[10px] font-semibold text-white">
+                  {paymentCount > 99 ? "99+" : paymentCount}
+                </span>
+              )}
+              {collapsed && item.badgeKey === "contrat" && contractCount > 0 && (
+                <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-orange-500 px-1 text-[10px] font-semibold text-white">
+                  {contractCount > 99 ? "99+" : contractCount}
                 </span>
               )}
             </Link>
@@ -177,12 +221,16 @@ export function OwnerSidebar({
   demandeCount = 0,
   visiteCount = 0,
   messageCount = 0,
+  paymentCount = 0,
+  contractCount = 0,
   canAccessSeeker = false,
 }: {
   user: { email?: string | null; displayName?: string };
   demandeCount?: number;
   visiteCount?: number;
   messageCount?: number;
+  paymentCount?: number;
+  contractCount?: number;
   canAccessSeeker?: boolean;
 }) {
   const pathname = usePathname();
@@ -227,6 +275,8 @@ export function OwnerSidebar({
             demandeCount={demandeCount}
             visiteCount={visiteCount}
             messageCount={messageCount}
+            paymentCount={paymentCount}
+            contractCount={contractCount}
             onItemClick={() => setMobileOpen(false)}
             canAccessSeeker={canAccessSeeker}
           />
@@ -267,6 +317,8 @@ export function OwnerSidebar({
           demandeCount={demandeCount}
           visiteCount={visiteCount}
           messageCount={messageCount}
+          paymentCount={paymentCount}
+          contractCount={contractCount}
           collapsed={collapsed}
           canAccessSeeker={canAccessSeeker}
         />

@@ -17,7 +17,7 @@ const navItems = [
   { href: "/dashboard", label: "Tableau de bord", icon: Home },
   { href: "/dashboard/rechercher", label: "Rechercher une salle", icon: Search, opensSearchModal: true },
   { href: "/dashboard/demandes", label: "Mes visites", icon: FileText, badgeKey: "demandes" },
-  { href: "/dashboard/paiement", label: "Paiement", icon: CreditCard },
+  { href: "/dashboard/paiement", label: "Paiement", icon: CreditCard, badgeKey: "paiement" },
   { href: "/dashboard/messagerie", label: "Messagerie", icon: MessageCircle, badgeKey: "messagerie" },
   { href: "/dashboard/favoris", label: "Favoris", icon: Heart },
   { href: "/dashboard/parametres", label: "Paramètres", icon: Settings },
@@ -29,6 +29,7 @@ function NavContent({
   userEmail,
   demandeCount,
   messageCount,
+  paymentCount,
   collapsed = false,
   onItemClick,
   searchModalOpen,
@@ -40,6 +41,7 @@ function NavContent({
   userEmail?: string | null;
   demandeCount: number;
   messageCount: number;
+  paymentCount: number;
   collapsed?: boolean;
   onItemClick?: () => void;
   searchModalOpen?: boolean;
@@ -82,7 +84,14 @@ function NavContent({
         {navItems.map((item) => {
           const isActive = pathname === item.href && !(item as { opensSearchModal?: boolean }).opensSearchModal;
           const Icon = item.icon;
-          const badgeVal = item.badgeKey === "demandes" ? demandeCount : item.badgeKey === "messagerie" ? messageCount : null;
+          const badgeVal =
+            item.badgeKey === "demandes"
+              ? demandeCount
+              : item.badgeKey === "messagerie"
+                ? messageCount
+                : item.badgeKey === "paiement"
+                  ? paymentCount
+                  : null;
           const opensSearchModal = (item as { opensSearchModal?: boolean }).opensSearchModal;
           const navClassName = cn(
             "relative flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left text-sm font-medium transition-colors",
@@ -175,11 +184,13 @@ export function DashboardSidebar({
   user,
   demandeCount = 0,
   messageCount = 0,
+  paymentCount = 0,
   canAccessOwner = false,
 }: {
   user: { email?: string | null; displayName?: string };
   demandeCount?: number;
   messageCount?: number;
+  paymentCount?: number;
   canAccessOwner?: boolean;
 }) {
   const pathname = usePathname();
@@ -224,6 +235,7 @@ export function DashboardSidebar({
             userEmail={user.email}
             demandeCount={demandeCount}
             messageCount={messageCount}
+            paymentCount={paymentCount}
             onItemClick={() => setMobileOpen(false)}
             searchModalOpen={searchModalOpen}
             setSearchModalOpen={(open) => {
@@ -270,6 +282,7 @@ export function DashboardSidebar({
           userEmail={user.email}
           demandeCount={demandeCount}
           messageCount={messageCount}
+          paymentCount={paymentCount}
           collapsed={collapsed}
           searchModalOpen={searchModalOpen}
           setSearchModalOpen={setSearchModalOpen}
