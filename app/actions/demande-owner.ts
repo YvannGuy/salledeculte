@@ -2,6 +2,7 @@
 
 import { redirect } from "next/navigation";
 
+import { getOrCreateConversation } from "@/app/actions/messagerie";
 import { createClient } from "@/lib/supabase/server";
 
 /** Vérifie que l'utilisateur est propriétaire de la salle de la demande. Retourne aussi seeker_id et owner_id. */
@@ -65,20 +66,7 @@ export async function updateDemandeStatusAction(
   if (error) return { success: false, error: error.message };
 
   if (status === "replied") {
-    const { data: conv } = await supabase
-      .from("conversations")
-      .select("id")
-      .eq("demande_id", demandeId)
-      .maybeSingle();
-    let convId = conv?.id;
-    if (!convId && seekerId && ownerId && salleId) {
-      const { data: newConv } = await supabase
-        .from("conversations")
-        .insert({ demande_id: demandeId, seeker_id: seekerId, owner_id: ownerId, salle_id: salleId })
-        .select("id")
-        .single();
-      convId = newConv?.id;
-    }
+    const { conversationId: convId } = await getOrCreateConversation(demandeId);
     if (convId) {
       await supabase.from("messages").insert({
         conversation_id: convId,

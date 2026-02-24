@@ -6,6 +6,7 @@ import { useState } from "react";
 import { Calendar, Check, X } from "lucide-react";
 
 import { ContactVisiteOwnerButton } from "@/components/demandes/contact-visite-owner-button";
+import { ProposerAutreCreneauVisiteButton } from "@/components/proprietaire/proposer-autre-creneau-visite-button";
 import { Button } from "@/components/ui/button";
 import { accepterDemandeVisite, refuserDemandeVisite } from "@/app/actions/demande-visite-owner";
 
@@ -17,6 +18,7 @@ type Item = {
   salleImage: string;
   seekerName: string;
   dateDisplay: string;
+  typeEvenement?: string;
   message: string | null;
   status: string;
 };
@@ -81,7 +83,7 @@ export function VisitesTable({ list }: { list: Item[] }) {
               <td className="px-4 py-4 text-sm text-slate-600">
                 <span className="inline-flex items-center gap-1">
                   <Calendar className="h-4 w-4 text-slate-400" />
-                  Visite
+                  {item.typeEvenement ?? "Visite"}
                 </span>
               </td>
               <td className="px-4 py-4 text-sm text-slate-600">{item.dateDisplay}</td>
@@ -104,6 +106,7 @@ export function VisitesTable({ list }: { list: Item[] }) {
                 <div className="flex flex-wrap items-center gap-2">
                   {item.status === "pending" && (
                     <>
+                      <ProposerAutreCreneauVisiteButton demandeVisiteId={item.id} />
                       <Button
                         variant="outline"
                         size="sm"

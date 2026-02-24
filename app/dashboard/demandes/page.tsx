@@ -7,6 +7,7 @@ import { Calendar } from "lucide-react";
 
 import { ContactProprietaireDemandeButton } from "@/components/demandes/contact-proprietaire-demande-button";
 import { ContactVisiteSeekerButton } from "@/components/demandes/contact-visite-seeker-button";
+import { ReprogrammationVisiteActions } from "@/components/demandes/reprogrammation-visite-actions";
 import { Button } from "@/components/ui/button";
 import { Pagination } from "@/components/ui/pagination";
 import { createClient } from "@/lib/supabase/server";
@@ -79,11 +80,18 @@ export default async function DemandesPage({
     .eq("seeker_id", user.id)
     .order("created_at", { ascending: false });
 
-  let demandesVisiteData: { id: string; salle_id: string; date_visite: string; heure_debut: string; heure_fin: string; status: string; created_at: string }[] | null = null;
+  const TYPE_EVENEMENT_LABEL: Record<string, string> = {
+    "culte-regulier": "Culte régulier",
+    conference: "Conférence",
+    celebration: "Célébration",
+    bapteme: "Baptême",
+    retraite: "Retraite",
+  };
+  let demandesVisiteData: { id: string; salle_id: string; date_visite: string; heure_debut: string; heure_fin: string; type_evenement: string | null; status: string; created_at: string }[] | null = null;
   try {
     const res = await supabase
       .from("demandes_visite")
-      .select("id, salle_id, date_visite, heure_debut, heure_fin, status, created_at")
+      .select("id, salle_id, date_visite, heure_debut, heure_fin, type_evenement, status, created_at")
       .eq("seeker_id", user.id)
       .order("created_at", { ascending: false });
     demandesVisiteData = res.data;
@@ -111,7 +119,7 @@ export default async function DemandesPage({
 
   type ListItem =
     | { kind: "demande"; id: string; salle_id: string; status: string; created_at: string; salle?: { id: string; name: string; city: string; images?: unknown; capacity?: number; slug: string } | undefined } & Record<string, unknown>
-    | { kind: "visite"; id: string; salle_id: string; status: string; created_at: string; date_visite: string; heure_debut: string; heure_fin: string; salle?: { id: string; name: string; city: string; images?: unknown; capacity?: number; slug: string } | undefined };
+    | { kind: "visite"; id: string; salle_id: string; status: string; created_at: string; date_visite: string; heure_debut: string; heure_fin: string; type_evenement: string | null; salle?: { id: string; name: string; city: string; images?: unknown; capacity?: number; slug: string } | undefined };
 
   const demandesWithSalle: ListItem[] = demandes.map((d) => ({
     kind: "demande" as const,
@@ -128,6 +136,7 @@ export default async function DemandesPage({
     date_visite: d.date_visite,
     heure_debut: d.heure_debut ?? "",
     heure_fin: d.heure_fin ?? "",
+    type_evenement: d.type_evenement ? (TYPE_EVENEMENT_LABEL[d.type_evenement] ?? d.type_evenement) : null,
     salle: salleMap.get(d.salle_id),
   }));
 
@@ -278,7 +287,7 @@ export default async function DemandesPage({
                         {isVisite ? (
                           <span className="inline-flex items-center gap-1">
                             <Calendar className="h-4 w-4 text-slate-400" />
-                            Visite
+                            {(d as { type_evenement?: string | null }).type_evenement ?? "Visite"}
                           </span>
                         ) : (
                           (d as { type_evenement?: string }).type_evenement ?? "—"
@@ -309,7 +318,12 @@ export default async function DemandesPage({
                         </span>
                       </td>
                       <td className="px-4 py-4">
-                        {isVisite ? (
+                        {isVisite && d.status === "reschedule_proposed" ? (
+                          <ReprogrammationVisiteActions
+                            demandeVisiteId={d.id}
+                            compact
+                          />
+                        ) : isVisite ? (
                           <ContactVisiteSeekerButton demandeVisiteId={d.id} />
                         ) : (
                           <ContactProprietaireDemandeButton demandeId={d.id} />

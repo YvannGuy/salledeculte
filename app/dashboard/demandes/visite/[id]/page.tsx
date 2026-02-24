@@ -6,6 +6,7 @@ import { fr } from "date-fns/locale";
 import { ArrowLeft, Calendar, Clock, MapPin } from "lucide-react";
 
 import { ContactVisiteSeekerButton } from "@/components/demandes/contact-visite-seeker-button";
+import { ReprogrammationVisiteActions } from "@/components/demandes/reprogrammation-visite-actions";
 import { Button } from "@/components/ui/button";
 import { createClient } from "@/lib/supabase/server";
 
@@ -14,6 +15,14 @@ const STATUT_LABEL: Record<string, string> = {
   accepted: "Acceptée",
   refused: "Refusée",
   reschedule_proposed: "Reprogrammation proposée",
+};
+
+const TYPE_EVENEMENT_LABEL: Record<string, string> = {
+  "culte-regulier": "Culte régulier",
+  conference: "Conférence",
+  celebration: "Célébration",
+  bapteme: "Baptême",
+  retraite: "Retraite",
 };
 
 const STATUT_BADGE: Record<string, string> = {
@@ -44,7 +53,7 @@ export default async function DemandeVisiteDetailPage({
   const { data: demande } = await supabase
     .from("demandes_visite")
     .select(
-      "id, salle_id, date_visite, heure_debut, heure_fin, message, status, created_at, date_proposee, heure_debut_proposee, heure_fin_proposee"
+      "id, salle_id, date_visite, heure_debut, heure_fin, type_evenement, message, status, created_at, date_proposee, heure_debut_proposee, heure_fin_proposee"
     )
     .eq("id", id)
     .eq("seeker_id", user.id)
@@ -136,6 +145,14 @@ export default async function DemandeVisiteDetailPage({
               </dt>
               <dd className="mt-0.5 text-black">{horairesStr || "—"}</dd>
             </div>
+            {demande.type_evenement && (
+              <div>
+                <dt className="text-xs font-medium text-slate-500">Type d&apos;événement</dt>
+                <dd className="mt-0.5 text-black">
+                  {TYPE_EVENEMENT_LABEL[demande.type_evenement] ?? demande.type_evenement}
+                </dd>
+              </div>
+            )}
             {demande.status === "reschedule_proposed" &&
               (dateProposeeStr || horairesProposeesStr) && (
                 <div>
@@ -161,6 +178,18 @@ export default async function DemandeVisiteDetailPage({
             Infos pratiques
           </h2>
           <dl className="space-y-4">
+            {demande.status === "reschedule_proposed" &&
+              (dateProposeeStr || horairesProposeesStr) && (
+                <div className="rounded-lg border border-sky-200 bg-sky-50/80 p-4">
+                  <dt className="text-xs font-semibold uppercase tracking-wide text-sky-700">
+                    Nouveau créneau proposé
+                  </dt>
+                  <dd className="mt-1 text-sm font-medium text-sky-900">
+                    {[dateProposeeStr, horairesProposeesStr].filter(Boolean).join(" • ")}
+                  </dd>
+                  <ReprogrammationVisiteActions demandeVisiteId={demande.id} />
+                </div>
+              )}
             {demande.status === "accepted" && salle.address && (
               <div>
                 <dt className="flex items-center gap-1.5 text-xs font-medium text-slate-500">

@@ -393,6 +393,72 @@ export async function sendVisiteAcceptedNotification(
   return { success: !error, error: error?.message };
 }
 
+/** Notification au seeker quand sa demande de visite est refusée */
+export async function sendVisiteRefusedNotification(
+  to: string,
+  salleName: string,
+  demandesUrl: string
+) {
+  if (!process.env.RESEND_API_KEY) {
+    return { success: false };
+  }
+  const { error } = await resend.emails.send({
+    from,
+    to,
+    subject: `Créneau indisponible pour ${salleName} — salledeculte.com`,
+    html: `
+<!DOCTYPE html>
+<html>
+<head><meta charset="utf-8">
+<style>body{font-family:system-ui,sans-serif;line-height:1.6;color:#333;max-width:560px;margin:0 auto;padding:24px;}a{color:#213398;text-decoration:none;}.btn{display:inline-block;background:#213398;color:#fff!important;padding:12px 24px;border-radius:8px;margin:16px 0;}p{margin:0 0 1em;}</style></head>
+<body>
+  <h1>Votre demande de visite n&apos;a pas pu être confirmée</h1>
+  <p>Le propriétaire de <strong>${escapeHtml(salleName)}</strong> n&apos;est pas disponible sur ce créneau.</p>
+  <p>Vous pouvez consulter votre demande et échanger avec le propriétaire depuis votre espace :</p>
+  <p><a href="${demandesUrl}" class="btn">Voir ma demande</a></p>
+  <p>Cordialement,<br>L'équipe salledeculte.com</p>
+</body>
+</html>`,
+  });
+  return { success: !error, error: error?.message };
+}
+
+/** Notification au seeker quand le propriétaire propose une reprogrammation */
+export async function sendVisiteRescheduleNotification(
+  to: string,
+  salleName: string,
+  dateStr: string,
+  horairesStr: string,
+  demandeUrl: string
+) {
+  if (!process.env.RESEND_API_KEY) {
+    return { success: false };
+  }
+  const { error } = await resend.emails.send({
+    from,
+    to,
+    subject: `Nouveau créneau proposé pour ${salleName} — salledeculte.com`,
+    html: `
+<!DOCTYPE html>
+<html>
+<head><meta charset="utf-8">
+<style>body{font-family:system-ui,sans-serif;line-height:1.6;color:#333;max-width:560px;margin:0 auto;padding:24px;}a{color:#213398;text-decoration:none;}.btn{display:inline-block;background:#213398;color:#fff!important;padding:12px 24px;border-radius:8px;margin:16px 0;}.info{background:#f5f5f5;padding:12px;border-radius:8px;margin:16px 0;font-weight:500;}</style></head>
+<body>
+  <h1>Un nouveau créneau vous est proposé</h1>
+  <p>Le propriétaire de <strong>${escapeHtml(salleName)}</strong> vous propose une nouvelle date de visite :</p>
+  <div class="info">
+    <p><strong>Date :</strong> ${escapeHtml(dateStr)}</p>
+    <p><strong>Créneau :</strong> ${escapeHtml(horairesStr)}</p>
+  </div>
+  <p>Vous pouvez accepter ou refuser cette proposition depuis votre demande :</p>
+  <p><a href="${demandeUrl}" class="btn">Gérer ma demande</a></p>
+  <p>Cordialement,<br>L'équipe salledeculte.com</p>
+</body>
+</html>`,
+  });
+  return { success: !error, error: error?.message };
+}
+
 /** Notifie les admins quand une nouvelle annonce est soumise et doit être validée */
 export async function sendNewSallePendingAdminNotification(
   adminEmails: string[],

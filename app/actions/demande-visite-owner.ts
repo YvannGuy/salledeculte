@@ -7,7 +7,11 @@ import { createClient } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
 
 import { getOrCreateConversationForVisite } from "./messagerie";
-import { sendVisiteAcceptedNotification } from "@/lib/email";
+import {
+  sendVisiteAcceptedNotification,
+  sendVisiteRefusedNotification,
+  sendVisiteRescheduleNotification,
+} from "@/lib/email";
 
 const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
 
@@ -82,17 +86,17 @@ export async function refuserDemandeVisite(demandeVisiteId: string) {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return { success: false, error: "Non connecté" };
 
-  const { data: salle } = await supabase
+  const { data: dv } = await supabase
     .from("demandes_visite")
-    .select("salle_id")
+    .select("salle_id, seeker_id")
     .eq("id", demandeVisiteId)
     .single();
-  if (!salle) return { success: false, error: "Demande introuvable" };
+  if (!dv) return { success: false, error: "Demande introuvable" };
 
   const { data: salleOwned } = await supabase
     .from("salles")
-    .select("id")
-    .eq("id", (salle as { salle_id: string }).salle_id)
+    .select("id, name")
+    .eq("id", (dv as { salle_id: string }).salle_id)
     .eq("owner_id", user.id)
     .single();
   if (!salleOwned) return { success: false, error: "Non autorisé" };
@@ -103,6 +107,94 @@ export async function refuserDemandeVisite(demandeVisiteId: string) {
     .eq("id", demandeVisiteId);
 
   if (error) return { success: false, error: error.message };
+  try {
+    const dvRow = dv as { seeker_id: string };
+    const salleRow = salleOwned as { name?: string | null };
+    const admin = createAdminClient();
+    const { data: seekerUser } = await admin.auth.admin.getUserById(dvRow.seeker_id);
+    const seekerEmail = seekerUser?.user?.email;
+    if (seekerEmail) {
+      await sendVisiteRefusedNotification(
+        seekerEmail,
+        salleRow.name ?? "la salle",
+        `${siteUrl}/dashboard/demandes/visite/${demandeVisiteId}`
+      );
+    }
+  } catch (e) {
+    console.error("[refuserDemandeVisite] email:", e);
+  }
+
+  revalidatePath("/dashboard/demandes");
+  revalidatePath(`/dashboard/demandes/visite/${demandeVisiteId}`);
+  revalidatePath("/proprietaire/visites");
+  return { success: true };
+}
+
+export async function proposerAutreCreneauVisite(
+  demandeVisiteId: string,
+  dateProposee: string,
+  heureDebutProposee: string,
+  heureFinProposee: string
+) {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { success: false, error: "Non connecté" };
+  if (!dateProposee || !heureDebutProposee || !heureFinProposee) {
+    return { success: false, error: "Date et horaires requis" };
+  }
+
+  const { data: dv } = await supabase
+    .from("demandes_visite")
+    .select("salle_id, seeker_id")
+    .eq("id", demandeVisiteId)
+    .single();
+  if (!dv) return { success: false, error: "Demande introuvable" };
+
+  const { data: salleOwned } = await supabase
+    .from("salles")
+    .select("id, name")
+    .eq("id", (dv as { salle_id: string }).salle_id)
+    .eq("owner_id", user.id)
+    .single();
+  if (!salleOwned) return { success: false, error: "Non autorisé" };
+
+  const { error } = await supabase
+    .from("demandes_visite")
+    .update({
+      status: "reschedule_proposed",
+      date_proposee: dateProposee,
+      heure_debut_proposee: `${heureDebutProposee}:00`,
+      heure_fin_proposee: `${heureFinProposee}:00`,
+      updated_at: new Date().toISOString(),
+    })
+    .eq("id", demandeVisiteId);
+
+  if (error) return { success: false, error: error.message };
+
+  const dateStr = format(new Date(dateProposee + "T12:00:00"), "EEEE d MMMM yyyy", { locale: fr });
+  const horairesStr = `${formatTime(`${heureDebutProposee}:00`)} – ${formatTime(`${heureFinProposee}:00`)}`;
+
+  try {
+    const dvRow = dv as { seeker_id: string };
+    const salleRow = salleOwned as { name?: string | null };
+    const admin = createAdminClient();
+    const { data: seekerUser } = await admin.auth.admin.getUserById(dvRow.seeker_id);
+    const seekerEmail = seekerUser?.user?.email;
+    if (seekerEmail) {
+      await sendVisiteRescheduleNotification(
+        seekerEmail,
+        salleRow.name ?? "la salle",
+        dateStr,
+        horairesStr,
+        `${siteUrl}/dashboard/demandes/visite/${demandeVisiteId}`
+      );
+    }
+  } catch (e) {
+    console.error("[proposerAutreCreneauVisite] email:", e);
+  }
+
+  revalidatePath("/dashboard/demandes");
+  revalidatePath(`/dashboard/demandes/visite/${demandeVisiteId}`);
   revalidatePath("/proprietaire/visites");
   return { success: true };
 }

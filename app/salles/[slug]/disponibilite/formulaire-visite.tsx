@@ -7,10 +7,25 @@ import { Calendar, ChevronLeft, ChevronRight, Clock, Loader2 } from "lucide-reac
 
 import { Button } from "@/components/ui/button";
 import { Calendar as CalendarUi } from "@/components/ui/calendar";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { getCreneauxForSalle } from "@/app/actions/creneaux";
 import { createDemandeVisite } from "@/app/actions/create-demande-visite";
 import { type Creneau } from "@/lib/creneaux";
 import { cn } from "@/lib/utils";
+
+const TYPES_EVENEMENT = [
+  { id: "culte-regulier", label: "Culte régulier" },
+  { id: "conference", label: "Conférence" },
+  { id: "celebration", label: "Célébration" },
+  { id: "bapteme", label: "Baptême" },
+  { id: "retraite", label: "Retraite" },
+] as const;
 
 export function FormulaireVisite({ slug }: { slug: string }) {
   const [creneaux, setCreneaux] = useState<Creneau[]>([]);
@@ -18,6 +33,7 @@ export function FormulaireVisite({ slug }: { slug: string }) {
   const [loading, setLoading] = useState(true);
   const [selectedDate, setSelectedDate] = useState<Date | undefined>();
   const [selectedCreneau, setSelectedCreneau] = useState<Creneau | null>(null);
+  const [typeEvenement, setTypeEvenement] = useState<string>("");
   const [message, setMessage] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [success, setSuccess] = useState(false);
@@ -75,6 +91,7 @@ export function FormulaireVisite({ slug }: { slug: string }) {
     formData.set("dateVisite", selectedCreneau.date);
     formData.set("heureDebut", selectedCreneau.heureDebut);
     formData.set("heureFin", selectedCreneau.heureFin);
+    formData.set("typeEvenement", typeEvenement || "");
     formData.set("message", message);
     formData.set("redirectTo", `/salles/${slug}/disponibilite`);
 
@@ -226,6 +243,25 @@ export function FormulaireVisite({ slug }: { slug: string }) {
               </div>
             </div>
           )}
+
+          <div>
+            <label className="mb-2 block text-sm font-medium text-slate-700">
+              Type d&apos;événement (optionnel)
+            </label>
+            <Select value={typeEvenement || "none"} onValueChange={(v) => setTypeEvenement(v === "none" ? "" : v)}>
+              <SelectTrigger className="w-full rounded-lg border-slate-200">
+                <SelectValue placeholder="Choisir..." />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="none">— Non précisé</SelectItem>
+                {TYPES_EVENEMENT.map((t) => (
+                  <SelectItem key={t.id} value={t.id}>
+                    {t.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
 
           <div>
             <label className="mb-2 block text-sm font-medium text-slate-700">

@@ -36,6 +36,14 @@ const STATUT_LABEL: Record<string, string> = {
   reschedule_proposed: "Reprogrammation proposée",
 };
 
+const TYPE_EVENEMENT_LABEL: Record<string, string> = {
+  "culte-regulier": "Culte régulier",
+  conference: "Conférence",
+  celebration: "Célébration",
+  bapteme: "Baptême",
+  retraite: "Retraite",
+};
+
 const STATUT_BADGE: Record<string, string> = {
   pending: "bg-amber-100 text-amber-700",
   accepted: "bg-emerald-100 text-emerald-700",
@@ -77,11 +85,11 @@ export default async function VisitesPage({
     );
   }
 
-  let demandes: { id: string; salle_id: string; seeker_id: string; date_visite: string; heure_debut: string; heure_fin: string; message: string | null; status: string; created_at: string }[] = [];
+  let demandes: { id: string; salle_id: string; seeker_id: string; date_visite: string; heure_debut: string; heure_fin: string; type_evenement: string | null; message: string | null; status: string; created_at: string }[] = [];
   try {
     const res = await supabase
       .from("demandes_visite")
-      .select("id, salle_id, seeker_id, date_visite, heure_debut, heure_fin, message, status, created_at")
+      .select("id, salle_id, seeker_id, date_visite, heure_debut, heure_fin, type_evenement, message, status, created_at")
       .in("salle_id", salleIds)
       .order("created_at", { ascending: false });
     demandes = (res.data ?? []) as typeof demandes;
@@ -135,6 +143,9 @@ export default async function VisitesPage({
         ? String(salle.images[0])
         : "/img.png";
 
+    const typeEvenementLabel = d.type_evenement
+      ? (TYPE_EVENEMENT_LABEL as Record<string, string>)[d.type_evenement] ?? d.type_evenement
+      : "Visite";
     return {
       id: d.id,
       salleName: salle?.name ?? "—",
@@ -143,6 +154,7 @@ export default async function VisitesPage({
       salleImage: img,
       seekerName: profile?.full_name ?? "Locataire",
       dateDisplay,
+      typeEvenement: typeEvenementLabel,
       message: d.message,
       status: d.status,
     };

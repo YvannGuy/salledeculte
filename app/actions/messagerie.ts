@@ -47,6 +47,23 @@ export async function getOrCreateConversation(demandeId: string) {
 
   const demandeRow = demande as { seeker_id: string; salle_id: string };
   const salleRow = salle as { owner_id: string };
+  // Vérifier si une conversation existe déjà (contrainte unique seeker_id + owner_id + salle_id)
+  const { data: existingByTriple } = await supabase
+    .from("conversations")
+    .select("id")
+    .eq("seeker_id", demandeRow.seeker_id)
+    .eq("owner_id", salleRow.owner_id)
+    .eq("salle_id", demandeRow.salle_id)
+    .maybeSingle();
+
+  if (existingByTriple) {
+    await supabase
+      .from("conversations")
+      .update({ demande_id: demandeId, updated_at: new Date().toISOString() })
+      .eq("id", existingByTriple.id);
+    return { conversationId: existingByTriple.id, error: null };
+  }
+
   const { data: newConv, error } = await supabase
     .from("conversations")
     .insert({
@@ -94,6 +111,26 @@ export async function getOrCreateConversationForVisite(demandeVisiteId: string) 
 
   const dvRow = dv as { seeker_id: string; salle_id: string };
   const salleRow = salle as { owner_id: string };
+  // Vérifier si une conversation existe déjà (contrainte unique seeker_id + owner_id + salle_id)
+  const { data: existingByTriple } = await supabase
+    .from("conversations")
+    .select("id")
+    .eq("seeker_id", dvRow.seeker_id)
+    .eq("owner_id", salleRow.owner_id)
+    .eq("salle_id", dvRow.salle_id)
+    .maybeSingle();
+
+  if (existingByTriple) {
+    await supabase
+      .from("conversations")
+      .update({
+        demande_visite_id: demandeVisiteId,
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", existingByTriple.id);
+    return { conversationId: existingByTriple.id, error: null };
+  }
+
   const { data: newConv, error } = await supabase
     .from("conversations")
     .insert({

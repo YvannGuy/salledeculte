@@ -7,7 +7,15 @@ import { contactProprietaireVisiteAction } from "@/app/actions/contact-proprieta
 import { Button } from "@/components/ui/button";
 
 /** Bouton pour le locataire : contacter le propriétaire (visite) */
-export function ContactVisiteSeekerButton({ demandeVisiteId }: { demandeVisiteId: string }) {
+export function ContactVisiteSeekerButton({
+  demandeVisiteId,
+  className,
+  label = "Contacter le propriétaire",
+}: {
+  demandeVisiteId: string;
+  className?: string;
+  label?: string;
+}) {
   const [loading, setLoading] = useState(false);
   return (
     <form
@@ -20,9 +28,14 @@ export function ContactVisiteSeekerButton({ demandeVisiteId }: { demandeVisiteId
         }
       }}
     >
-      <Button type="submit" disabled={loading} size="sm" className="bg-[#213398] hover:bg-[#1a2980]">
+      <Button
+        type="submit"
+        disabled={loading}
+        size="sm"
+        className={`bg-[#213398] hover:bg-[#1a2980] ${className ?? ""}`.trim()}
+      >
         <MessageCircle className="mr-2 h-4 w-4" />
-        {loading ? "Ouverture…" : "Contacter le propriétaire"}
+        {loading ? "Ouverture…" : label}
       </Button>
     </form>
   );

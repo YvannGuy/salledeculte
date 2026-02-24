@@ -35,6 +35,7 @@ CREATE TABLE IF NOT EXISTS demandes_visite (
   date_visite date NOT NULL,
   heure_debut time NOT NULL,
   heure_fin time NOT NULL,
+  type_evenement text,
   message text,
   status text NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'accepted', 'refused', 'reschedule_proposed')),
   -- Proposition de reprogrammation par le propriétaire (quand status = reschedule_proposed)
