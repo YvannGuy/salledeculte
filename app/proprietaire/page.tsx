@@ -183,7 +183,7 @@ export default async function ProprietaireDashboardPage() {
                 <div>
                   <p className="font-semibold text-black">Recevoir les paiements</p>
                   <p className="mt-0.5 text-sm text-slate-600">
-                    Envoyez des offres aux organisateurs depuis la messagerie et recevez vos paiements directement.
+                    Envoyez des offres aux locataires depuis la messagerie et recevez vos paiements directement.
                   </p>
                 </div>
               </div>
@@ -342,7 +342,7 @@ export default async function ProprietaireDashboardPage() {
               <table className="w-full">
                 <thead>
                   <tr className="border-b border-slate-200 text-left text-xs font-medium uppercase tracking-wider text-slate-500">
-                    <th className="pb-3 pr-4">Organisateur</th>
+                    <th className="pb-3 pr-4">Locataire</th>
                     <th className="pb-3 pr-4">Type d&apos;événement</th>
                     <th className="pb-3 pr-4">Date</th>
                     <th className="pb-3 pr-4">Statut</th>

@@ -62,7 +62,7 @@ export default async function ProprietaireContratPage({
     <div className="p-4 sm:p-6 lg:p-8">
       <h1 className="text-2xl font-bold text-black">Contrat & facture</h1>
       <p className="mt-2 text-slate-500">
-        Téléchargez votre contrat type en PDF pour chaque salle. L&apos;organisateur le consultera avant de payer.
+        Téléchargez votre contrat type en PDF pour chaque salle. Le locataire le consultera avant de payer.
       </p>
 
       {sallesAvecContrat.length > 0 && (
@@ -102,7 +102,7 @@ export default async function ProprietaireContratPage({
                     {salle.name}
                   </CardTitle>
                   <CardDescription>
-                    {salle.city} — Votre PDF sera affiché à l&apos;organisateur avant le paiement
+                    {salle.city} — Votre PDF sera affiché au locataire avant le paiement
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
@@ -132,7 +132,7 @@ export default async function ProprietaireContratPage({
           <h3 className="font-semibold text-black">À propos des factures</h3>
           <p className="mt-2 text-sm text-slate-600">
             Après chaque paiement de réservation, une facture est générée automatiquement.
-            L&apos;organisateur et vous-même pouvez la télécharger depuis la messagerie.
+            Le locataire et vous-même pouvez la télécharger depuis la messagerie.
           </p>
         </CardContent>
       </Card>

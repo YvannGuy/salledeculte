@@ -67,7 +67,7 @@ export async function createDemandeVisite(formData: FormData): Promise<CreateDem
         .eq("id", user.id)
         .single();
       const ownerEmail = (ownerProfile as { email?: string } | null)?.email;
-      const seekerName = (seekerProfile as { full_name?: string } | null)?.full_name ?? "Un organisateur";
+      const seekerName = (seekerProfile as { full_name?: string } | null)?.full_name ?? "Un locataire";
       const salleName = (salle as { name?: string }).name ?? "votre salle";
       const d = new Date(dateVisite + "T12:00:00");
       const creneauLabel = `${d.toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long" })}, ${heureDebut} – ${heureFin}`;

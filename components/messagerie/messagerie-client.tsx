@@ -640,7 +640,7 @@ export function MessagerieClient({
             </div>
             <h2 className="mt-6 text-xl font-bold text-black">Aucune conversation</h2>
             <p className="mt-2 max-w-sm text-slate-600">
-              Vous n&apos;avez pas encore de messages. Vos conversations avec les organisateurs et propriétaires apparaîtront ici.
+              Vous n&apos;avez pas encore de messages. Vos conversations avec les locataires et propriétaires apparaîtront ici.
             </p>
             <div className="mt-6 flex flex-col items-center gap-3">
               {userType === "owner" && (
@@ -948,7 +948,7 @@ export function MessagerieClient({
                     </div>
                     {selected.message && (
                       <div>
-                        <dt className="text-xs font-medium text-slate-500">Message de l&apos;organisateur</dt>
+                        <dt className="text-xs font-medium text-slate-500">Message du locataire</dt>
                         <dd className="mt-1 rounded-lg bg-slate-50 p-3 text-slate-700">{selected.message}</dd>
                       </div>
                     )}
@@ -1347,7 +1347,7 @@ export function MessagerieClient({
           </div>
           <h2 className="mt-6 text-xl font-bold text-black">Aucune conversation</h2>
           <p className="mt-2 max-w-sm text-center text-slate-600">
-            Vous n&apos;avez pas encore de messages. Vos conversations avec les organisateurs et propriétaires apparaîtront ici.
+            Vous n&apos;avez pas encore de messages. Vos conversations avec les locataires et propriétaires apparaîtront ici.
           </p>
           <div className="mt-6 flex flex-col items-center gap-3">
             {userType === "owner" && (

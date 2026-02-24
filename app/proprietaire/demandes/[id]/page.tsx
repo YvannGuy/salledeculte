@@ -161,7 +161,7 @@ export default async function DemandeDetailPage({
           </div>
           <div>
             <h1 className="text-lg font-bold text-black">
-              {profile?.full_name ?? "Organisateur"}
+              {profile?.full_name ?? "Locataire"}
             </h1>
             <p className="text-sm text-slate-600">
               • {TYPE_EVENEMENT_LABEL[demande.type_evenement ?? ""] ?? demande.type_evenement ?? "Événement"} • {dateStr}
@@ -197,7 +197,7 @@ export default async function DemandeDetailPage({
       )}
 
       <div className="grid gap-6 lg:grid-cols-[1fr_380px]">
-        {/* Colonne gauche : détails + organisateur */}
+        {/* Colonne gauche : détails + locataire */}
         <div className="space-y-6">
           {/* Détails de l'événement */}
           <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
@@ -223,7 +223,7 @@ export default async function DemandeDetailPage({
                 <div>
                   <dt className="flex items-center gap-1.5 text-xs font-medium uppercase text-slate-500">
                     <MessageSquare className="h-4 w-4" />
-                    Message de l&apos;organisateur
+                    Message du locataire
                   </dt>
                   <dd className="mt-2 rounded-lg bg-slate-50 p-4 text-sm text-slate-700">
                     {demande.message}
@@ -233,9 +233,9 @@ export default async function DemandeDetailPage({
             </dl>
           </div>
 
-          {/* Organisateur */}
+          {/* Locataire */}
           <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
-            <h2 className="mb-4 text-base font-bold text-black">Organisateur</h2>
+            <h2 className="mb-4 text-base font-bold text-black">Locataire</h2>
             <div className="flex items-start gap-4">
               <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-slate-200 text-base font-semibold text-slate-600">
                 {(profile?.full_name ?? profile?.email ?? "?").charAt(0).toUpperCase()}

@@ -80,7 +80,7 @@ export async function GET(
         amountEur,
         paidAt: new Date(pay.created_at).toLocaleDateString("fr-FR"),
         productType: "reservation",
-        seekerName: seekerProfile.full_name ?? "Organisateur",
+        seekerName: seekerProfile.full_name ?? "Locataire",
         seekerEmail: seekerProfile.email ?? "",
         ownerName: ownerProfile.full_name ?? "Propriétaire",
         salleName: (salle as { name?: string }).name ?? "Salle",

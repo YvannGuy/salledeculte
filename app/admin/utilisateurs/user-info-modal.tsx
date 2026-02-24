@@ -31,7 +31,7 @@ function formatType(type: string) {
     case "admin":
       return "Admin";
     default:
-      return "Organisateur";
+      return "Locataire";
   }
 }
 
@@ -88,7 +88,7 @@ export function UserInfoModal({ user, open, onOpenChange }: Props) {
           )}
           {user.demandes_count !== undefined && (
             <div>
-              <p className="text-sm font-medium text-slate-500">Demandes envoyées</p>
+              <p className="text-sm font-medium text-slate-500">Demandes de visites</p>
               <p className="text-black">{user.demandes_count}</p>
             </div>
           )}

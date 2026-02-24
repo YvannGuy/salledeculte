@@ -3,24 +3,15 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { format, formatDistanceToNow } from "date-fns";
 import { fr } from "date-fns/locale";
-import { ArrowLeft, Mail, MessageSquare, MessageSquareText, Phone } from "lucide-react";
+import { ArrowLeft, Calendar, Clock, Mail, MessageSquare, Phone } from "lucide-react";
 
 import { createAdminClient } from "@/lib/supabase/admin";
 
-const TYPE_EVENEMENT_LABEL: Record<string, string> = {
-  "culte-regulier": "Culte régulier",
-  conference: "Conférence",
-  celebration: "Célébration",
-  bapteme: "Baptême",
-  retraite: "Retraite",
-};
-
 const STATUT_LABEL: Record<string, string> = {
-  sent: "Nouvelle",
-  viewed: "En attente",
-  replied: "Répondue",
+  pending: "En attente",
   accepted: "Acceptée",
-  rejected: "Refusée",
+  refused: "Refusée",
+  reschedule_proposed: "Reprogrammation proposée",
 };
 
 function formatTime(t: string | null): string {
@@ -38,9 +29,9 @@ export default async function AdminDemandeDetailPage({
   const admin = createAdminClient();
 
   const { data: demande } = await admin
-    .from("demandes")
+    .from("demandes_visite")
     .select(
-      "id, seeker_id, salle_id, date_debut, date_fin, nb_personnes, type_evenement, message, status, created_at, reply_message, replied_at, heure_debut_souhaitee, heure_fin_souhaitee"
+      "id, seeker_id, salle_id, date_visite, heure_debut, heure_fin, message, status, created_at, date_proposee, heure_debut_proposee, heure_fin_proposee"
     )
     .eq("id", id)
     .maybeSingle();
@@ -68,13 +59,13 @@ export default async function AdminDemandeDetailPage({
     .eq("id", salle.owner_id)
     .maybeSingle();
 
-  const hDebut = formatTime(demande.heure_debut_souhaitee ?? null);
-  const hFin = formatTime(demande.heure_fin_souhaitee ?? null);
-  const dateStr = demande.date_debut
-    ? format(new Date(demande.date_debut), "d MMMM yyyy", { locale: fr })
+  const dateStr = demande.date_visite
+    ? format(new Date(demande.date_visite + "T12:00:00"), "EEEE d MMMM yyyy", { locale: fr })
     : "";
-  const horairesStr = hDebut && hFin ? `${hDebut} - ${hFin}` : hDebut || "";
-  const dateHoraires = [dateStr, horairesStr].filter(Boolean).join(" • ");
+  const horairesStr =
+    demande.heure_debut && demande.heure_fin
+      ? `${formatTime(demande.heure_debut)} – ${formatTime(demande.heure_fin)}`
+      : "";
   const receivedAgo = formatDistanceToNow(new Date(demande.created_at), {
     addSuffix: false,
     locale: fr,
@@ -87,6 +78,14 @@ export default async function AdminDemandeDetailPage({
     ? String(salle.images[0])
     : "/img.png";
 
+  const dateProposeeStr = demande.date_proposee
+    ? format(new Date(demande.date_proposee + "T12:00:00"), "EEEE d MMMM yyyy", { locale: fr })
+    : "";
+  const horairesProposeesStr =
+    demande.heure_debut_proposee && demande.heure_fin_proposee
+      ? `${formatTime(demande.heure_debut_proposee)} – ${formatTime(demande.heure_fin_proposee)}`
+      : "";
+
   return (
     <div className="p-4 sm:p-6 lg:p-8">
       <Link
@@ -94,7 +93,7 @@ export default async function AdminDemandeDetailPage({
         className="mb-6 inline-flex items-center gap-2 text-sm font-medium text-slate-600 hover:text-black"
       >
         <ArrowLeft className="h-4 w-4" />
-        Retour aux demandes
+        Retour aux demandes de visites
       </Link>
 
       {/* Carte résumé */}
@@ -105,25 +104,23 @@ export default async function AdminDemandeDetailPage({
           </div>
           <div>
             <h1 className="text-lg font-bold text-black">
-              {seekerProfile?.full_name ?? "Organisateur"}
+              {seekerProfile?.full_name ?? "Locataire"}
             </h1>
             <p className="text-sm text-slate-600">
-              • {TYPE_EVENEMENT_LABEL[demande.type_evenement ?? ""] ?? demande.type_evenement ?? "Événement"} • {dateStr}
+              Visite • {dateStr} • {horairesStr}
             </p>
           </div>
         </div>
         <div className="flex items-center gap-3">
           <span
             className={`inline-flex rounded-full px-3 py-1 text-xs font-medium ${
-              demande.status === "sent"
-                ? "bg-emerald-100 text-emerald-700"
-                : demande.status === "viewed"
-                  ? "bg-amber-100 text-amber-700"
-                  : demande.status === "accepted"
-                    ? "bg-green-100 text-green-700"
-                    : demande.status === "rejected"
-                      ? "bg-red-100 text-red-700"
-                      : "bg-[#213398]/10 text-black"
+              demande.status === "pending"
+                ? "bg-amber-100 text-amber-700"
+                : demande.status === "accepted"
+                  ? "bg-green-100 text-green-700"
+                  : demande.status === "refused"
+                    ? "bg-red-100 text-red-700"
+                    : "bg-sky-100 text-sky-700"
             }`}
           >
             {STATUT_LABEL[demande.status] ?? demande.status}
@@ -133,31 +130,41 @@ export default async function AdminDemandeDetailPage({
       </div>
 
       <div className="grid gap-6 lg:grid-cols-[1fr_380px]">
-        {/* Colonne gauche : détails + organisateur */}
+        {/* Colonne gauche : détails + locataire */}
         <div className="space-y-6">
-          {/* Détails de l'événement */}
+          {/* Détails de la demande de visite */}
           <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
-            <h2 className="mb-4 text-base font-bold text-black">Détails de l&apos;événement</h2>
+            <h2 className="mb-4 text-base font-bold text-black">Détails de la demande de visite</h2>
             <dl className="space-y-4">
               <div>
-                <dt className="text-xs font-medium uppercase text-slate-500">
-                  Date et horaires
+                <dt className="flex items-center gap-1.5 text-xs font-medium uppercase text-slate-500">
+                  <Calendar className="h-4 w-4" />
+                  Date de visite
                 </dt>
-                <dd className="mt-1 text-black">{dateHoraires || "—"}</dd>
+                <dd className="mt-1 text-black">{dateStr || "—"}</dd>
               </div>
               <div>
-                <dt className="text-xs font-medium uppercase text-slate-500">
-                  Nombre de participants
+                <dt className="flex items-center gap-1.5 text-xs font-medium uppercase text-slate-500">
+                  <Clock className="h-4 w-4" />
+                  Créneau
                 </dt>
-                <dd className="mt-1 text-black">
-                  {demande.nb_personnes ?? "—"} personnes
-                </dd>
+                <dd className="mt-1 text-black">{horairesStr || "—"}</dd>
               </div>
+              {demande.status === "reschedule_proposed" && (dateProposeeStr || horairesProposeesStr) && (
+                <div>
+                  <dt className="text-xs font-medium uppercase text-slate-500">
+                    Reprogrammation proposée par le propriétaire
+                  </dt>
+                  <dd className="mt-1 text-black">
+                    {[dateProposeeStr, horairesProposeesStr].filter(Boolean).join(" • ")}
+                  </dd>
+                </div>
+              )}
               {demande.message && (
                 <div>
                   <dt className="flex items-center gap-1.5 text-xs font-medium uppercase text-slate-500">
                     <MessageSquare className="h-4 w-4" />
-                    Message de l&apos;organisateur
+                    Message du locataire
                   </dt>
                   <dd className="mt-2 rounded-lg bg-slate-50 p-4 text-sm text-slate-700">
                     {demande.message}
@@ -167,9 +174,9 @@ export default async function AdminDemandeDetailPage({
             </dl>
           </div>
 
-          {/* Organisateur (seeker) */}
+          {/* Locataire (seeker) */}
           <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
-            <h2 className="mb-4 text-base font-bold text-black">Organisateur</h2>
+            <h2 className="mb-4 text-base font-bold text-black">Locataire</h2>
             <div className="flex items-start gap-4">
               <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-slate-200 text-base font-semibold text-slate-600">
                 {(seekerProfile?.full_name ?? seekerProfile?.email ?? "?").charAt(0).toUpperCase()}
@@ -202,7 +209,7 @@ export default async function AdminDemandeDetailPage({
           </div>
         </div>
 
-        {/* Colonne droite : salle + propriétaire + réponse */}
+        {/* Colonne droite : salle + propriétaire */}
         <div className="space-y-6">
           {/* Salle */}
           <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
@@ -236,24 +243,6 @@ export default async function AdminDemandeDetailPage({
               )}
             </div>
           </div>
-
-          {/* Réponse du propriétaire */}
-          {demande.reply_message && (
-            <div className="rounded-xl border border-sky-100 bg-sky-50 p-4">
-              <p className="flex items-center gap-1.5 text-xs font-medium uppercase text-black">
-                <MessageSquareText className="h-4 w-4" />
-                Réponse du propriétaire
-              </p>
-              <p className="mt-2 text-sm text-slate-700">{demande.reply_message}</p>
-              {demande.replied_at && (
-                <p className="mt-1 text-xs text-slate-500">
-                  {format(new Date(demande.replied_at), "d MMM yyyy à HH:mm", {
-                    locale: fr,
-                  })}
-                </p>
-              )}
-            </div>
-          )}
         </div>
       </div>
     </div>

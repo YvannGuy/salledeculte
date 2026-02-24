@@ -177,7 +177,7 @@ export function CreateOfferModal({
               id="offer-message"
               value={message}
               onChange={(e) => setMessage(e.target.value)}
-              placeholder="Ajoutez un message à l'organisateur"
+              placeholder="Ajoutez un message au locataire"
               maxLength={500}
               className="mt-1.5 w-full rounded-md border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#213398]"
               rows={3}

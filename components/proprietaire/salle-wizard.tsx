@@ -290,6 +290,7 @@ export function SalleWizard({ embedded, onSuccess, onClose }: SalleWizardProps =
     formData.set("restrictionSonore", data.restrictionSonore);
     formData.set("evenementsAcceptes", JSON.stringify(data.evenementsAcceptes));
     data.photos.forEach((file) => formData.append("photos", file));
+    if (data.video) formData.append("video", data.video);
 
     const result = await createSalleFromOnboarding(formData);
 
@@ -313,7 +314,7 @@ export function SalleWizard({ embedded, onSuccess, onClose }: SalleWizardProps =
               <CheckCircle className="h-8 w-8 text-emerald-600" />
             </div>
             <p className="mt-4 text-lg font-semibold text-black">Annonce publiée !</p>
-            <p className="mt-2 text-sm text-slate-600">Votre annonce est en ligne et visible par les organisateurs.</p>
+            <p className="mt-2 text-sm text-slate-600">Votre annonce est en ligne et visible par les locataires.</p>
           </>
         ) : (
           <>
@@ -363,7 +364,7 @@ export function SalleWizard({ embedded, onSuccess, onClose }: SalleWizardProps =
                   Annonce publiée !
                 </h1>
                 <p className="mt-4 max-w-md text-slate-600">
-                  Votre annonce est en ligne et visible par les organisateurs. Vous pouvez la modifier depuis votre tableau de bord.
+                  Votre annonce est en ligne et visible par les locataires. Vous pouvez la modifier depuis votre tableau de bord.
                 </p>
               </>
             ) : (
@@ -453,7 +454,7 @@ export function SalleWizard({ embedded, onSuccess, onClose }: SalleWizardProps =
                 <p className="mt-1 text-sm leading-relaxed text-slate-600">
                   La validation manuelle garantit la qualité et la fiabilité des annonces sur notre
                   plateforme. Cette démarche protège à la fois les propriétaires et les
-                  organisateurs d&apos;événements.
+                  locataires d&apos;événements.
                 </p>
               </div>
             </div>
@@ -1066,7 +1067,7 @@ function Step4JoursVisite({
     <>
       <h2 className="text-2xl font-bold text-black">Jours de visite</h2>
       <p className="mt-2 text-slate-600">
-        Sélectionnez les dates où les organisateurs peuvent organiser une visite, puis indiquez les horaires
+        Sélectionnez les dates où les locataires peuvent organiser une visite, puis indiquez les horaires
       </p>
 
       <div className="mt-8 space-y-6">

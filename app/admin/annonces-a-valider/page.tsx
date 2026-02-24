@@ -16,7 +16,7 @@ export default async function AnnoncesAValiderPage({
   const to = from + PAGE_SIZE - 1;
   const { data: salles, count: totalCount } = await supabase
     .from("salles")
-    .select("id, slug, name, city, address, capacity, price_per_day, description, images, features, conditions, created_at, owner_id", { count: "exact" })
+    .select("id, slug, name, city, address, capacity, price_per_day, price_per_hour, price_per_month, description, images, video_url, features, conditions, pricing_inclusions, horaires_par_jour, jours_ouverture, created_at, owner_id", { count: "exact" })
     .eq("status", "pending")
     .order("created_at", { ascending: false })
     .range(from, to);

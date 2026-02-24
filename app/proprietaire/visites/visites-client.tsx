@@ -30,8 +30,8 @@ export function VisitesClient({ list }: { list: Item[] }) {
         <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-slate-100">
           <Calendar className="h-7 w-7 text-slate-500" />
         </div>
-        <p className="mt-4 font-medium text-slate-700">Aucune demande de visite</p>
-        <p className="mt-1 text-sm text-slate-500">Les demandes apparaîtront ici</p>
+        <p className="mt-4 font-medium text-slate-700">Aucune demande de visites</p>
+        <p className="mt-1 text-sm text-slate-500">Les demandes de visites apparaîtront ici</p>
       </div>
     );
   }

@@ -105,7 +105,7 @@ export async function GET(
       salleCity: (salle as { city?: string })?.city ?? "",
       ownerName: ownerProfile?.full_name ?? "Propriétaire",
       ownerEmail: ownerProfile?.email ?? "",
-      seekerName: seekerProfile?.full_name ?? "Organisateur",
+      seekerName: seekerProfile?.full_name ?? "Locataire",
       seekerEmail: seekerProfile?.email ?? "",
       template: template
         ? {

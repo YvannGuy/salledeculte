@@ -36,7 +36,7 @@ const navItems = (
   { href: "/admin/annonces-a-valider", label: "Annonces à valider", icon: Bell, badge: pendingCount },
   { href: "/admin/annonces", label: "Annonces", icon: Building2 },
   { href: "/admin/signalements", label: "Signalements", icon: Flag, badge: reportsCount },
-  { href: "/admin/demandes", label: "Demandes", icon: FileText },
+  { href: "/admin/demandes", label: "Demandes de visites", icon: FileText },
   { href: "/admin/utilisateurs", label: "Utilisateurs", icon: Users },
   { href: "/admin/paiements", label: "Paiements", icon: CreditCard },
   { href: "/admin/parametres", label: "Paramètres", icon: Settings },

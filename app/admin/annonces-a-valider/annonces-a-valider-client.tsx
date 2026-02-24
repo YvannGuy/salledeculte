@@ -1,15 +1,17 @@
 "use client";
 
 import Image from "next/image";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useMemo, useState, useTransition } from "react";
+import { useEffect, useMemo, useState, useTransition } from "react";
 import {
   Check,
+  ChevronLeft,
+  ChevronRight,
   Clock,
   Eye,
   MapPin,
   Search,
+  Video,
   X,
 } from "lucide-react";
 
@@ -26,10 +28,16 @@ type SalleWithOwner = {
   address: string;
   capacity: number;
   price_per_day: number;
+  price_per_hour?: number | null;
+  price_per_month?: number | null;
   description: string | null;
   images: string[];
+  video_url?: string | null;
   features: unknown;
   conditions: unknown;
+  pricing_inclusions?: string[] | null;
+  horaires_par_jour?: Record<string, { debut: string; fin: string }> | null;
+  jours_ouverture?: string[] | null;
   created_at: string;
   owner?: { full_name: string | null; email: string | null };
 };
@@ -80,6 +88,194 @@ export function AnnoncesAValiderClient({ salles, highlightSalleId }: Props) {
     const c = s.conditions as { label?: string }[] | undefined;
     return Array.isArray(c) ? c.map((x) => x.label ?? "").filter(Boolean) : [];
   };
+
+  const tarifsParts: string[] = [];
+  if (selected?.price_per_day) tarifsParts.push(`${selected.price_per_day} € / jour`);
+  if (selected?.price_per_hour) tarifsParts.push(`${selected.price_per_hour} € / heure`);
+  if (selected?.price_per_month) tarifsParts.push(`${selected.price_per_month} € / mois`);
+
+  const [imgIndex, setImgIndex] = useState(0);
+  const [lightboxOpen, setLightboxOpen] = useState(false);
+  const imgs = selected && Array.isArray(selected.images) && selected.images.length > 0 ? selected.images : ["/img.png"];
+  const currentImg = imgs[imgIndex % imgs.length];
+
+  useEffect(() => {
+    setImgIndex(0);
+    setLightboxOpen(false);
+  }, [selectedId]);
+
+  const PreviewBody = selected ? (
+    <div className="space-y-4">
+      {/* Galerie photos */}
+      <div>
+        <p className="mb-2 text-xs font-medium uppercase text-slate-500">Photos</p>
+        <div className="space-y-2">
+          <div className="relative aspect-video overflow-hidden rounded-lg bg-slate-100">
+            <Image
+              src={currentImg}
+              alt={selected.name}
+              fill
+              className="cursor-pointer object-cover"
+              sizes="380px"
+              onClick={() => setLightboxOpen(true)}
+            />
+            {imgs.length > 1 && (
+              <>
+                <button
+                  type="button"
+                  onClick={(e) => { e.stopPropagation(); setImgIndex((i) => (i <= 0 ? imgs.length - 1 : i - 1)); }}
+                  className="absolute left-1 top-1/2 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-full bg-black/50 text-white hover:bg-black/70"
+                >
+                  <ChevronLeft className="h-4 w-4" />
+                </button>
+                <button
+                  type="button"
+                  onClick={(e) => { e.stopPropagation(); setImgIndex((i) => (i >= imgs.length - 1 ? 0 : i + 1)); }}
+                  className="absolute right-1 top-1/2 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-full bg-black/50 text-white hover:bg-black/70"
+                >
+                  <ChevronRight className="h-4 w-4" />
+                </button>
+                <span className="absolute bottom-1 right-1 rounded bg-black/50 px-2 py-0.5 text-xs text-white">
+                  {imgIndex + 1} / {imgs.length}
+                </span>
+              </>
+            )}
+          </div>
+          {imgs.length > 1 && (
+            <div className="flex gap-1 overflow-x-auto pb-1">
+              {imgs.map((img, i) => (
+                <button
+                  key={img + i}
+                  type="button"
+                  onClick={() => setImgIndex(i)}
+                  className={`relative h-14 w-14 shrink-0 overflow-hidden rounded border-2 transition ${
+                    i === imgIndex ? "border-violet-600" : "border-transparent opacity-70 hover:opacity-100"
+                  }`}
+                >
+                  <Image src={img} alt="" fill className="object-cover" sizes="56px" />
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Vidéo */}
+      {selected.video_url && (
+        <div>
+          <p className="mb-2 flex items-center gap-1 text-xs font-medium uppercase text-slate-500">
+            <Video className="h-3.5 w-3.5" /> Vidéo
+          </p>
+          <div className="overflow-hidden rounded-lg bg-slate-900">
+            <video
+              src={selected.video_url}
+              controls
+              playsInline
+              className="aspect-video w-full object-contain"
+              preload="metadata"
+              poster={imgs[0]}
+            >
+              Votre navigateur ne supporte pas la vidéo.
+            </video>
+          </div>
+        </div>
+      )}
+
+      {/* Infos */}
+      <h2 className="text-lg font-bold text-black">{selected.name}</h2>
+      <p className="flex items-center gap-2 text-sm text-slate-600">
+        <MapPin className="h-4 w-4 shrink-0" />
+        {selected.address}, {selected.city}
+      </p>
+      <div className="flex flex-wrap gap-4">
+        <div>
+          <p className="text-xs text-slate-500">Capacité</p>
+          <p className="font-medium text-slate-700">{selected.capacity} places</p>
+        </div>
+        <div>
+          <p className="text-xs text-slate-500">Tarifs</p>
+          <p className="font-medium text-slate-700">{tarifsParts.length ? tarifsParts.join(" · ") : "—"}</p>
+        </div>
+      </div>
+      <p className="text-sm leading-relaxed text-slate-600">
+        {selected.description || "Aucune description."}
+      </p>
+      {selected.horaires_par_jour && Object.keys(selected.horaires_par_jour).length > 0 && (
+        <div>
+          <h4 className="text-xs font-semibold uppercase text-slate-500">Horaires</h4>
+          <ul className="mt-1 space-y-0.5 text-sm text-slate-600">
+            {Object.entries(selected.horaires_par_jour).map(([jour, h]) => (
+              <li key={jour} className="capitalize">{jour}: {h.debut} – {h.fin}</li>
+            ))}
+          </ul>
+        </div>
+      )}
+      {selected.jours_ouverture?.length ? (
+        <div>
+          <h4 className="text-xs font-semibold uppercase text-slate-500">Jours de location</h4>
+          <p className="mt-1 text-sm capitalize text-slate-600">{selected.jours_ouverture.join(", ")}</p>
+        </div>
+      ) : null}
+      {Array.isArray(selected.pricing_inclusions) && selected.pricing_inclusions.length > 0 && (
+        <div>
+          <h4 className="text-xs font-semibold uppercase text-slate-500">Ce tarif comprend</h4>
+          <p className="mt-1 text-sm text-slate-600">{selected.pricing_inclusions.join(", ")}</p>
+        </div>
+      )}
+      {featuresList(selected).length > 0 && (
+        <div>
+          <h4 className="text-xs font-semibold uppercase text-slate-500">Caractéristiques</h4>
+          <ul className="mt-1 space-y-0.5">
+            {featuresList(selected).map((f, i) => (
+              <li key={i} className="flex items-center gap-2 text-sm text-slate-600">
+                <Check className="h-3.5 w-3.5 text-emerald-500" />
+                {f}
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+      {conditionsList(selected).length > 0 && (
+        <div>
+          <h4 className="text-xs font-semibold uppercase text-slate-500">Conditions</h4>
+          <p className="mt-1 text-sm text-slate-600">{conditionsList(selected).join(". ")}</p>
+        </div>
+      )}
+      <div className="flex gap-3 pt-2">
+        <Button
+          onClick={() => {
+            const fd = new FormData();
+            fd.append("salleId", selected.id);
+            fd.append("status", "approved");
+            startTransition(() =>
+              validateSalleAction(fd).then(() => router.refresh())
+            );
+          }}
+          className="flex-1 bg-emerald-600 hover:bg-emerald-700"
+          disabled={isPending}
+        >
+          <Check className="mr-2 h-4 w-4" />
+          Valider
+        </Button>
+        <Button
+          variant="outline"
+          onClick={() => {
+            const fd = new FormData();
+            fd.append("salleId", selected.id);
+            fd.append("status", "rejected");
+            startTransition(() =>
+              validateSalleAction(fd).then(() => router.refresh())
+            );
+          }}
+          className="flex-1 border-red-200 text-red-600 hover:bg-red-50"
+          disabled={isPending}
+        >
+          <X className="mr-2 h-4 w-4" />
+          Refuser
+        </Button>
+      </div>
+    </div>
+  ) : null;
 
   return (
     <div className="flex gap-0">
@@ -280,7 +476,7 @@ export function AnnoncesAValiderClient({ salles, highlightSalleId }: Props) {
       </div>
 
       {selected && (
-        <aside className="hidden w-[380px] shrink-0 border-l border-slate-200 bg-white lg:block">
+        <aside className="hidden w-[400px] shrink-0 border-l border-slate-200 bg-white lg:block">
           <div className="sticky top-0 max-h-screen overflow-y-auto">
             <div className="flex items-center justify-between border-b border-slate-200 p-4">
               <h3 className="font-semibold text-black">Prévisualisation</h3>
@@ -292,162 +488,70 @@ export function AnnoncesAValiderClient({ salles, highlightSalleId }: Props) {
                 <X className="h-5 w-5" />
               </button>
             </div>
-            <div className="p-4">
-              <div className="relative mb-4 aspect-video overflow-hidden rounded-lg bg-slate-100">
-                <Image
-                  src={Array.isArray(selected.images) && selected.images[0] ? selected.images[0] : "/img.png"}
-                  alt={selected.name}
-                  fill
-                  className="object-cover"
-                  sizes="380px"
-                />
-              </div>
-              <h2 className="text-lg font-bold text-black">{selected.name}</h2>
-              <p className="mt-2 flex items-center gap-2 text-sm text-slate-600">
-                <MapPin className="h-4 w-4 shrink-0" />
-                {selected.address}, {selected.city}
-              </p>
-              <div className="mt-4 flex gap-4">
-                <div>
-                  <p className="text-xs text-slate-500">Capacité</p>
-                  <p className="font-medium text-slate-700">{selected.capacity} places</p>
-                </div>
-                <div>
-                  <p className="text-xs text-slate-500">Prix</p>
-                  <p className="font-medium text-slate-700">€{selected.price_per_day}/jour</p>
-                </div>
-              </div>
-              <p className="mt-4 text-sm leading-relaxed text-slate-600">
-                {selected.description || "Aucune description."}
-              </p>
-              {featuresList(selected).length > 0 && (
-                <div className="mt-4">
-                  <h4 className="text-sm font-semibold text-slate-700">Caractéristiques</h4>
-                  <ul className="mt-2 space-y-1">
-                    {featuresList(selected).map((f, i) => (
-                      <li key={i} className="flex items-center gap-2 text-sm text-slate-600">
-                        <Check className="h-4 w-4 text-emerald-500" />
-                        {f}
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              )}
-              {conditionsList(selected).length > 0 && (
-                <div className="mt-4">
-                  <h4 className="text-sm font-semibold text-slate-700">Conditions</h4>
-                  <p className="mt-1 text-sm text-slate-600">
-                    {conditionsList(selected).join(". ")}
-                  </p>
-                </div>
-              )}
-              <div className="mt-6 flex gap-3">
-                <Button
-                  onClick={() => {
-                    const fd = new FormData();
-                    fd.append("salleId", selected.id);
-                    fd.append("status", "approved");
-                    startTransition(() =>
-                      validateSalleAction(fd).then(() => router.refresh())
-                    );
-                  }}
-                  className="w-full bg-emerald-600 hover:bg-emerald-700"
-                  disabled={isPending}
-                >
-                  <Check className="mr-2 h-4 w-4" />
-                  Valider l&apos;annonce
-                </Button>
-                <Button
-                  variant="outline"
-                  onClick={() => {
-                    const fd = new FormData();
-                    fd.append("salleId", selected.id);
-                    fd.append("status", "rejected");
-                    startTransition(() =>
-                      validateSalleAction(fd).then(() => router.refresh())
-                    );
-                  }}
-                  className="w-full border-red-200 text-red-600 hover:bg-red-50"
-                  disabled={isPending}
-                >
-                  <X className="mr-2 h-4 w-4" />
-                  Refuser
-                </Button>
-              </div>
-              <Link
-                href={`/salles/${selected.slug}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="mt-4 block text-center text-sm text-blue-600 hover:underline"
-              >
-                Voir l&apos;annonce complète →
-              </Link>
-            </div>
+            <div className="p-4">{PreviewBody}</div>
           </div>
         </aside>
+      )}
+
+      {/* Lightbox photo */}
+      {selected && lightboxOpen && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/90 p-4"
+          onClick={() => setLightboxOpen(false)}
+        >
+          <div className="relative max-h-[90vh] max-w-full" onClick={(e) => e.stopPropagation()}>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={currentImg}
+              alt={selected.name}
+              className="max-h-[90vh] w-auto max-w-full rounded-lg object-contain"
+            />
+            <button
+              type="button"
+              onClick={() => setLightboxOpen(false)}
+              className="absolute right-2 top-2 flex h-10 w-10 items-center justify-center rounded-full bg-black/50 text-white hover:bg-black/70"
+            >
+              <X className="h-5 w-5" />
+            </button>
+            {imgs.length > 1 && (
+              <>
+                <button
+                  type="button"
+                  onClick={() => setImgIndex((i) => (i <= 0 ? imgs.length - 1 : i - 1))}
+                  className="absolute left-2 top-1/2 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full bg-black/50 text-white hover:bg-black/70"
+                >
+                  <ChevronLeft className="h-5 w-5" />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setImgIndex((i) => (i >= imgs.length - 1 ? 0 : i + 1))}
+                  className="absolute right-2 top-1/2 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full bg-black/50 text-white hover:bg-black/70"
+                >
+                  <ChevronRight className="h-5 w-5" />
+                </button>
+                <span className="absolute bottom-2 left-1/2 -translate-x-1/2 rounded bg-black/50 px-3 py-1 text-sm text-white">
+                  {imgIndex + 1} / {imgs.length}
+                </span>
+              </>
+            )}
+          </div>
+        </div>
       )}
 
       {/* Preview mobile: modal */}
       {selected && (
         <div className="fixed inset-0 z-50 bg-black/50 lg:hidden" onClick={() => setSelectedId(null)}>
           <div
-            className="absolute right-0 top-0 h-full w-full max-w-sm overflow-y-auto bg-white shadow-xl"
+            className="absolute right-0 top-0 h-full w-full max-w-md overflow-y-auto bg-white shadow-xl"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="flex items-center justify-between border-b border-slate-200 p-4">
+            <div className="sticky top-0 z-10 flex items-center justify-between border-b border-slate-200 bg-white p-4">
               <h3 className="font-semibold">Prévisualisation</h3>
               <button type="button" onClick={() => setSelectedId(null)} className="rounded p-2">
                 <X className="h-5 w-5" />
               </button>
             </div>
-            <div className="p-4">
-              <div className="relative mb-4 aspect-video overflow-hidden rounded-lg bg-slate-100">
-                <Image
-                  src={Array.isArray(selected.images) && selected.images[0] ? selected.images[0] : "/img.png"}
-                  alt={selected.name}
-                  fill
-                  className="object-cover"
-                  sizes="400px"
-                />
-              </div>
-              <h2 className="text-lg font-bold">{selected.name}</h2>
-              <p className="mt-2 flex items-center gap-2 text-sm text-slate-600">
-                <MapPin className="h-4 w-4 shrink-0" />
-                {selected.address}, {selected.city}
-              </p>
-              <p className="mt-4 text-sm text-slate-600">{selected.description || "Aucune description."}</p>
-              <div className="mt-6 flex gap-3">
-                <Button
-                  onClick={() => {
-                    const fd = new FormData();
-                    fd.append("salleId", selected.id);
-                    fd.append("status", "approved");
-                    startTransition(() =>
-                      validateSalleAction(fd).then(() => router.refresh())
-                    );
-                  }}
-                  className="w-full bg-emerald-600"
-                  disabled={isPending}
-                >
-                  Valider
-                </Button>
-                <Button
-                  variant="outline"
-                  onClick={() => {
-                    const fd = new FormData();
-                    fd.append("salleId", selected.id);
-                    fd.append("status", "rejected");
-                    startTransition(() =>
-                      validateSalleAction(fd).then(() => router.refresh())
-                    );
-                  }}
-                  className="border-red-200 text-red-600"
-                  disabled={isPending}
-                >
-                  Refuser
-                </Button>
-              </div>
-            </div>
+            <div className="p-4 pb-8">{PreviewBody}</div>
           </div>
         </div>
       )}

@@ -331,7 +331,7 @@ export function AnnoncesClient({ salles, stats, highlightSalleId }: Props) {
                   <th className="px-4 py-3">Capacité</th>
                   <th className="px-4 py-3">Prix</th>
                   <th className="px-4 py-3">Vues</th>
-                  <th className="px-4 py-3">Demandes</th>
+                  <th className="px-4 py-3">Dem. visites</th>
                   <th className="px-4 py-3">Statut</th>
                   <th className="px-4 py-3">Actions</th>
                 </tr>

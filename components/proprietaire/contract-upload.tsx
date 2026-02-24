@@ -76,7 +76,7 @@ export function ContractUpload({ salleId, salleName, hasContract }: Props) {
       {hasContract && (
         <div className="flex flex-wrap items-center gap-3 rounded-lg bg-emerald-50 py-3 px-4">
           <p className="flex-1 text-sm text-emerald-700">
-            ✓ Contrat enregistré — visible par l&apos;organisateur avant paiement
+            ✓ Contrat enregistré — visible par le locataire avant paiement
           </p>
           <div className="flex gap-2">
             <Button
@@ -126,7 +126,7 @@ export function ContractUpload({ salleId, salleName, hasContract }: Props) {
               : "Télécharger votre contrat (PDF)"}
         </Button>
         <span className="text-sm text-slate-500">
-          Max 2 Mo — L&apos;organisateur le consultera avant de payer
+          Max 2 Mo — Le locataire le consultera avant de payer
         </span>
       </div>
       {error && <p className="text-sm text-red-600">{error}</p>}

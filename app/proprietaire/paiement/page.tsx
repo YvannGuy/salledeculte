@@ -93,7 +93,7 @@ export default async function ProprietairePaiementPage({
           </CardTitle>
           <CardDescription>
             {hasConnectAccount
-              ? "Envoyez des offres depuis la messagerie et recevez les paiements des organisateurs."
+              ? "Envoyez des offres depuis la messagerie et recevez les paiements des locataires."
               : "Connectez votre compte bancaire pour recevoir les paiements des réservations (commission plateforme 10 %)."}
           </CardDescription>
         </CardHeader>
@@ -163,7 +163,7 @@ export default async function ProprietairePaiementPage({
               Réservations reçues
             </CardTitle>
             <CardDescription>
-              Paiements des organisateurs pour vos offres acceptées
+              Paiements des locataires pour vos offres acceptées
             </CardDescription>
           </CardHeader>
           <CardContent>

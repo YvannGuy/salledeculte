@@ -33,7 +33,7 @@ export default async function AdminDashboardPage() {
   ] = await Promise.all([
     supabase.from("salles").select("*", { count: "exact", head: true }).eq("status", "pending"),
     supabase.from("salles").select("*", { count: "exact", head: true }).eq("status", "approved"),
-    supabase.from("demandes").select("*", { count: "exact", head: true }).gte("created_at", weekAgo),
+    supabase.from("demandes_visite").select("*", { count: "exact", head: true }).gte("created_at", weekAgo),
     supabase
       .from("payments")
       .select("id, user_id, amount, product_type, status, created_at")
@@ -87,7 +87,7 @@ export default async function AdminDashboardPage() {
 
   const getRoleLabel = (userType: string | null) => {
     if (userType === "owner") return "Propriétaire";
-    if (userType === "seeker") return "Organisateur";
+    if (userType === "seeker") return "Locataire";
     return "—";
   };
 
@@ -171,7 +171,7 @@ export default async function AdminDashboardPage() {
           <CardContent>
             <p className="text-2xl font-bold text-black">{trialStats.totalUsersOnTrial}</p>
             <p className="text-xs text-slate-500">
-              {trialStats.organisateursOnTrial} organisateurs, {trialStats.proprietairesOnTrial} propriétaires • {trialStats.totalClicksRemaining} clics restants
+              {trialStats.organisateursOnTrial} locataires, {trialStats.proprietairesOnTrial} propriétaires • {trialStats.totalClicksRemaining} clics restants
             </p>
           </CardContent>
         </Card>
@@ -192,7 +192,7 @@ export default async function AdminDashboardPage() {
       <div className="mb-8 grid gap-6 lg:grid-cols-2">
         <Card className="bg-white shadow-sm">
           <CardHeader>
-            <CardTitle className="text-base">Demandes par jour (30 derniers jours)</CardTitle>
+            <CardTitle className="text-base">Demandes de visites par jour (30 derniers jours)</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="h-48 w-full">

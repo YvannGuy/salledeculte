@@ -60,7 +60,7 @@ const faqSectionItems = [
   {
     question: "Comment ajouter ma salle sur la plateforme ?",
     answer:
-      "En créant un compte et en cliquant sur « Ajoutez ma salle », vous pouvez publier gratuitement votre lieu. Vous recevrez ensuite des demandes ciblées d'organisateurs d'événements cultuels.",
+      "En créant un compte et en cliquant sur « Ajoutez ma salle », vous pouvez publier gratuitement votre lieu. Vous recevrez ensuite des demandes ciblées de locataires d'événements cultuels.",
   },
   {
     question: "Quels types d'événements puis-je organiser ?",

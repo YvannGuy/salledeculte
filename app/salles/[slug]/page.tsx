@@ -316,8 +316,8 @@ export default async function SalleDetailPage({
                   <p className="mt-4 flex items-center gap-2 text-[12px] text-slate-400">
                     <Clock className="h-3.5 w-3.5" />
                     {recentViewerCount === 1
-                      ? "1 organisateur a consulté cette salle récemment."
-                      : `${recentViewerCount} organisateurs ont consulté cette salle récemment.`}
+                      ? "1 locataire a consulté cette salle récemment."
+                      : `${recentViewerCount} locataires ont consulté cette salle récemment.`}
                   </p>
                 )}
               </div>

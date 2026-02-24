@@ -31,7 +31,7 @@ const navItems = [
   { href: "/proprietaire", label: "Tableau de bord", icon: Home },
   { href: "/proprietaire/annonces", label: "Mes annonces", icon: Building2 },
   { href: "/proprietaire/demandes", label: "Demandes reçues", icon: FolderOpen, badgeKey: "demandes" },
-  { href: "/proprietaire/visites", label: "Visites", icon: Calendar, badgeKey: "visites" },
+  { href: "/proprietaire/visites", label: "Demandes de visites", icon: Calendar, badgeKey: "visites" },
   { href: "/proprietaire/messagerie", label: "Messagerie", icon: MessageCircle, badgeKey: "messagerie" },
   { href: "/proprietaire/paiement", label: "Paiement", icon: CreditCard },
   { href: "/proprietaire/contrat", label: "Contrat & facture", icon: FileText },

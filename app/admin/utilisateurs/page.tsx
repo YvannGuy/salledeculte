@@ -30,7 +30,7 @@ export default async function AdminUtilisateursPage({
       .order("created_at", { ascending: false })
       .range(from, to),
     supabase.from("salles").select("owner_id"),
-    supabase.from("demandes").select("seeker_id"),
+    supabase.from("demandes_visite").select("seeker_id"),
     supabase.from("profiles").select("id", { count: "exact", head: true }).is("suspended", null),
     supabase.from("profiles").select("id", { count: "exact", head: true }).eq("user_type", "owner"),
     (() => {

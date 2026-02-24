@@ -60,7 +60,7 @@ export default async function VisitesPage() {
     };
     const salle = salleMap.get(row.salle_id);
     const profile = profileMap.get(row.seeker_id) as { full_name?: string } | undefined;
-    const seekerName = profile?.full_name ?? "Organisateur";
+    const seekerName = profile?.full_name ?? "Locataire";
     const dateLabel = new Date(row.date_visite + "T12:00:00").toLocaleDateString("fr-FR", {
       weekday: "long",
       day: "numeric",
@@ -84,9 +84,9 @@ export default async function VisitesPage() {
 
   return (
     <div className="p-8">
-      <h1 className="text-2xl font-bold text-black">Demandes de visite</h1>
+      <h1 className="text-2xl font-bold text-black">Demandes de visites</h1>
       <p className="mt-1 text-slate-600">
-        Acceptez ou refusez les demandes de visite sur vos salles
+        Acceptez ou refusez les demandes de visites sur vos salles
       </p>
       <VisitesClient list={list} />
     </div>

@@ -75,7 +75,7 @@ export default async function DemandesPage({
         <div className="mt-8 flex flex-col items-center justify-center rounded-xl border-2 border-dashed border-slate-200 py-16 text-center">
           <p className="text-slate-500">Aucune demande pour le moment.</p>
           <p className="mt-1 text-sm text-slate-400">
-            Les demandes apparaîtront ici lorsque des organisateurs contacteront vos salles.
+            Les demandes apparaîtront ici lorsque des locataires contacteront vos salles.
           </p>
         </div>
       </div>
@@ -244,7 +244,7 @@ export default async function DemandesPage({
           <table className="w-full min-w-[900px]">
             <thead>
               <tr className="border-b border-slate-200 bg-slate-50 text-left text-xs font-medium uppercase tracking-wider text-slate-500">
-                <th className="px-4 py-3">Organisateur</th>
+                <th className="px-4 py-3">Locataire</th>
                 <th className="px-4 py-3">Type d&apos;événement</th>
                 <th className="px-4 py-3">Date</th>
                 <th className="px-4 py-3">Participants</th>

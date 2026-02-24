@@ -105,7 +105,7 @@ export async function createDemande(formData: FormData): Promise<CreateDemandeRe
         .eq("id", user.id)
         .single();
       const ownerEmail = (ownerProfile as { email?: string } | null)?.email;
-      const seekerName = (seekerProfile as { full_name?: string } | null)?.full_name ?? "Un organisateur";
+      const seekerName = (seekerProfile as { full_name?: string } | null)?.full_name ?? "Un locataire";
       const salleName = (salle as { name?: string }).name ?? "votre salle";
       if (ownerEmail) {
         await sendNewDemandeNotification(

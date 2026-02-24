@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
-import { Users } from "lucide-react";
+import { Calendar, Clock } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Pagination } from "@/components/ui/pagination";
@@ -9,30 +9,20 @@ import { createAdminClient } from "@/lib/supabase/admin";
 
 const PAGE_SIZE = 15;
 
-type StatusFilter = "all" | "sent" | "viewed" | "replied" | "accepted" | "rejected";
+type StatusFilter = "all" | "pending" | "accepted" | "refused" | "reschedule_proposed";
 
 const STATUT_LABEL: Record<string, string> = {
-  sent: "Nouvelle",
-  viewed: "En attente",
-  replied: "Répondue",
+  pending: "En attente",
   accepted: "Acceptée",
-  rejected: "Refusée",
-};
-
-const TYPE_EVENEMENT_LABEL: Record<string, string> = {
-  "culte-regulier": "Culte régulier",
-  conference: "Conférence",
-  celebration: "Célébration",
-  bapteme: "Baptême",
-  retraite: "Retraite",
+  refused: "Refusée",
+  reschedule_proposed: "Reprogrammation proposée",
 };
 
 const STATUT_BADGE: Record<string, string> = {
-  sent: "bg-emerald-100 text-emerald-700",
-  viewed: "bg-amber-100 text-amber-700",
-  replied: "bg-[#213398]/10 text-black",
+  pending: "bg-amber-100 text-amber-700",
   accepted: "bg-green-100 text-green-700",
-  rejected: "bg-red-100 text-red-700",
+  refused: "bg-red-100 text-red-700",
+  reschedule_proposed: "bg-sky-100 text-sky-700",
 };
 
 function formatTime(t: string | null): string {
@@ -49,27 +39,27 @@ export default async function AdminDemandesPage({
   const { status: statusParam, page: pageParam } = await searchParams;
   const page = Math.max(1, parseInt(String(pageParam || "1"), 10) || 1);
   const statusFilter: StatusFilter =
-    statusParam === "sent" || statusParam === "viewed" || statusParam === "replied" || statusParam === "rejected"
+    statusParam === "pending" || statusParam === "accepted" || statusParam === "refused" || statusParam === "reschedule_proposed"
       ? statusParam
       : "all";
 
   const admin = createAdminClient();
 
-  let demandesQuery = admin
-    .from("demandes")
+  let query = admin
+    .from("demandes_visite")
     .select(
-      "id, seeker_id, salle_id, date_debut, date_fin, nb_personnes, type_evenement, status, message, created_at, replied_at, heure_debut_souhaitee, heure_fin_souhaitee",
+      "id, seeker_id, salle_id, date_visite, heure_debut, heure_fin, message, status, created_at",
       { count: "exact" }
     )
     .order("created_at", { ascending: false });
 
   if (statusFilter !== "all") {
-    demandesQuery = demandesQuery.eq("status", statusFilter);
+    query = query.eq("status", statusFilter);
   }
 
   const from = (page - 1) * PAGE_SIZE;
   const to = from + PAGE_SIZE - 1;
-  const { data: demandesData, count: totalCount } = await demandesQuery.range(from, to);
+  const { data: demandesData, count: totalCount } = await query.range(from, to);
 
   const total = totalCount ?? 0;
   const totalPages = Math.ceil(total / PAGE_SIZE) || 1;
@@ -107,54 +97,36 @@ export default async function AdminDemandesPage({
     };
   });
 
-  const { count: totalAll } = await admin
-    .from("demandes")
-    .select("id", { count: "exact", head: true });
-  const allCount = totalAll ?? 0;
-  const { count: sentCount } = await admin
-    .from("demandes")
-    .select("id", { count: "exact", head: true })
-    .eq("status", "sent");
-  const { count: viewedCount } = await admin
-    .from("demandes")
-    .select("id", { count: "exact", head: true })
-    .eq("status", "viewed");
-  const { count: repliedCount } = await admin
-    .from("demandes")
-    .select("id", { count: "exact", head: true })
-    .eq("status", "replied");
-  const { count: acceptedCount } = await admin
-    .from("demandes")
-    .select("id", { count: "exact", head: true })
-    .eq("status", "accepted");
-  const { count: rejectedCount } = await admin
-    .from("demandes")
-    .select("id", { count: "exact", head: true })
-    .eq("status", "rejected");
+  const [{ count: allCount }, { count: pendingCount }, { count: acceptedCount }, { count: refusedCount }, { count: rescheduleCount }] =
+    await Promise.all([
+      admin.from("demandes_visite").select("id", { count: "exact", head: true }),
+      admin.from("demandes_visite").select("id", { count: "exact", head: true }).eq("status", "pending"),
+      admin.from("demandes_visite").select("id", { count: "exact", head: true }).eq("status", "accepted"),
+      admin.from("demandes_visite").select("id", { count: "exact", head: true }).eq("status", "refused"),
+      admin.from("demandes_visite").select("id", { count: "exact", head: true }).eq("status", "reschedule_proposed"),
+    ]);
 
   const counts = {
-    all: allCount,
-    sent: sentCount ?? 0,
-    viewed: viewedCount ?? 0,
-    replied: repliedCount ?? 0,
+    all: allCount ?? 0,
+    pending: pendingCount ?? 0,
     accepted: acceptedCount ?? 0,
-    rejected: rejectedCount ?? 0,
+    refused: refusedCount ?? 0,
+    reschedule_proposed: rescheduleCount ?? 0,
   };
 
   const tabs = [
     { key: "all" as const, label: "Toutes", count: counts.all },
-    { key: "sent" as const, label: "Nouvelles", count: counts.sent },
-    { key: "viewed" as const, label: "En attente", count: counts.viewed },
-    { key: "replied" as const, label: "Répondues", count: counts.replied },
+    { key: "pending" as const, label: "En attente", count: counts.pending },
     { key: "accepted" as const, label: "Acceptées", count: counts.accepted },
-    { key: "rejected" as const, label: "Refusées", count: counts.rejected },
+    { key: "refused" as const, label: "Refusées", count: counts.refused },
+    { key: "reschedule_proposed" as const, label: "Reprogrammation proposée", count: counts.reschedule_proposed },
   ];
 
   return (
     <div className="p-4 sm:p-6 lg:p-8">
       <div className="mb-6">
-        <h1 className="text-2xl font-bold text-black">Demandes</h1>
-        <p className="mt-1 text-slate-500">Toutes les demandes envoyées par les organisateurs</p>
+        <h1 className="text-2xl font-bold text-black">Demandes de visites</h1>
+        <p className="mt-1 text-slate-500">Toutes les demandes de visites envoyées par les locataires</p>
       </div>
 
       <div className="mb-6 flex flex-wrap gap-2 border-b border-slate-200 pb-4">
@@ -193,7 +165,7 @@ export default async function AdminDemandesPage({
         <div className="flex flex-col items-center justify-center rounded-xl border-2 border-dashed border-slate-200 py-16 text-center">
           <p className="text-slate-500">
             {statusFilter === "all"
-              ? "Aucune demande"
+              ? "Aucune demande de visites"
               : `Aucune demande ${STATUT_LABEL[statusFilter] ?? statusFilter}`}
           </p>
         </div>
@@ -203,10 +175,8 @@ export default async function AdminDemandesPage({
             <table className="w-full min-w-[900px]">
               <thead>
                 <tr className="border-b border-slate-200 bg-slate-50 text-left text-xs font-medium uppercase tracking-wider text-slate-500">
-                  <th className="px-4 py-3">Organisateur</th>
-                  <th className="px-4 py-3">Type</th>
-                  <th className="px-4 py-3">Date</th>
-                  <th className="px-4 py-3">Participants</th>
+                  <th className="px-4 py-3">Locataire</th>
+                  <th className="px-4 py-3">Date / Créneau</th>
                   <th className="px-4 py-3">Salle / Propriétaire</th>
                   <th className="px-4 py-3">Statut</th>
                   <th className="px-4 py-3">Action</th>
@@ -216,12 +186,13 @@ export default async function AdminDemandesPage({
                 {list.map((d) => {
                   const profile = d.seeker;
                   const salle = d.salle;
-                  const hDebut = formatTime(d.heure_debut_souhaitee ?? null);
-                  const hFin = formatTime(d.heure_fin_souhaitee ?? null);
-                  const horaires = hDebut && hFin ? `${hDebut}-${hFin}` : hDebut || "";
-                  const dateStr = d.date_debut
-                    ? format(new Date(d.date_debut), "d MMM yyyy", { locale: fr })
+                  const dateStr = d.date_visite
+                    ? format(new Date(d.date_visite + "T12:00:00"), "d MMM yyyy", { locale: fr })
                     : "—";
+                  const heureStr =
+                    d.heure_debut && d.heure_fin
+                      ? `${formatTime(d.heure_debut)} - ${formatTime(d.heure_fin)}`
+                      : "";
 
                   return (
                     <tr key={d.id} className="hover:bg-slate-50">
@@ -236,18 +207,17 @@ export default async function AdminDemandesPage({
                           </div>
                         </div>
                       </td>
-                      <td className="px-4 py-4 text-sm text-slate-700">
-                        {TYPE_EVENEMENT_LABEL[d.type_evenement ?? ""] ?? d.type_evenement ?? "—"}
-                      </td>
                       <td className="px-4 py-4">
-                        <p className="text-sm text-slate-700">{dateStr}</p>
-                        {horaires && <p className="text-xs text-slate-500">{horaires}</p>}
-                      </td>
-                      <td className="px-4 py-4">
-                        <span className="flex items-center gap-1.5 text-sm text-slate-700">
-                          <Users className="h-4 w-4 text-slate-400" />
-                          {d.nb_personnes ?? "—"}
-                        </span>
+                        <p className="flex items-center gap-2 text-sm text-slate-700">
+                          <Calendar className="h-4 w-4 text-slate-400" />
+                          {dateStr}
+                        </p>
+                        {heureStr && (
+                          <p className="mt-1 flex items-center gap-2 text-xs text-slate-500">
+                            <Clock className="h-3.5 w-3.5" />
+                            {heureStr}
+                          </p>
+                        )}
                       </td>
                       <td className="px-4 py-4">
                         <p className="text-sm font-medium text-black">{salle?.name ?? "—"}</p>

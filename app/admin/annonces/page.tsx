@@ -19,7 +19,7 @@ export default async function AdminAnnoncesPage({
       .select("id, slug, name, city, address, capacity, price_per_day, images, status, owner_id")
       .order("created_at", { ascending: false }),
     supabase.from("salle_views").select("salle_id"),
-    supabase.from("demandes").select("salle_id"),
+    supabase.from("demandes_visite").select("salle_id"),
   ]);
 
   const viewsBySalle = new Map<string, number>();

@@ -62,7 +62,7 @@ function formatType(type: string) {
     case "admin":
       return "Admin";
     default:
-      return "Organisateur";
+      return "Locataire";
   }
 }
 
@@ -122,7 +122,7 @@ function getTypeBadge(type: string, sallesCount?: number) {
   }
   return (
     <span className="inline-flex rounded-full bg-blue-100 px-2.5 py-0.5 text-xs font-medium text-blue-700">
-      Organisateur
+      Locataire
     </span>
   );
 }
@@ -242,7 +242,7 @@ export function UtilisateursClient({ users, stats, highlightUserId }: Props) {
               className="h-10 rounded-md border border-slate-200 bg-white px-4 text-sm text-slate-700"
             >
               <option value="all">Tous</option>
-              <option value="seeker">Organisateur</option>
+              <option value="seeker">Locataire</option>
               <option value="owner">Propriétaire</option>
               <option value="admin">Admin</option>
             </select>

@@ -182,7 +182,7 @@ export function OfferCard({
           )}
         </div>
         {isOwner && offer.status === "pending" && (
-          <p className="text-xs text-slate-500">En attente de réponse de l&apos;organisateur</p>
+          <p className="text-xs text-slate-500">En attente de réponse du locataire</p>
         )}
       </div>
 
