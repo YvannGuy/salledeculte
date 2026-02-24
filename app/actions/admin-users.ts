@@ -53,3 +53,24 @@ export async function deleteUserAction(userId: string) {
   revalidatePath("/admin/annonces");
   return { success: true };
 }
+
+/** Supprime plusieurs utilisateurs en une fois. */
+export async function deleteUsersBulkAction(userIds: string[]) {
+  if (!userIds.length) return { error: "Aucun utilisateur sélectionné" };
+
+  const supabase = createAdminClient();
+  const errors: string[] = [];
+
+  for (const userId of userIds) {
+    const { error } = await supabase.auth.admin.deleteUser(userId);
+    if (error) errors.push(`${userId}: ${error.message}`);
+  }
+
+  revalidatePath("/admin/utilisateurs");
+  revalidatePath("/admin/annonces");
+
+  if (errors.length > 0) {
+    return { error: `Échec pour ${errors.length} utilisateur(s): ${errors.join("; ")}` };
+  }
+  return { success: true };
+}

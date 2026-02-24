@@ -17,6 +17,7 @@ import {
 
 import {
   deleteUserAction,
+  deleteUsersBulkAction,
   reactivateUserAction,
   suspendUserAction,
 } from "@/app/actions/admin-users";
@@ -142,6 +143,10 @@ export function UtilisateursClient({ users, stats, highlightUserId }: Props) {
     type: "suspendre" | "reactiver" | "supprimer";
     user: UserRow;
   } | null>(null);
+  const [confirmBulkDelete, setConfirmBulkDelete] = useState<{
+    userIds: string[];
+    count: number;
+  } | null>(null);
 
   useEffect(() => {
     if (highlightUserId && users.length > 0) {
@@ -192,6 +197,7 @@ export function UtilisateursClient({ users, stats, highlightUserId }: Props) {
         const res = await deleteUserAction(confirmAction.user.id);
         if (res.success) {
           setConfirmAction(null);
+          setSelectedIds(new Set());
           router.refresh();
         }
       } else if (confirmAction.type === "suspendre") {
@@ -206,6 +212,21 @@ export function UtilisateursClient({ users, stats, highlightUserId }: Props) {
           setConfirmAction(null);
           router.refresh();
         }
+      }
+    } finally {
+      setActionPending(false);
+    }
+  };
+
+  const handleBulkDelete = async () => {
+    if (!confirmBulkDelete) return;
+    setActionPending(true);
+    try {
+      const res = await deleteUsersBulkAction(confirmBulkDelete.userIds);
+      if (res.success) {
+        setConfirmBulkDelete(null);
+        setSelectedIds(new Set());
+        router.refresh();
       }
     } finally {
       setActionPending(false);
@@ -311,16 +332,47 @@ export function UtilisateursClient({ users, stats, highlightUserId }: Props) {
 
       <Card>
         <CardContent className="p-0">
-          <div className="flex items-center justify-between border-b border-slate-200 p-4">
-            <label className="flex cursor-pointer items-center gap-2 text-sm text-slate-600">
-              <input
-                type="checkbox"
-                checked={allSelected}
-                onChange={toggleAll}
-                className="h-4 w-4 rounded border-slate-300 text-blue-600"
-              />
-              Sélectionner tout
-            </label>
+          <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-200 p-4">
+            <div className="flex items-center gap-3">
+              <label className="flex cursor-pointer items-center gap-2 text-sm text-slate-600">
+                <input
+                  type="checkbox"
+                  checked={allSelected}
+                  onChange={toggleAll}
+                  className="h-4 w-4 rounded border-slate-300 text-blue-600"
+                />
+                Sélectionner tout
+              </label>
+              {selectedIds.size > 0 && (
+                <>
+                  <span className="text-sm text-slate-600">
+                    {selectedIds.size} utilisateur{selectedIds.size > 1 ? "s" : ""} sélectionné
+                    {selectedIds.size > 1 ? "s" : ""}
+                  </span>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() =>
+                      setConfirmBulkDelete({
+                        userIds: Array.from(selectedIds),
+                        count: selectedIds.size,
+                      })
+                    }
+                    className="gap-1.5 border-red-200 text-red-600 hover:bg-red-50 hover:text-red-700"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                    Supprimer
+                  </Button>
+                  <button
+                    type="button"
+                    onClick={() => setSelectedIds(new Set())}
+                    className="text-sm text-slate-500 hover:text-slate-700"
+                  >
+                    Tout désélectionner
+                  </button>
+                </>
+              )}
+            </div>
           </div>
           <div className="overflow-x-auto">
             <table className="w-full min-w-[800px]">
@@ -514,6 +566,40 @@ export function UtilisateursClient({ users, stats, highlightUserId }: Props) {
                   : confirmAction?.type === "suspendre"
                     ? "Suspendre"
                     : "Réactiver"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog
+        open={!!confirmBulkDelete}
+        onOpenChange={(open) => !open && setConfirmBulkDelete(null)}
+      >
+        <DialogContent showClose>
+          <DialogHeader>
+            <DialogTitle>Supprimer {confirmBulkDelete?.count ?? 0} utilisateur(s) ?</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-2 text-sm text-slate-600">
+            <p>
+              {confirmBulkDelete?.count === 1
+                ? "Cet utilisateur sera supprimé définitivement. Cette action est irréversible."
+                : `${confirmBulkDelete?.count ?? 0} utilisateurs seront supprimés définitivement. Cette action est irréversible.`}
+            </p>
+          </div>
+          <DialogFooter className="flex justify-end gap-2 pt-4">
+            <Button
+              variant="outline"
+              onClick={() => setConfirmBulkDelete(null)}
+              disabled={actionPending}
+            >
+              Annuler
+            </Button>
+            <Button
+              onClick={handleBulkDelete}
+              disabled={actionPending}
+              className="bg-red-600 hover:bg-red-700"
+            >
+              {actionPending ? "En cours..." : "Supprimer"}
             </Button>
           </DialogFooter>
         </DialogContent>

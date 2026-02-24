@@ -46,6 +46,7 @@ async function main() {
   }
 
   console.log(`Bucket "${BUCKET_NAME}" créé avec succès (MP4/WebM, max 50 Mo).`);
+  console.log("Exécutez les politiques RLS depuis config/supabase-storage.sql dans l'éditeur SQL Supabase.");
 }
 
 main();
