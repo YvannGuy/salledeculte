@@ -2,6 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import { useActionState, useTransition, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -32,6 +33,7 @@ export default function AdminAuthPage() {
   const [state, formAction] = useActionState(loginAdminAction, initialState);
   const [isPending, startTransition] = useTransition();
   const [showPassword, setShowPassword] = useState(false);
+  const searchParams = useSearchParams();
 
   const form = useForm<LoginSchema>({
     resolver: zodResolver(loginSchema),
@@ -42,6 +44,7 @@ export default function AdminAuthPage() {
     const fd = new FormData();
     fd.append("email", values.email);
     fd.append("password", values.password);
+    fd.append("redirectTo", searchParams.get("redirectedFrom") ?? "/admin");
     startTransition(() => formAction(fd));
   };
 

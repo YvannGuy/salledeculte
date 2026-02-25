@@ -1343,6 +1343,8 @@ function Step6({
   submitError?: string | null;
   minPhotos: number;
 }) {
+  const [acceptedTerms, setAcceptedTerms] = useState(false);
+
   return (
     <>
       <h2 className="text-2xl font-bold text-black">Récapitulatif</h2>
@@ -1437,27 +1439,25 @@ function Step6({
           </div>
         </div>
       </div>
-      <p className="mt-4 text-sm text-slate-600">
-        En soumettant votre annonce vous acceptez nos{" "}
-        <Link
-          href="/cgu"
-          target="_blank"
-          rel="noopener noreferrer"
-          className="font-medium text-[#213398] hover:underline"
-        >
-          conditions générales d&apos;utilisation
-        </Link>
-        {" "}et nos{" "}
-        <Link
-          href="/cgv"
-          target="_blank"
-          rel="noopener noreferrer"
-          className="font-medium text-[#213398] hover:underline"
-        >
-          conditions générales de vente
-        </Link>
-        .
-      </p>
+      <label className="mt-4 flex items-start gap-2 text-sm text-slate-700">
+        <input
+          type="checkbox"
+          checked={acceptedTerms}
+          onChange={(e) => setAcceptedTerms(e.target.checked)}
+          className="mt-0.5 h-4 w-4 rounded border-slate-300 text-[#213398] focus:ring-[#213398]"
+        />
+        <span>
+          J&apos;accepte les{" "}
+          <Link href="/cgu" target="_blank" rel="noopener noreferrer" className="font-medium text-[#213398] hover:underline">
+            conditions générales d&apos;utilisation
+          </Link>{" "}
+          et{" "}
+          <Link href="/cgv" target="_blank" rel="noopener noreferrer" className="font-medium text-[#213398] hover:underline">
+            conditions générales de vente
+          </Link>
+          .
+        </span>
+      </label>
       <div className="mt-8 flex flex-col gap-3 sm:flex-row">
         <Button
           variant="outline"
@@ -1469,7 +1469,7 @@ function Step6({
         </Button>
         <Button
           onClick={onSubmit}
-          disabled={isSubmitting || data.photos.length < minPhotos}
+          disabled={isSubmitting || data.photos.length < minPhotos || !acceptedTerms}
           className="h-11 flex-1 bg-[#5b4dbf] hover:bg-[#4a3dad] disabled:opacity-50"
         >
           {isSubmitting ? "Envoi en cours..." : "Soumettre mon annonce"}

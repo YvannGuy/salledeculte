@@ -29,7 +29,7 @@ export async function POST(request: Request) {
 
     const { data: offer, error: offerError } = await adminSupabase
       .from("offers")
-      .select("id, demande_id, owner_id, seeker_id, salle_id, amount_cents, payment_mode, upfront_amount_cents, balance_amount_cents, balance_due_at, deposit_amount_cents, service_fee_cents, expires_at, status, event_type")
+      .select("id, conversation_id, demande_id, owner_id, seeker_id, salle_id, amount_cents, payment_mode, upfront_amount_cents, balance_amount_cents, balance_due_at, deposit_amount_cents, service_fee_cents, expires_at, status, event_type")
       .eq("id", offerId)
       .single();
 
@@ -49,7 +49,8 @@ export async function POST(request: Request) {
       service_fee_cents?: number | null;
       expires_at: string;
       status: string;
-      demande_id: string;
+      demande_id: string | null;
+      conversation_id: string;
       salle_id: string;
       event_type: string | null;
     };
@@ -137,6 +138,25 @@ export async function POST(request: Request) {
     const serviceFeeCents = Math.max(0, offerRow.service_fee_cents ?? 1500);
     const applicationFeeCents = serviceFeeCents;
     const checkoutTotalCents = chargeNowCents + serviceFeeCents;
+    let demandeParam = offerRow.demande_id;
+    if (!demandeParam) {
+      const { data: conv } = await adminSupabase
+        .from("conversations")
+        .select("demande_visite_id")
+        .eq("id", offerRow.conversation_id)
+        .maybeSingle();
+      const demandeVisiteId =
+        (conv as { demande_visite_id?: string | null } | null)?.demande_visite_id ?? null;
+      if (demandeVisiteId) {
+        demandeParam = `visite-${demandeVisiteId}`;
+      }
+    }
+    const successUrl = demandeParam
+      ? `${siteConfig.url}/dashboard/messagerie?demandeId=${demandeParam}&offer=paid`
+      : `${siteConfig.url}/dashboard/messagerie?offer=paid`;
+    const cancelUrl = demandeParam
+      ? `${siteConfig.url}/dashboard/messagerie?demandeId=${demandeParam}&offer=cancel`
+      : `${siteConfig.url}/dashboard/messagerie?offer=cancel`;
 
     const sessionConfig: Stripe.Checkout.SessionCreateParams = {
       mode: "payment",
@@ -179,8 +199,8 @@ export async function POST(request: Request) {
           quantity: 1,
         },
       ],
-      success_url: `${siteConfig.url}/dashboard/messagerie?demandeId=${offerRow.demande_id}&offer=paid`,
-      cancel_url: `${siteConfig.url}/dashboard/messagerie?demandeId=${offerRow.demande_id}&offer=cancel`,
+      success_url: successUrl,
+      cancel_url: cancelUrl,
       metadata: {
         offer_id: offerId,
         user_id: user.id,

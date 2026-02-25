@@ -1,8 +1,9 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { ArrowLeft, Building2, Camera, ChevronLeft, ChevronRight, CreditCard, FileText, Heart, Home, LogOut, Menu, MessageCircle, Search, Settings, User } from "lucide-react";
 
 import { signOutAction } from "@/app/actions/auth";
@@ -199,7 +200,11 @@ export function DashboardSidebar({
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [searchModalOpen, setSearchModalOpen] = useState(false);
+  const [isHydrated, setIsHydrated] = useState(false);
   const displayName = user.displayName ?? "Utilisateur";
+  useEffect(() => {
+    setIsHydrated(true);
+  }, []);
 
   return (
     <>
@@ -213,7 +218,8 @@ export function DashboardSidebar({
         >
           <Menu className="h-6 w-6" />
         </Button>
-        <Link href="/dashboard" className="text-lg font-semibold text-[#303B4A]">
+        <Link href="/dashboard" className={cn("text-lg font-semibold text-[#213398]", isHydrated && "flex items-center")}>
+          {isHydrated && <Image src="/logopleinsdc.png" alt="" width={24} height={24} className="-mr-0.5 h-6 w-6 shrink-0 object-contain" />}
           {siteConfig.name}
         </Link>
         <div className="w-10" />
@@ -225,9 +231,10 @@ export function DashboardSidebar({
           <div className="flex h-14 items-center border-b border-slate-200 px-4">
             <Link
               href="/dashboard"
-              className="text-lg font-semibold text-[#303B4A]"
+              className={cn("text-lg font-semibold text-[#213398]", isHydrated && "flex items-center")}
               onClick={() => setMobileOpen(false)}
             >
+              {isHydrated && <Image src="/logopleinsdc.png" alt="" width={24} height={24} className="-mr-0.5 h-6 w-6 shrink-0 object-contain" />}
               {siteConfig.name}
             </Link>
           </div>
@@ -265,7 +272,8 @@ export function DashboardSidebar({
           )}
         >
           {!collapsed && (
-            <Link href="/dashboard" className="text-lg font-semibold text-[#303B4A]">
+            <Link href="/dashboard" className={cn("text-lg font-semibold text-[#213398]", isHydrated && "flex items-center")}>
+              {isHydrated && <Image src="/logopleinsdc.png" alt="" width={24} height={24} className="-mr-0.5 h-6 w-6 shrink-0 object-contain" />}
               {siteConfig.name}
             </Link>
           )}

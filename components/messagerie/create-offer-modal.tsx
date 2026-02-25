@@ -119,11 +119,11 @@ export function CreateOfferModal({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent showClose={true}>
+      <DialogContent showClose={true} className="max-h-[90vh] flex flex-col overflow-hidden">
         <DialogHeader>
           <DialogTitle>Créer une offre</DialogTitle>
         </DialogHeader>
-        <form onSubmit={handleSubmit} className="space-y-4 py-2">
+        <form onSubmit={handleSubmit} className="flex min-h-0 flex-1 flex-col overflow-y-auto space-y-4 py-2">
           <div>
             <label className="text-sm font-medium text-black">Type d&apos;évènement</label>
             <div className="mt-1.5 flex gap-4">

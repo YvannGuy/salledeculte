@@ -7,7 +7,7 @@ export type OfferStatus = "pending" | "paid" | "refused" | "expired";
 export type Offer = {
   id: string;
   conversation_id: string;
-  demande_id: string;
+  demande_id: string | null;
   owner_id: string;
   seeker_id: string;
   salle_id: string;
@@ -52,7 +52,7 @@ export type Offer = {
 export type OfferRow = {
   id: string;
   conversation_id: string;
-  demande_id: string;
+  demande_id: string | null;
   owner_id: string;
   seeker_id: string;
   salle_id: string;

@@ -1,8 +1,9 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   ArrowLeft,
   Building2,
@@ -240,7 +241,11 @@ export function OwnerSidebar({
   const pathname = usePathname();
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [isHydrated, setIsHydrated] = useState(false);
   const displayName = user.displayName ?? "Utilisateur";
+  useEffect(() => {
+    setIsHydrated(true);
+  }, []);
 
   return (
     <>
@@ -254,7 +259,8 @@ export function OwnerSidebar({
         >
           <Menu className="h-6 w-6" />
         </Button>
-        <Link href="/proprietaire" className="text-lg font-semibold text-[#303B4A]">
+        <Link href="/proprietaire" className={cn("text-lg font-semibold text-[#213398]", isHydrated && "flex items-center")}>
+          {isHydrated && <Image src="/logopleinsdc.png" alt="" width={24} height={24} className="-mr-0.5 h-6 w-6 shrink-0 object-contain" />}
           {siteConfig.name}
         </Link>
         <div className="w-10" />
@@ -266,9 +272,10 @@ export function OwnerSidebar({
           <div className="flex h-14 items-center border-b border-slate-200 px-4">
             <Link
               href="/proprietaire"
-              className="text-lg font-semibold text-[#303B4A]"
+              className={cn("text-lg font-semibold text-[#213398]", isHydrated && "flex items-center")}
               onClick={() => setMobileOpen(false)}
             >
+              {isHydrated && <Image src="/logopleinsdc.png" alt="" width={24} height={24} className="-mr-0.5 h-6 w-6 shrink-0 object-contain" />}
               {siteConfig.name}
             </Link>
           </div>
@@ -301,7 +308,8 @@ export function OwnerSidebar({
           )}
         >
           {!collapsed && (
-            <Link href="/proprietaire" className="text-lg font-semibold text-[#303B4A]">
+            <Link href="/proprietaire" className={cn("text-lg font-semibold text-[#213398]", isHydrated && "flex items-center")}>
+              {isHydrated && <Image src="/logopleinsdc.png" alt="" width={24} height={24} className="-mr-0.5 h-6 w-6 shrink-0 object-contain" />}
               {siteConfig.name}
             </Link>
           )}

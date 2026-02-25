@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
-import { Archive, Banknote, Check, ChevronDown, ChevronLeft, Lightbulb, MessageCircle, MoreVertical, Paperclip, Pencil, RotateCcw, Send, Search, Trash2, X } from "lucide-react";
+import { Archive, Banknote, Check, ChevronDown, ChevronLeft, FileText, Lightbulb, MessageCircle, MoreVertical, Paperclip, Pencil, RotateCcw, Send, Search, Trash2, X } from "lucide-react";
 
 import { updateDemandeStatusAction } from "@/app/actions/demande-owner";
 import { markExpiredOffersAction } from "@/app/actions/offers";
@@ -48,6 +48,7 @@ export type Thread = {
   salleCity?: string;
   salleCapacity?: number | null;
   salleSlug?: string;
+  hasContract?: boolean;
   typeEvenement: string | null;
   dateDebut: string;
   dateDebutHeure?: string;
@@ -603,7 +604,8 @@ export function MessagerieClient({
     hasConnectAccount &&
     ["replied", "accepted"].includes(selected?.demandeStatus ?? "") &&
     !hasPendingOffer &&
-    !!selected?.salleId;
+    !!selected?.salleId &&
+    !!selected?.hasContract;
 
   const handleAcceptAndPay = async (offerId: string) => {
     try {
@@ -1279,6 +1281,22 @@ export function MessagerieClient({
                 >
                   <Banknote className="h-3.5 w-3.5" />
                   Activez les paiements pour envoyer une offre
+                </Link>
+              </div>
+            )}
+            {userType === "owner" &&
+              hasConnectAccount &&
+              !selected?.hasContract &&
+              ["replied", "accepted"].includes(selected?.demandeStatus ?? "") &&
+              !hasPendingOffer &&
+              !!selected?.salleId && (
+              <div className="mt-2">
+                <Link
+                  href="/proprietaire/contrat"
+                  className="inline-flex items-center gap-1.5 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs font-medium text-amber-800 hover:bg-amber-100"
+                >
+                  <FileText className="h-3.5 w-3.5" />
+                  Téléchargez votre contrat pour envoyer une offre
                 </Link>
               </div>
             )}

@@ -250,13 +250,13 @@ export default async function AdminReservationsPage({
                     </div>
                   </div>
                   <div className="flex flex-wrap gap-2">
-                    <Link href="/admin/etats-des-lieux" className="rounded border px-3 py-1.5 text-sm">
+                    <Link href={`/admin/etats-des-lieux?offerId=${offer.id}`} className="rounded border px-3 py-1.5 text-sm">
                       Voir EDL
                     </Link>
-                    <Link href="/admin/paiements" className="rounded border px-3 py-1.5 text-sm">
+                    <Link href={`/admin/paiements?offerId=${offer.id}`} className="rounded border px-3 py-1.5 text-sm">
                       Refund / caution
                     </Link>
-                    <Link href="/admin/paiements" className="rounded bg-amber-600 px-3 py-1.5 text-sm text-white">
+                    <Link href={`/admin/etats-des-lieux?offerId=${offer.id}&caseType=dispute`} className="rounded bg-amber-600 px-3 py-1.5 text-sm text-white">
                       Traiter litige
                     </Link>
                   </div>

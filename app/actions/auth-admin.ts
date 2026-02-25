@@ -17,9 +17,16 @@ function getAdminEmails(): string[] {
     .filter(Boolean);
 }
 
+function getSafeAdminRedirect(formData: FormData): string {
+  const redirectTo = String(formData.get("redirectTo") ?? "");
+  if (!redirectTo.startsWith("/admin")) return "/admin";
+  return redirectTo;
+}
+
 export async function loginAdminAction(_: AuthFormState, formData: FormData): Promise<AuthFormState> {
   const email = String(formData.get("email") ?? "").trim().toLowerCase();
   const password = String(formData.get("password") ?? "");
+  const redirectTo = getSafeAdminRedirect(formData);
 
   const supabase = await createClient();
   const { data, error } = await supabase.auth.signInWithPassword({ email, password });
@@ -47,7 +54,7 @@ export async function loginAdminAction(_: AuthFormState, formData: FormData): Pr
   }
 
   revalidatePath("/", "layout");
-  redirect("/admin");
+  redirect(redirectTo);
 }
 
 export async function signOutAdminAction() {

@@ -83,13 +83,14 @@ export async function createOfferAction(formData: FormData): Promise<{ success: 
 
   const { data: conv } = await adminSupabase
     .from("conversations")
-    .select("owner_id")
+    .select("owner_id, demande_id")
     .eq("id", conversationId)
     .single();
 
-  if (!conv || (conv as { owner_id: string }).owner_id !== user.id) {
+  if (!conv || (conv as { owner_id: string; demande_id: string | null }).owner_id !== user.id) {
     return { success: false, error: "Conversation introuvable ou accès refusé." };
   }
+  const conversationDemandeId = (conv as { owner_id: string; demande_id: string | null }).demande_id;
 
   const { data: existingPending } = await adminSupabase
     .from("offers")
@@ -116,7 +117,7 @@ export async function createOfferAction(formData: FormData): Promise<{ success: 
     .from("offers")
     .insert({
       conversation_id: conversationId,
-      demande_id: demandeId,
+      demande_id: conversationDemandeId,
       owner_id: user.id,
       seeker_id: seekerId,
       salle_id: salleId,
