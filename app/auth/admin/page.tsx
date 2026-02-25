@@ -3,7 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { useActionState, useTransition, useState } from "react";
+import { Suspense, useActionState, useTransition, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -29,7 +29,7 @@ const features = [
   "Demandes rapides",
 ];
 
-export default function AdminAuthPage() {
+function AdminAuthPageContent() {
   const [state, formAction] = useActionState(loginAdminAction, initialState);
   const [isPending, startTransition] = useTransition();
   const [showPassword, setShowPassword] = useState(false);
@@ -138,5 +138,20 @@ export default function AdminAuthPage() {
         </form>
       </div>
     </div>
+  );
+}
+
+export default function AdminAuthPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="grid min-h-screen grid-cols-1 md:grid-cols-[0.95fr_1.05fr]">
+          <div className="bg-slate-100" />
+          <div className="bg-white" />
+        </div>
+      }
+    >
+      <AdminAuthPageContent />
+    </Suspense>
   );
 }
