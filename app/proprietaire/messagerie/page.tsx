@@ -84,11 +84,13 @@ export default async function MessageriePage({
           .select("id, demande_id, last_message_at, last_message_preview")
           .in("demande_id", demandeIds)
       : { data: [] },
-    demandeVisiteIds.length > 0
+    salleIdsDem.length > 0
       ? supabase
           .from("conversations")
-          .select("id, demande_visite_id, last_message_at, last_message_preview")
-          .in("demande_visite_id", demandeVisiteIds)
+          .select("id, seeker_id, owner_id, salle_id, demande_visite_id, last_message_at, last_message_preview")
+          .eq("owner_id", user.id)
+          .in("salle_id", salleIdsDem)
+          .not("demande_visite_id", "is", null)
       : { data: [] },
   ]);
 
@@ -97,8 +99,16 @@ export default async function MessageriePage({
       ? (convsResRaw.data ?? []) as { id: string; demande_id: string; last_message_at: string | null; last_message_preview: string | null }[]
       : [];
   const convsVisiteData =
-    demandeVisiteIds.length > 0 && !("error" in convsVisiteResRaw && convsVisiteResRaw.error)
-      ? (convsVisiteResRaw.data ?? []).filter((c: { demande_visite_id?: string }) => c.demande_visite_id) as { id: string; demande_visite_id: string; last_message_at: string | null; last_message_preview: string | null }[]
+    salleIdsDem.length > 0 && !("error" in convsVisiteResRaw && convsVisiteResRaw.error)
+      ? (convsVisiteResRaw.data ?? []) as {
+          id: string;
+          seeker_id: string;
+          owner_id: string;
+          salle_id: string;
+          demande_visite_id: string | null;
+          last_message_at: string | null;
+          last_message_preview: string | null;
+        }[]
       : [];
 
   const profileMap = new Map((profilesRes.data ?? []).map((p) => [p.id, p]));
@@ -108,7 +118,9 @@ export default async function MessageriePage({
   );
   const contractBySalle = new Map<string, boolean>(salleContractStatus);
   const convByDemande = new Map(convsData.map((c) => [c.demande_id, c]));
-  const convByDemandeVisite = new Map(convsVisiteData.map((c) => [c.demande_visite_id, c]));
+  const convByDemandeVisiteTriple = new Map(
+    convsVisiteData.map((c) => [`${c.seeker_id}:${c.owner_id}:${c.salle_id}`, c])
+  );
 
   const convIds = [...new Set([...convsData.map((c) => c.id), ...convsVisiteData.map((c) => c.id)])];
 
@@ -234,8 +246,8 @@ export default async function MessageriePage({
     };
   });
 
-  const threadsVisite: Thread[] = demandesVisite.map((dv) => {
-    const conv = convByDemandeVisite.get(dv.id);
+  const threadsVisiteRaw: Thread[] = demandesVisite.map((dv) => {
+    const conv = convByDemandeVisiteTriple.get(`${dv.seeker_id}:${user.id}:${dv.salle_id}`);
     const profile = profileMap.get(dv.seeker_id);
     const salle = salleMap.get(dv.salle_id);
     const convId = conv?.id ?? null;
@@ -281,6 +293,13 @@ export default async function MessageriePage({
     };
   });
 
+  const threadsVisiteByKey = new Map<string, Thread>();
+  for (const t of threadsVisiteRaw) {
+    const key = t.conversationId ?? `visite:${t.demandeVisiteId ?? t.demandeId}`;
+    if (!threadsVisiteByKey.has(key)) threadsVisiteByKey.set(key, t);
+  }
+  const threadsVisite = [...threadsVisiteByKey.values()];
+
   const threads: Thread[] = [...threadsDemande, ...threadsVisite];
 
   const visibleThreads = threads.filter((t) => !t.deletedAt);
@@ -296,14 +315,14 @@ export default async function MessageriePage({
   const conversationIdParam = params.conversationId ?? null;
   const pageParam = params.page;
   const page = Math.max(1, parseInt(String(pageParam || "1"), 10) || 1);
-  const totalPages = Math.ceil(threads.length / PAGE_SIZE) || 1;
+  const totalPages = Math.ceil(visibleThreads.length / PAGE_SIZE) || 1;
   const currentPage = Math.min(page, totalPages);
   const from = (currentPage - 1) * PAGE_SIZE;
-  let paginatedThreads = threads.slice(from, from + PAGE_SIZE);
+  let paginatedThreads = visibleThreads.slice(from, from + PAGE_SIZE);
   const targetThread = conversationIdParam
-    ? threads.find((t) => t.conversationId === conversationIdParam)
+    ? visibleThreads.find((t) => t.conversationId === conversationIdParam)
     : demandeIdParam
-      ? threads.find((t) => t.demandeId === demandeIdParam)
+      ? visibleThreads.find((t) => t.demandeId === demandeIdParam)
       : null;
   if (targetThread && !paginatedThreads.some((t) => t.demandeId === targetThread.demandeId)) {
     paginatedThreads = [targetThread, ...paginatedThreads];

@@ -144,6 +144,8 @@ type Props = {
   hasConnectAccount?: boolean;
   /** offer=paid ou offer=cancel au retour de Stripe */
   offerReturnStatus?: string | null;
+  /** Texte à pré-remplir dans la zone de saisie (ex: contact visite) */
+  initialComposerText?: string | null;
 };
 
 const STATUS_TAG: Record<string, { label: string; className: string }> = {
@@ -204,6 +206,7 @@ export function MessagerieClient({
   initialConversationId,
   hasConnectAccount = false,
   offerReturnStatus,
+  initialComposerText,
 }: Props) {
   const router = useRouter();
   const [selected, setSelected] = useState<Thread | null>(null);
@@ -229,6 +232,7 @@ export function MessagerieClient({
   const [threadPreferences, setThreadPreferences] = useState<Map<string, { archivedAt?: string | null; deletedAt?: string | null }>>(new Map());
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const prefillAppliedRef = useRef(false);
 
   const getThreadArchived = (t: Thread) => threadPreferences.get(t.demandeId)?.archivedAt ?? t.archivedAt;
   const getThreadDeleted = (t: Thread) => threadPreferences.get(t.demandeId)?.deletedAt ?? t.deletedAt;
@@ -250,6 +254,21 @@ export function MessagerieClient({
     if (filterTab === "archived") return isArchived;
     return true;
   });
+
+  const selectedHiddenByFilters =
+    !!selected &&
+    !filteredThreads.some(
+      (t) =>
+        t.demandeId === selected.demandeId ||
+        (!!selected.conversationId && t.conversationId === selected.conversationId)
+    );
+
+  const selectedVisibleThread =
+    selectedHiddenByFilters && !getThreadDeleted(selected) ? selected : null;
+
+  const threadsForList = selectedVisibleThread
+    ? [selectedVisibleThread, ...filteredThreads]
+    : filteredThreads;
 
   const loadMessages = useCallback(async (convId: string) => {
     const supabase = createClient();
@@ -407,6 +426,15 @@ export function MessagerieClient({
     };
     open();
   }, [selected?.demandeId, selected?.demandeVisiteId, selected?.conversationId, loadMessages]);
+
+  useEffect(() => {
+    if (prefillAppliedRef.current) return;
+    if (!initialComposerText || !initialComposerText.trim()) return;
+    if (!selected) return;
+    if (input.trim()) return;
+    setInput(initialComposerText.trim());
+    prefillAppliedRef.current = true;
+  }, [initialComposerText, selected?.demandeId, input]);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -671,7 +699,7 @@ export function MessagerieClient({
         </div>
       </div>
       <div className="min-h-0 flex-1 overflow-y-auto">
-        {filteredThreads.length === 0 ? (
+        {threadsForList.length === 0 ? (
           <div className="flex flex-col items-center justify-center p-8 text-center">
             <div className="flex h-20 w-20 items-center justify-center rounded-full bg-[#213398]/10">
               <MessageCircle className="h-10 w-10 text-[#213398]" />
@@ -737,7 +765,7 @@ export function MessagerieClient({
             </div>
           </div>
         ) : (
-          filteredThreads.map((t) => {
+          threadsForList.map((t) => {
             const isSelected = selected?.demandeId === t.demandeId;
             const isArchivedTab = filterTab === "archived";
             return (

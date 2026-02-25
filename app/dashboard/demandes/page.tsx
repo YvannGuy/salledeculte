@@ -324,7 +324,10 @@ export default async function DemandesPage({
                             compact
                           />
                         ) : isVisite ? (
-                          <ContactVisiteSeekerButton demandeVisiteId={d.id} />
+                          <ContactVisiteSeekerButton
+                            demandeVisiteId={d.id}
+                            status={d.status}
+                          />
                         ) : (
                           <ContactProprietaireDemandeButton demandeId={d.id} />
                         )}

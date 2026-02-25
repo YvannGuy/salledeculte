@@ -10,13 +10,20 @@ import { Button } from "@/components/ui/button";
 export function ContactVisiteSeekerButton({
   demandeVisiteId,
   className,
-  label = "Contacter le propriétaire",
+  label,
+  status,
 }: {
   demandeVisiteId: string;
   className?: string;
   label?: string;
+  status?: string;
 }) {
   const [loading, setLoading] = useState(false);
+  const computedLabel =
+    label ??
+    (["accepted", "refused", "replied"].includes(status ?? "")
+      ? "Voir la conversation"
+      : "Contacter le propriétaire");
   return (
     <form
       action={async () => {
@@ -35,7 +42,7 @@ export function ContactVisiteSeekerButton({
         className={`bg-[#213398] hover:bg-[#1a2980] ${className ?? ""}`.trim()}
       >
         <MessageCircle className="mr-2 h-4 w-4" />
-        {loading ? "Ouverture…" : label}
+        {loading ? "Ouverture…" : computedLabel}
       </Button>
     </form>
   );

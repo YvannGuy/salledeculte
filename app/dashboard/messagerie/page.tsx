@@ -17,7 +17,7 @@ function formatTime(t: string | null): string {
 export default async function MessageriePage({
   searchParams,
 }: {
-  searchParams: Promise<{ page?: string; demandeId?: string; conversationId?: string; offer?: string }>;
+  searchParams: Promise<{ page?: string; demandeId?: string; conversationId?: string; offer?: string; compose?: string }>;
 }) {
   const supabase = await createClient();
   const {
@@ -64,18 +64,30 @@ export default async function MessageriePage({
           .select("id, demande_id, last_message_at, last_message_preview")
           .in("demande_id", demandeIds)
       : { data: [] },
-    demandeVisiteIds.length > 0
+    salleIds.length > 0
       ? supabase
           .from("conversations")
-          .select("id, demande_visite_id, last_message_at, last_message_preview")
-          .in("demande_visite_id", demandeVisiteIds)
+        .select("id, seeker_id, owner_id, salle_id, demande_visite_id, last_message_at, last_message_preview")
+        .eq("seeker_id", user.id)
+        .in("salle_id", salleIds)
+        .not("demande_visite_id", "is", null)
       : { data: [] },
   ]);
 
   const convsData =
     "error" in convsResRaw && convsResRaw.error ? [] : (convsResRaw.data ?? []).filter((c: { demande_id?: string }) => c.demande_id);
   const convsVisiteData =
-    "error" in convsVisiteResRaw && convsVisiteResRaw.error ? [] : (convsVisiteResRaw.data ?? []).filter((c: { demande_visite_id?: string }) => c.demande_visite_id) as { id: string; demande_visite_id: string; last_message_at: string | null; last_message_preview: string | null }[];
+    "error" in convsVisiteResRaw && convsVisiteResRaw.error
+      ? []
+      : (convsVisiteResRaw.data ?? []) as {
+          id: string;
+          seeker_id: string;
+          owner_id: string;
+          salle_id: string;
+          demande_visite_id: string | null;
+          last_message_at: string | null;
+          last_message_preview: string | null;
+        }[];
 
   const ownerIds = [...new Set((sallesRes.data ?? []).map((s) => (s as { owner_id: string }).owner_id))];
   const { data: profiles } =
@@ -88,6 +100,9 @@ export default async function MessageriePage({
     (sallesRes.data ?? []).map((s) => [s.id, (s as { owner_id: string }).owner_id])
   );
   const convIds = [...new Set([...convsData.map((c) => c.id), ...convsVisiteData.map((c) => c.id)])];
+  const convVisiteByTriple = new Map(
+    convsVisiteData.map((c) => [`${c.seeker_id}:${c.owner_id}:${c.salle_id}`, c])
+  );
 
   const { data: prefsData } =
     convIds.length > 0
@@ -213,10 +228,10 @@ export default async function MessageriePage({
     };
   });
 
-  const visiteThreads: Thread[] = (demandesVisite ?? []).map((dv) => {
-    const conv = convsVisiteData.find((c) => c.demande_visite_id === dv.id);
+  const visiteThreadsRaw: Thread[] = (demandesVisite ?? []).map((dv) => {
     const salle = salleMap.get(dv.salle_id);
     const ownerId = salleToOwner.get(dv.salle_id);
+    const conv = ownerId ? convVisiteByTriple.get(`${user.id}:${ownerId}:${dv.salle_id}`) : undefined;
     const profile = ownerId ? profileMap.get(ownerId) : null;
     const convId = conv?.id ?? null;
     const unreadCount = convId ? unreadByConv.get(convId) ?? 0 : 0;
@@ -265,6 +280,13 @@ export default async function MessageriePage({
     };
   });
 
+  const visiteThreadsByKey = new Map<string, Thread>();
+  for (const t of visiteThreadsRaw) {
+    const key = t.conversationId ?? `visite:${t.demandeVisiteId ?? t.demandeId}`;
+    if (!visiteThreadsByKey.has(key)) visiteThreadsByKey.set(key, t);
+  }
+  const visiteThreads = [...visiteThreadsByKey.values()];
+
   const threads: Thread[] = [...demandeThreads, ...visiteThreads];
 
   const visibleThreads = threads.filter((t) => !t.deletedAt);
@@ -280,15 +302,16 @@ export default async function MessageriePage({
   const demandeIdParam = params.demandeId ?? undefined;
   const conversationIdParam = params.conversationId ?? undefined;
   const offerReturnStatus = typeof params.offer === "string" ? params.offer : null;
+  const initialComposerText = typeof params.compose === "string" ? params.compose : null;
   const page = Math.max(1, parseInt(String(pageParam || "1"), 10) || 1);
-  const totalPages = Math.ceil(threads.length / PAGE_SIZE) || 1;
+  const totalPages = Math.ceil(visibleThreads.length / PAGE_SIZE) || 1;
   const currentPage = Math.min(page, totalPages);
   const from = (currentPage - 1) * PAGE_SIZE;
-  let paginatedThreads = threads.slice(from, from + PAGE_SIZE);
+  let paginatedThreads = visibleThreads.slice(from, from + PAGE_SIZE);
   const targetThread = conversationIdParam
-    ? threads.find((t) => t.conversationId === conversationIdParam)
+    ? visibleThreads.find((t) => t.conversationId === conversationIdParam)
     : demandeIdParam
-      ? threads.find((t) => t.demandeId === demandeIdParam)
+      ? visibleThreads.find((t) => t.demandeId === demandeIdParam)
       : null;
   if (targetThread && !paginatedThreads.some((t) => t.demandeId === targetThread.demandeId)) {
     paginatedThreads = [targetThread, ...paginatedThreads];
@@ -304,6 +327,7 @@ export default async function MessageriePage({
         currentUserFullName={(profile as { full_name?: string } | null)?.full_name ?? user.user_metadata?.full_name}
         userType="seeker"
         offerReturnStatus={offerReturnStatus}
+        initialComposerText={initialComposerText}
         pagination={
           totalPages > 1
             ? {

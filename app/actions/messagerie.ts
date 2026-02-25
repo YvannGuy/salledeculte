@@ -16,6 +16,25 @@ const ALLOWED_MIME_TYPES = [
   "application/pdf",
 ];
 
+async function restoreConversationVisibilityForUser(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  userId: string,
+  conversationId: string
+) {
+  await supabase
+    .from("user_conversation_preferences")
+    .upsert(
+      {
+        user_id: userId,
+        conversation_id: conversationId,
+        archived_at: null,
+        deleted_at: null,
+        updated_at: new Date().toISOString(),
+      },
+      { onConflict: "user_id,conversation_id" }
+    );
+}
+
 export async function getOrCreateConversation(demandeId: string) {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
@@ -27,7 +46,10 @@ export async function getOrCreateConversation(demandeId: string) {
     .eq("demande_id", demandeId)
     .maybeSingle();
 
-  if (conv) return { conversationId: conv.id, error: null };
+  if (conv) {
+    await restoreConversationVisibilityForUser(supabase, user.id, conv.id);
+    return { conversationId: conv.id, error: null };
+  }
 
   const { data: demande } = await supabase
     .from("demandes")
@@ -61,6 +83,7 @@ export async function getOrCreateConversation(demandeId: string) {
       .from("conversations")
       .update({ demande_id: demandeId, updated_at: new Date().toISOString() })
       .eq("id", existingByTriple.id);
+    await restoreConversationVisibilityForUser(supabase, user.id, existingByTriple.id);
     return { conversationId: existingByTriple.id, error: null };
   }
 
@@ -76,6 +99,7 @@ export async function getOrCreateConversation(demandeId: string) {
     .single();
 
   if (error) return { error: error.message, conversationId: null };
+  await restoreConversationVisibilityForUser(supabase, user.id, newConv.id);
   return { conversationId: newConv.id, error: null };
 }
 
@@ -91,7 +115,10 @@ export async function getOrCreateConversationForVisite(demandeVisiteId: string) 
     .eq("demande_visite_id", demandeVisiteId)
     .maybeSingle();
 
-  if (conv) return { conversationId: conv.id, error: null };
+  if (conv) {
+    await restoreConversationVisibilityForUser(supabase, user.id, conv.id);
+    return { conversationId: conv.id, error: null };
+  }
 
   const { data: dv } = await supabase
     .from("demandes_visite")
@@ -112,13 +139,16 @@ export async function getOrCreateConversationForVisite(demandeVisiteId: string) 
   const dvRow = dv as { seeker_id: string; salle_id: string };
   const salleRow = salle as { owner_id: string };
   // Vérifier si une conversation existe déjà (contrainte unique seeker_id + owner_id + salle_id)
-  const { data: existingByTriple } = await supabase
+  const { data: existingByTripleRows } = await supabase
     .from("conversations")
     .select("id")
     .eq("seeker_id", dvRow.seeker_id)
     .eq("owner_id", salleRow.owner_id)
     .eq("salle_id", dvRow.salle_id)
-    .maybeSingle();
+    .order("updated_at", { ascending: false })
+    .limit(1);
+
+  const existingByTriple = existingByTripleRows?.[0];
 
   if (existingByTriple) {
     await supabase
@@ -128,6 +158,7 @@ export async function getOrCreateConversationForVisite(demandeVisiteId: string) 
         updated_at: new Date().toISOString(),
       })
       .eq("id", existingByTriple.id);
+    await restoreConversationVisibilityForUser(supabase, user.id, existingByTriple.id);
     return { conversationId: existingByTriple.id, error: null };
   }
 
@@ -144,6 +175,7 @@ export async function getOrCreateConversationForVisite(demandeVisiteId: string) 
     .single();
 
   if (error) return { error: error.message, conversationId: null };
+  await restoreConversationVisibilityForUser(supabase, user.id, newConv.id);
   return { conversationId: newConv.id, error: null };
 }
 

@@ -202,7 +202,10 @@ export default async function DemandeVisiteDetailPage({
             <div>
               <dt className="text-xs font-medium text-slate-500">Contacter le propriétaire</dt>
               <dd className="mt-2">
-                <ContactVisiteSeekerButton demandeVisiteId={demande.id} />
+                <ContactVisiteSeekerButton
+                  demandeVisiteId={demande.id}
+                  status={demande.status}
+                />
               </dd>
             </div>
           </dl>
