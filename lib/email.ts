@@ -483,6 +483,39 @@ export async function sendPaymentFailedOwnerEmail(
   return { success: !error, error: error?.message };
 }
 
+export async function sendSupportContactEmail(params: {
+  name: string;
+  email: string;
+  helpType: string;
+  message: string;
+}) {
+  if (!process.env.RESEND_API_KEY) return { success: false };
+
+  const safeName = escapeHtml(params.name.trim() || "Utilisateur");
+  const safeEmail = escapeHtml(params.email.trim());
+  const safeHelpType = escapeHtml(params.helpType.trim());
+  const safeMessage = escapeHtml(params.message.trim()).replace(/\n/g, "<br/>");
+
+  const { error } = await resend.emails.send({
+    from,
+    to: contactEmail,
+    replyTo: params.email.trim(),
+    subject: `[Support] ${params.helpType} - ${params.name}`,
+    html: renderEmailLayout({
+      title: "Nouveau message depuis le Centre d'aide",
+      intro: "Un utilisateur a soumis une demande d'aide depuis le formulaire public.",
+      sections: [
+        `<p><strong>Nom:</strong> ${safeName}</p>`,
+        `<p><strong>Email:</strong> ${safeEmail}</p>`,
+        `<p><strong>Type de demande:</strong> ${safeHelpType}</p>`,
+        `<p><strong>Message:</strong><br/>${safeMessage}</p>`,
+      ],
+    }),
+  });
+
+  return { success: !error, error: error?.message };
+}
+
 function escapeHtml(s: string): string {
   return s
     .replace(/&/g, "&amp;")

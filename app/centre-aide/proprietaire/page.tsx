@@ -19,7 +19,7 @@ const FAQ_PROPRIETAIRE = [
   },
   {
     q: "Dois-je payer pour publier mon annonce ?",
-    a: "La publication d'une annonce est gratuite. Vous recevez des demandes d'organisateurs. Des options payantes existent pour mettre en avant vos annonces si vous le souhaitez.",
+    a: "La publication d'une annonce est gratuite. Vous recevez des demandes d'organisateurs sans frais d'inscription.",
   },
   {
     q: "Comment recevoir des demandes ?",
@@ -63,7 +63,7 @@ const FAQ_PROPRIETAIRE = [
   },
   {
     q: "Comment mettre en avant mon annonce ?",
-    a: "Des options de mise en avant sont disponibles dans la section Paiement de votre tableau de bord. Contactez-nous pour en savoir plus.",
+    a: "Travaillez surtout la qualité de votre annonce (photos nettes, description précise, infos complètes) et répondez rapidement aux demandes : ce sont les leviers principaux de visibilité.",
   },
   {
     q: "Qui peut voir mon annonce ?",

@@ -19,7 +19,7 @@ const FAQ_ORGANISATEUR = [
   },
   {
     q: "La consultation des annonces est-elle payante ?",
-    a: "Non, la consultation des annonces est gratuite. Vous pouvez envoyer vos demandes sans pass ; les frais interviennent au paiement de la réservation.",
+    a: "Non, la consultation des annonces est gratuite. Vous pouvez envoyer vos demandes sans formule payante ; les frais interviennent uniquement au paiement de la réservation.",
   },
   {
     q: "Comment fonctionnent les demandes ?",
