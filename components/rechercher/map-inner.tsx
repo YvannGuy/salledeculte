@@ -135,9 +135,10 @@ function MapPanController({
     try {
       const zoom = map.getZoom();
       const safeZoom = Number.isFinite(zoom) ? Math.min(zoom, 15) : 12;
-      map.flyTo([coords.lat, coords.lng], safeZoom, { duration: 0.4 });
+      // setView avoids Leaflet animation race conditions on rapid rerenders
+      map.setView([coords.lat, coords.lng], safeZoom, { animate: false });
     } catch {
-      // Ignore flyTo errors
+      // Ignore map movement errors
     }
   }, [highlightedSalleId, salles, map]);
 
@@ -294,7 +295,7 @@ function MapInnerComponent({
             />
           );
         })}
-        <MarkerClusterGroup chunkedLoading>
+        <MarkerClusterGroup chunkedLoading animate={false}>
         {visibleSalles.map((salle) => {
           const origIdx = salles.findIndex((s) => s.id === salle.id);
           const i = origIdx >= 0 ? origIdx : 0;

@@ -239,6 +239,9 @@ export default async function SalleDetailPage({
               <section>
                 <h2 className="mb-3 text-lg font-semibold text-black">Localisation</h2>
                 <SalleMap salle={salle} />
+                <p className="mt-3 text-xs text-slate-500">
+                  Note : L&apos;adresse de l&apos;église reste privée pour des raisons de sécurité jusqu&apos;à l&apos;approche de la date de réservation.
+                </p>
               </section>
 
               {nearbySalles.length > 0 && (
@@ -348,20 +351,6 @@ export default async function SalleDetailPage({
                 blockedDates={blockedLocationDates}
                 joursOuverture={salle.joursOuverture}
               />
-            </div>
-            <div className="mt-6 flex gap-4 rounded-xl border border-amber-200 bg-amber-50/80 p-6">
-              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-amber-400">
-                <HelpCircle className="h-5 w-5 text-white" />
-              </div>
-              <div>
-                <h3 className="text-lg font-semibold text-black">Besoin d&apos;aide ?</h3>
-                <p className="mt-2 text-[14px] text-slate-600">
-                  Notre équipe est disponible pour vous accompagner dans votre recherche.
-                </p>
-                <a href="mailto:contact@salledeculte.com" className="mt-3 inline-block text-[14px] font-medium text-black hover:underline">
-                  Contacter le support
-                </a>
-              </div>
             </div>
           </aside>
         </div>
