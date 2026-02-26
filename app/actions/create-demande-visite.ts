@@ -26,11 +26,14 @@ export async function createDemandeVisite(formData: FormData): Promise<CreateDem
   const dateVisite = String(formData.get("dateVisite") ?? "").trim();
   const heureDebut = String(formData.get("heureDebut") ?? "").trim();
   const heureFin = String(formData.get("heureFin") ?? "").trim();
-  const typeEvenement = String(formData.get("typeEvenement") ?? "").trim() || null;
+  const typeEvenement = String(formData.get("typeEvenement") ?? "").trim();
   const message = String(formData.get("message") ?? "").trim();
 
   if (!salleId || !dateVisite || !heureDebut || !heureFin) {
     return { success: false, error: "Créneau incomplet." };
+  }
+  if (!typeEvenement) {
+    return { success: false, error: "Type d'événement requis." };
   }
 
   const { error } = await supabase.from("demandes_visite").insert({

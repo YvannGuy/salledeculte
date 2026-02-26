@@ -140,6 +140,124 @@ function parsePositiveNumber(value: string): number | null {
   return n;
 }
 
+function formatSentence(value: string): string {
+  const trimmed = value.trim();
+  if (!trimmed) return "";
+  const normalized = trimmed.replace(/\s+/g, " ");
+  const withCap = normalized.charAt(0).toUpperCase() + normalized.slice(1);
+  return /[.!?]$/.test(withCap) ? withCap : `${withCap}.`;
+}
+
+function splitSentences(value: string): string[] {
+  return value
+    .split(/(?<=[.!?])\s+/)
+    .map((s) => s.trim())
+    .filter(Boolean);
+}
+
+function joinNatural(values: string[]): string {
+  if (values.length <= 1) return values[0] ?? "";
+  if (values.length === 2) return `${values[0]} et ${values[1]}`;
+  return `${values.slice(0, -1).join(", ")} et ${values[values.length - 1]}`;
+}
+
+function buildTarifPhrase(data: WizardData): string {
+  const tarifs = [
+    data.tarifParJour.trim() ? `${data.tarifParJour.trim()} € / jour` : null,
+    data.tarifHoraire.trim() ? `${data.tarifHoraire.trim()} € / heure` : null,
+    data.tarifMensuel.trim() ? `${data.tarifMensuel.trim()} € / mois` : null,
+  ].filter(Boolean) as string[];
+  return tarifs.length ? `Tarifs indicatifs : ${tarifs.join(" · ")}.` : "";
+}
+
+function buildFeaturePhrase(data: WizardData): string {
+  const labels = FEATURES.filter((f) => data.features.includes(f.id))
+    .slice(0, 4)
+    .map((f) => f.label.toLowerCase());
+  if (!labels.length) return "";
+  return `Le lieu propose ${joinNatural(labels)}.`;
+}
+
+function buildEventPhrase(data: WizardData): string {
+  const labels = ACCEPTED_EVENTS.filter((e) => data.evenementsAcceptes.includes(e.id))
+    .slice(0, 3)
+    .map((e) => e.label.toLowerCase());
+  if (!labels.length) return "";
+  return `Il convient notamment pour ${joinNatural(labels)}.`;
+}
+
+function buildPracticalPhrase(data: WizardData): string {
+  const parts: string[] = [];
+  if (data.cautionRequise) parts.push("caution demandée");
+  const restriction = SOUND_RESTRICTIONS.find((s) => s.id === data.restrictionSonore)?.label;
+  if (restriction && restriction !== "Aucune restriction") {
+    parts.push(`restriction sonore : ${restriction.toLowerCase()}`);
+  }
+  if (!parts.length) return "";
+  return `Informations pratiques : ${parts.join(" · ")}.`;
+}
+
+function buildShortTarifPhrase(data: WizardData): string {
+  const tarifs = [
+    data.tarifParJour.trim() ? `${data.tarifParJour.trim()} €/jour` : null,
+    data.tarifHoraire.trim() ? `${data.tarifHoraire.trim()} €/heure` : null,
+    data.tarifMensuel.trim() ? `${data.tarifMensuel.trim()} €/mois` : null,
+  ].filter(Boolean) as string[];
+  return tarifs.length ? `Tarifs : ${tarifs.join(" · ")}.` : "";
+}
+
+function generateDescriptionFromData(data: WizardData): string {
+  const nom = data.nom.trim() || "Cette salle";
+  const ville = data.ville.trim();
+  const capacite = parsePositiveNumber(data.capacite);
+  const intro = capacite
+    ? `${ville ? `${nom} à ${ville}` : nom} accueille jusqu'à ${capacite} personnes dans un cadre soigné et chaleureux.`
+    : `${ville ? `${nom} à ${ville}` : nom} propose un cadre soigné et chaleureux pour vos événements.`;
+  const feature = buildFeaturePhrase(data) || "Le lieu offre un espace modulable, adapté aux besoins des organisateurs.";
+  const events = buildEventPhrase(data);
+  const practical = buildPracticalPhrase(data);
+  const tarif = buildTarifPhrase(data);
+  return [intro, feature, events, practical, tarif].filter(Boolean).join(" ");
+}
+
+function improveDescription(value: string, data: WizardData): string {
+  const user = splitSentences(value).map(formatSentence).filter(Boolean);
+  const nom = data.nom.trim() || "Ce lieu";
+  const ville = data.ville.trim();
+  const capacite = parsePositiveNumber(data.capacite);
+  const accroche = capacite
+    ? `${ville ? `${nom} à ${ville}` : nom} est une salle accueillante pouvant recevoir jusqu'à ${capacite} personnes.`
+    : `${ville ? `${nom} à ${ville}` : nom} est une salle accueillante pour vos événements.`;
+  const pointsForts = buildFeaturePhrase(data);
+  const usages = buildEventPhrase(data);
+  const pratique = buildPracticalPhrase(data);
+  const tarifs = buildTarifPhrase(data);
+
+  // Garde les meilleures phrases utilisateur puis enrichit avec une structure claire.
+  const userCore = user.slice(0, 2);
+  const merged = [accroche, ...userCore, pointsForts, usages, pratique, tarifs]
+    .map(formatSentence)
+    .filter(Boolean)
+    .filter((sentence, idx, arr) => arr.findIndex((s) => s.toLowerCase() === sentence.toLowerCase()) === idx);
+
+  return merged.join(" ");
+}
+
+function shortenDescription(value: string, data: WizardData): string {
+  const nom = data.nom.trim() || "Cette salle";
+  const ville = data.ville.trim();
+  const capacite = parsePositiveNumber(data.capacite);
+  const intro = capacite
+    ? `${ville ? `${nom} à ${ville}` : nom}, jusqu'à ${capacite} personnes.`
+    : `${ville ? `${nom} à ${ville}` : nom}, salle disponible pour vos événements.`;
+
+  const base = value.trim()
+    ? splitSentences(value).map(formatSentence).filter(Boolean)[0] ?? ""
+    : "";
+  const shortTarifs = buildShortTarifPhrase(data);
+  return [base || intro, shortTarifs].filter(Boolean).join(" ");
+}
+
 function isValidTimeRange(debut?: string, fin?: string): boolean {
   if (!debut || !fin) return false;
   return debut < fin;
@@ -739,6 +857,10 @@ function Step1({
   updateData: (u: Partial<WizardData>) => void;
   onNext: () => void;
 }) {
+  const [showDescriptionAssist, setShowDescriptionAssist] = useState(false);
+  const [descriptionAssistInfo, setDescriptionAssistInfo] = useState<string | null>(null);
+  const [assistVariantIndex, setAssistVariantIndex] = useState(0);
+
   const hasAtLeastOneTarif =
     (data.tarifParJour.trim() !== "" && Number(data.tarifParJour) > 0) ||
     (data.tarifMensuel.trim() !== "" && Number(data.tarifMensuel) > 0) ||
@@ -760,6 +882,45 @@ function Step1({
         : !data.description.trim()
           ? "Ajoutez une description de la salle."
           : null;
+
+  const handleDescriptionAssist = () => {
+    const variants = [
+      {
+        text: generateDescriptionFromData(data),
+        info: "Version générée automatiquement.",
+      },
+      {
+        text: improveDescription(data.description, data),
+        info: "Version reformulée en style plus professionnel.",
+      },
+      {
+        text: shortenDescription(data.description, data),
+        info: "Version raccourcie pour aller à l'essentiel.",
+      },
+    ];
+
+    const current = data.description.trim().toLowerCase();
+    const ordered = [
+      variants[assistVariantIndex % variants.length],
+      variants[(assistVariantIndex + 1) % variants.length],
+      variants[(assistVariantIndex + 2) % variants.length],
+    ];
+    const selected = ordered.find((v) => v.text.trim().toLowerCase() !== current) ?? ordered[0];
+
+    if (!selected.text.trim()) {
+      setDescriptionAssistInfo("Impossible de générer une proposition pour le moment.");
+      return;
+    }
+
+    const doneAt = new Date().toLocaleTimeString("fr-FR", {
+      hour: "2-digit",
+      minute: "2-digit",
+      second: "2-digit",
+    });
+    setDescriptionAssistInfo(`${selected.info} (${doneAt})`);
+    updateData({ description: selected.text });
+    setAssistVariantIndex((v) => v + 1);
+  };
 
   return (
     <>
@@ -822,6 +983,34 @@ function Step1({
             rows={4}
             className="w-full rounded-md border border-slate-200 px-3 py-2.5 text-sm placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-[#5b4dbf]"
           />
+          <div className="flex items-center justify-between gap-2">
+            <p className="text-xs text-slate-500">Une description claire améliore vos chances d&apos;être contacté.</p>
+            <button
+              type="button"
+              onClick={() => setShowDescriptionAssist((v) => !v)}
+              className="text-xs font-medium text-[#213398] underline-offset-2 hover:underline"
+            >
+              {showDescriptionAssist ? "Masquer l'aide" : "M'aider à rédiger"}
+            </button>
+          </div>
+          {showDescriptionAssist && (
+            <div className="rounded-lg border border-slate-200 bg-slate-50 p-3">
+              <p className="text-xs font-medium text-slate-600">Assistant de rédaction</p>
+              <div className="mt-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="h-8 border-slate-300 bg-white px-3 text-xs"
+                  onClick={handleDescriptionAssist}
+                >
+                  Améliorer ma description
+                </Button>
+              </div>
+              {descriptionAssistInfo && (
+                <p className="mt-2 text-xs text-slate-600">{descriptionAssistInfo}</p>
+              )}
+            </div>
+          )}
         </div>
         <div className="space-y-2">
           <label className="text-sm font-medium text-slate-700">Tarifs indicatifs</label>

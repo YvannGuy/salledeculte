@@ -148,23 +148,43 @@ export default async function OwnerEtatsDesLieuxPage() {
     casesByOffer.set(row.offer_id, list);
   }
 
+  const totalOffers = offerRows.length;
+  const totalOwnerDepots = edlRows.filter((r) => r.role === "owner").length;
+  const totalExpectedDepots = totalOffers * 2;
+  const totalRestants = Math.max(totalExpectedDepots - totalOwnerDepots, 0);
+
   return (
-    <div className="p-4 sm:p-6 lg:p-8">
-      <h1 className="text-2xl font-bold text-black">États des lieux</h1>
-      <p className="mt-2 text-slate-600">
-        Déposez vos photos avant/après événement (max 10 photos) pour sécuriser la caution et les litiges.
-      </p>
+    <div className="space-y-5 p-4 pb-24 md:space-y-6 md:p-8 md:pb-8">
+      <div>
+        <h1 className="text-xl font-bold text-black md:text-2xl">États des lieux</h1>
+        <p className="mt-1 text-sm text-slate-600 md:text-base">
+          Déposez vos photos avant/après (max 10) pour protéger la caution et faciliter l&apos;arbitrage.
+        </p>
+      </div>
 
-      <Card className="mt-6 border-blue-200 bg-blue-50/40">
-        <CardHeader>
-          <CardTitle className="text-base text-blue-900">Consignes photos</CardTitle>
-          <CardDescription className="text-blue-800">
-            Photos bien éclairées, nettes, et couvrant les zones clés: entrée, salle principale, sanitaires, mobilier et chaque pièce utilisée.
-          </CardDescription>
-        </CardHeader>
-      </Card>
+      <div className="grid gap-3 sm:grid-cols-3">
+        <div className="rounded-xl border border-slate-200 bg-white p-4">
+          <p className="text-xs text-slate-500">Réservations à traiter</p>
+          <p className="mt-1 text-2xl font-bold text-black">{totalOffers}</p>
+        </div>
+        <div className="rounded-xl border border-slate-200 bg-white p-4">
+          <p className="text-xs text-slate-500">Dépôts envoyés</p>
+          <p className="mt-1 text-2xl font-bold text-emerald-700">{totalOwnerDepots}</p>
+        </div>
+        <div className="rounded-xl border border-slate-200 bg-white p-4">
+          <p className="text-xs text-slate-500">Dépôts restants</p>
+          <p className="mt-1 text-2xl font-bold text-amber-700">{totalRestants}</p>
+        </div>
+      </div>
 
-      <div className="mt-6 space-y-6">
+      <div className="rounded-xl border border-blue-200 bg-blue-50/50 p-4 text-sm text-blue-900">
+        <p className="font-semibold">Consignes photos</p>
+        <p className="mt-1 text-blue-800">
+          Prenez des photos nettes, bien éclairées, couvrant entrée, salle principale, sanitaires, mobilier et zones sensibles.
+        </p>
+      </div>
+
+      <div className="space-y-4">
         {offerRows.length === 0 ? (
           <Card>
             <CardContent className="py-10 text-center text-sm text-slate-500">
@@ -172,105 +192,121 @@ export default async function OwnerEtatsDesLieuxPage() {
             </CardContent>
           </Card>
         ) : (
-          offerRows.map((offer) => {
+          offerRows.map((offer, offerIndex) => {
             const offerEdl = byOffer.get(offer.id) ?? [];
             const offerCases = casesByOffer.get(offer.id) ?? [];
+            const ownerBefore = offerEdl.find((r) => r.role === "owner" && r.phase === "before");
+            const ownerAfter = offerEdl.find((r) => r.role === "owner" && r.phase === "after");
+            const doneCount = [ownerBefore, ownerAfter].filter(Boolean).length;
             return (
-              <Card key={offer.id}>
-                <CardHeader>
-                  <CardTitle className="text-lg">
-                    {salleMap.get(offer.salle_id) ?? "Salle"} - {(offer.amount_cents / 100).toFixed(2)} €
-                  </CardTitle>
-                  <CardDescription>
-                    Locataire: {seekerMap.get(offer.seeker_id) ?? "—"} | Offre: {offer.id}
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-6">
+              <details
+                key={offer.id}
+                open={offerIndex === 0}
+                className="rounded-xl border border-slate-200 bg-white p-4 md:p-5"
+              >
+                <summary className="cursor-pointer list-none">
+                  <div className="flex flex-col gap-2 md:flex-row md:items-start md:justify-between">
+                    <div>
+                      <p className="text-base font-semibold text-black md:text-lg">
+                        {salleMap.get(offer.salle_id) ?? "Salle"} • {(offer.amount_cents / 100).toFixed(2)} €
+                      </p>
+                      <p className="mt-1 text-xs text-slate-500 md:text-sm">
+                        Locataire : {seekerMap.get(offer.seeker_id) ?? "—"} • Offre : {offer.id}
+                      </p>
+                    </div>
+                    <span className="inline-flex w-fit items-center rounded-full bg-slate-100 px-2.5 py-1 text-xs font-medium text-slate-700">
+                      {doneCount}/2 phases déposées
+                    </span>
+                  </div>
+                </summary>
+
+                <div className="mt-4 space-y-4">
                   {(["before", "after"] as const).map((phase) => {
                     const ownerEdl = offerEdl.find((r) => r.role === "owner" && r.phase === phase);
                     const seekerEdl = offerEdl.find((r) => r.role === "seeker" && r.phase === phase);
                     return (
-                      <div key={phase} className="rounded-lg border border-slate-200 p-4">
-                        <h3 className="font-semibold text-black">{PHASE_LABEL[phase]}</h3>
-                        <p className="mt-1 text-xs text-slate-500">
-                          Maximum 10 photos. Ajoutez des preuves claires des zones sensibles de la salle.
-                        </p>
+                      <div key={phase} className="rounded-lg border border-slate-200 p-3 md:p-4">
+                        <div className="flex items-center justify-between gap-2">
+                          <h3 className="text-sm font-semibold text-black md:text-base">{PHASE_LABEL[phase]}</h3>
+                          <span className="text-xs text-slate-500">max 10 photos</span>
+                        </div>
 
-                        <form
-                          action={async (formData) => {
-                            "use server";
-                            await submitEtatDesLieuxAction(formData);
-                          }}
-                          className="mt-3 space-y-3"
-                        >
-                          <input type="hidden" name="offerId" value={offer.id} />
-                          <input type="hidden" name="phase" value={phase} />
-                          <textarea
-                            name="notes"
-                            rows={3}
-                            required
-                            className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm"
-                            placeholder="Décrivez les photos: pièces couvertes, état observé, anomalies éventuelles..."
-                          />
-                          <input
-                            type="file"
-                            name="photos"
-                            accept="image/*"
-                            multiple
-                            required
-                            className="block w-full text-sm"
-                          />
-                          <button
-                            type="submit"
-                            className="rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
+                        <div className="mt-3 grid gap-4 xl:grid-cols-[340px_minmax(0,1fr)]">
+                          <form
+                            action={async (formData) => {
+                              "use server";
+                              await submitEtatDesLieuxAction(formData);
+                            }}
+                            className="space-y-3 rounded-lg border border-slate-200 bg-slate-50/60 p-3"
                           >
-                            Envoyer mon état des lieux {phase === "before" ? "d'entrée" : "de sortie"}
-                          </button>
-                        </form>
+                            <input type="hidden" name="offerId" value={offer.id} />
+                            <input type="hidden" name="phase" value={phase} />
+                            <p className="text-xs font-medium text-slate-700">Votre dépôt</p>
+                            <textarea
+                              name="notes"
+                              rows={3}
+                              required
+                              className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm"
+                              placeholder="État observé, points à signaler..."
+                            />
+                            <input
+                              type="file"
+                              name="photos"
+                              accept="image/*"
+                              multiple
+                              required
+                              className="block w-full text-sm"
+                            />
+                            <button
+                              type="submit"
+                              className="w-full rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
+                            >
+                              Envoyer {phase === "before" ? "l'entrée" : "la sortie"}
+                            </button>
+                          </form>
 
-                        <div className="mt-4 grid gap-4 lg:grid-cols-2">
-                          {[ownerEdl, seekerEdl].map((entry, idx) => (
-                            <div key={idx} className="rounded-md bg-slate-50 p-3">
-                              <p className="text-xs font-semibold uppercase text-slate-600">
-                                {idx === 0 ? "Vos photos" : "Photos locataire"}
-                              </p>
-                              {!entry ? (
-                                <p className="mt-2 text-sm text-slate-500">Aucun dépôt.</p>
-                              ) : (
-                                <>
-                                  <p className="mt-2 text-sm text-slate-700">{entry.notes || "—"}</p>
-                                  <div className="mt-3 grid grid-cols-3 gap-2">
-                                    {(photosByEdl.get(entry.id) ?? []).map((photo) => {
-                                      const signedUrl = photoUrlMap.get(photo.id);
-                                      if (!signedUrl) return null;
-                                      return (
-                                        <a key={photo.id} href={signedUrl} target="_blank" rel="noreferrer">
-                                          <Image
-                                            src={signedUrl}
-                                            alt="Photo état des lieux"
-                                            width={220}
-                                            height={150}
-                                            unoptimized
-                                            className="h-20 w-full rounded object-cover"
-                                          />
-                                        </a>
-                                      );
-                                    })}
-                                  </div>
-                                </>
-                              )}
-                            </div>
-                          ))}
+                          <div className="grid gap-3 md:grid-cols-2">
+                            {[ownerEdl, seekerEdl].map((entry, idx) => (
+                              <div key={idx} className="rounded-lg border border-slate-200 bg-white p-3">
+                                <p className="text-xs font-semibold uppercase text-slate-600">
+                                  {idx === 0 ? "Vos photos" : "Photos locataire"}
+                                </p>
+                                {!entry ? (
+                                  <p className="mt-2 text-sm text-slate-500">Aucun dépôt.</p>
+                                ) : (
+                                  <>
+                                    <p className="mt-2 line-clamp-2 text-sm text-slate-700">{entry.notes || "—"}</p>
+                                    <div className="mt-3 grid grid-cols-3 gap-2">
+                                      {(photosByEdl.get(entry.id) ?? []).map((photo) => {
+                                        const signedUrl = photoUrlMap.get(photo.id);
+                                        if (!signedUrl) return null;
+                                        return (
+                                          <a key={photo.id} href={signedUrl} target="_blank" rel="noreferrer">
+                                            <Image
+                                              src={signedUrl}
+                                              alt="Photo état des lieux"
+                                              width={220}
+                                              height={150}
+                                              unoptimized
+                                              className="h-16 w-full rounded object-cover md:h-20"
+                                            />
+                                          </a>
+                                        );
+                                      })}
+                                    </div>
+                                  </>
+                                )}
+                              </div>
+                            ))}
+                          </div>
                         </div>
                       </div>
                     );
                   })}
 
-                  <div className="rounded-lg border border-amber-200 bg-amber-50/40 p-4">
-                    <h3 className="font-semibold text-amber-900">Ouvrir un litige</h3>
-                    <p className="mt-1 text-xs text-amber-800">
-                      Fournissez des preuves photo pour permettre à l&apos;admin d&apos;arbitrer.
-                    </p>
+                  <div className="rounded-lg border border-amber-200 bg-amber-50/50 p-3 md:p-4">
+                    <h3 className="text-sm font-semibold text-amber-900 md:text-base">Ouvrir un litige</h3>
+                    <p className="mt-1 text-xs text-amber-800">Ajoutez un motif clair et des preuves photo.</p>
                     <form
                       action={async (formData) => {
                         "use server";
@@ -296,13 +332,13 @@ export default async function OwnerEtatsDesLieuxPage() {
                       />
                       <button
                         type="submit"
-                        className="rounded-md bg-amber-600 px-4 py-2 text-sm font-medium text-white hover:bg-amber-700"
+                        className="w-full rounded-md bg-amber-600 px-4 py-2 text-sm font-medium text-white hover:bg-amber-700 sm:w-auto"
                       >
                         Soumettre un litige avec preuves
                       </button>
                     </form>
                     {offerCases.length > 0 && (
-                      <div className="mt-4 space-y-2">
+                      <div className="mt-4 grid gap-2 md:grid-cols-2">
                         {offerCases.map((c) => (
                           <div key={c.id} className="rounded border border-amber-200 bg-white p-2 text-xs text-slate-700">
                             <span className="font-semibold">{CASE_LABEL[c.case_type] ?? c.case_type}</span>
@@ -315,8 +351,8 @@ export default async function OwnerEtatsDesLieuxPage() {
                       </div>
                     )}
                   </div>
-                </CardContent>
-              </Card>
+                </div>
+              </details>
             );
           })
         )}

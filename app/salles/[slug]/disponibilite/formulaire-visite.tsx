@@ -34,6 +34,7 @@ export function FormulaireVisite({ slug }: { slug: string }) {
   const [selectedDate, setSelectedDate] = useState<Date | undefined>();
   const [selectedCreneau, setSelectedCreneau] = useState<Creneau | null>(null);
   const [typeEvenement, setTypeEvenement] = useState<string>("");
+  const [autreTypeEvenement, setAutreTypeEvenement] = useState("");
   const [message, setMessage] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [success, setSuccess] = useState(false);
@@ -85,13 +86,23 @@ export function FormulaireVisite({ slug }: { slug: string }) {
     e.preventDefault();
     if (!selectedCreneau || !salleId) return;
     setError(null);
+    if (!typeEvenement) {
+      setError("Type d'événement requis.");
+      return;
+    }
+    const typeEvenementFinal =
+      typeEvenement === "autre" ? autreTypeEvenement.trim() : typeEvenement;
+    if (!typeEvenementFinal) {
+      setError("Précisez le type d'événement.");
+      return;
+    }
     setIsSubmitting(true);
     const formData = new FormData();
     formData.set("salleId", salleId);
     formData.set("dateVisite", selectedCreneau.date);
     formData.set("heureDebut", selectedCreneau.heureDebut);
     formData.set("heureFin", selectedCreneau.heureFin);
-    formData.set("typeEvenement", typeEvenement || "");
+    formData.set("typeEvenement", typeEvenementFinal);
     formData.set("message", message);
     formData.set("redirectTo", `/salles/${slug}/disponibilite`);
 
@@ -246,22 +257,43 @@ export function FormulaireVisite({ slug }: { slug: string }) {
 
           <div>
             <label className="mb-2 block text-sm font-medium text-slate-700">
-              Type d&apos;événement (optionnel)
+              Type d&apos;événement *
             </label>
-            <Select value={typeEvenement || "none"} onValueChange={(v) => setTypeEvenement(v === "none" ? "" : v)}>
+            <Select
+              value={typeEvenement}
+              onValueChange={(v) => {
+                setTypeEvenement(v);
+                if (v !== "autre") setAutreTypeEvenement("");
+              }}
+            >
               <SelectTrigger className="w-full rounded-lg border-slate-200">
                 <SelectValue placeholder="Choisir..." />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="none">— Non précisé</SelectItem>
                 {TYPES_EVENEMENT.map((t) => (
                   <SelectItem key={t.id} value={t.id}>
                     {t.label}
                   </SelectItem>
                 ))}
+                <SelectItem value="autre">Autre (précisez)</SelectItem>
               </SelectContent>
             </Select>
           </div>
+
+          {typeEvenement === "autre" && (
+            <div>
+              <label className="mb-2 block text-sm font-medium text-slate-700">
+                Précisez le type d&apos;événement *
+              </label>
+              <input
+                type="text"
+                value={autreTypeEvenement}
+                onChange={(e) => setAutreTypeEvenement(e.target.value)}
+                placeholder="Ex: Réunion associative"
+                className="w-full rounded-lg border border-slate-200 px-3 py-2.5 text-sm placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-violet-500 focus:ring-offset-1"
+              />
+            </div>
+          )}
 
           <div>
             <label className="mb-2 block text-sm font-medium text-slate-700">
@@ -278,7 +310,12 @@ export function FormulaireVisite({ slug }: { slug: string }) {
 
           <Button
             type="submit"
-            disabled={!selectedCreneau || isSubmitting}
+            disabled={
+              !selectedCreneau ||
+              isSubmitting ||
+              !typeEvenement ||
+              (typeEvenement === "autre" && !autreTypeEvenement.trim())
+            }
             className="h-12 w-full rounded-lg bg-violet-600 font-semibold hover:bg-violet-700 disabled:opacity-50"
           >
             {isSubmitting ? "Envoi en cours..." : "Envoyer la demande de visite"}
