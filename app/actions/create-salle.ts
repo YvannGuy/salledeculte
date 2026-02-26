@@ -2,6 +2,7 @@
 
 import { getPlatformSettings } from "@/app/actions/admin-settings";
 import { sendNewSallePendingAdminNotification } from "@/lib/email";
+import { sendAdminPendingSalleTelegramNotification } from "@/lib/telegram";
 import { mapOnboardingToSalle } from "@/lib/onboarding-to-salle";
 import { createClient } from "@/lib/supabase/server";
 
@@ -227,12 +228,19 @@ export async function createSalleFromOnboarding(formData: FormData): Promise<Cre
     if (adminEmails.length > 0) {
       const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "https://salledeculte.com";
       const validationUrl = `${siteUrl}/admin/annonces-a-valider`;
+      const salleName = (mapped.name ?? nom) || "Ma salle";
+      const salleCity = mapped.city ?? ville;
       sendNewSallePendingAdminNotification(
         adminEmails,
-        (mapped.name ?? nom) || "Ma salle",
-        mapped.city ?? ville,
+        salleName,
+        salleCity,
         validationUrl
       ).catch((e) => console.error("[createSalle] admin notification email:", e));
+      sendAdminPendingSalleTelegramNotification(
+        salleName,
+        salleCity,
+        validationUrl
+      ).catch((e) => console.error("[createSalle] admin notification telegram:", e));
     }
   }
 

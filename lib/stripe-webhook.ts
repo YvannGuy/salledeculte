@@ -4,6 +4,7 @@ import { generateContractPdf } from "@/lib/contract-pdf";
 import { generateInvoicePdf } from "@/lib/invoice-pdf";
 import { getStripe } from "@/lib/stripe";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { sendAdminPaymentTelegramNotification } from "@/lib/telegram";
 
 export async function handleStripeWebhook(event: Stripe.Event) {
   switch (event.type) {
@@ -361,6 +362,18 @@ export async function handleStripeWebhook(event: Stripe.Event) {
         }
       }
 
+      if (productType) {
+        const telegramAmountCents = session.amount_total ?? Number(metadata?.amount_cents ?? "0");
+        sendAdminPaymentTelegramNotification({
+          amountCents: telegramAmountCents,
+          currency: session.currency ?? "eur",
+          productType,
+          offerId: metadata?.offer_id ?? null,
+          userId: metadata?.user_id ?? null,
+          source: "checkout_session_completed",
+        }).catch((e) => console.error("[webhook] notification telegram paiement:", e));
+      }
+
       return {
         type: event.type,
         customerEmail: session.customer_details?.email ?? null,
@@ -405,6 +418,15 @@ export async function handleStripeWebhook(event: Stripe.Event) {
             status: "paid",
             subscription_id: subscriptionId,
           });
+
+          sendAdminPaymentTelegramNotification({
+            amountCents: invoice.amount_paid ?? 0,
+            currency: invoice.currency ?? "eur",
+            productType: "abonnement",
+            offerId: null,
+            userId: profile.id,
+            source: "invoice_paid",
+          }).catch((e) => console.error("[webhook] notification telegram invoice paid:", e));
         }
       }
       return { type: event.type, invoiceId: invoice.id };

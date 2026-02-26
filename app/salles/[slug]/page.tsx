@@ -191,7 +191,7 @@ export default async function SalleDetailPage({
                       </span>
                       <span className="inline-flex items-center gap-1.5 rounded-full bg-white px-3 py-1 text-xs font-medium text-slate-700">
                         <Lock className="h-3.5 w-3.5 text-slate-400" />
-                        Adresse précise communiquée avant réservation
+                        Adresse précise communiquée après confirmation de la visite
                       </span>
                     </div>
                   </div>
