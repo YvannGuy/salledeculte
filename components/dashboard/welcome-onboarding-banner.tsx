@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import Link from "next/link";
 import { BookOpenText, Play } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 
@@ -18,7 +17,7 @@ export function WelcomeOnboardingBanner({
   dashboard,
   firstName,
   videoUrl,
-  tourUrl = "/centre-aide",
+  tourUrl: _tourUrl,
 }: WelcomeOnboardingBannerProps) {
   const [isVisible, setIsVisible] = useState(false);
   const [videoOpen, setVideoOpen] = useState(false);
@@ -64,13 +63,13 @@ export function WelcomeOnboardingBanner({
           <Play className="h-5 w-5" />
           Voir la vidéo (1 min 45)
         </button>
-        <Link
-          href={tourUrl}
+        <button
+          type="button"
           className="inline-flex h-11 items-center justify-center gap-2 rounded-xl border border-slate-300 bg-white px-5 text-sm font-medium text-[#0f1f52] hover:bg-slate-50"
         >
           <BookOpenText className="h-5 w-5" />
           Faire la visite guidée
-        </Link>
+        </button>
       </div>
 
       <div className="mt-3 flex justify-end">

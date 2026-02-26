@@ -75,3 +75,11 @@ body {
 .map-popup-content {
   transform: translateZ(0);
 }
+
+.tour-highlight-ring {
+  position: relative;
+  z-index: 10050;
+  border-radius: 0.5rem;
+  box-shadow: 0 0 0 2px #213398, 0 0 0 5px rgba(33, 51, 152, 0.16);
+  transition: box-shadow 0.2s ease;
+}

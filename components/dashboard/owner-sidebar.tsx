@@ -57,6 +57,7 @@ function NavContent({
   collapsed = false,
   onItemClick,
   canAccessSeeker = false,
+  tourLock = false,
 }: {
   pathname: string;
   displayName: string;
@@ -72,10 +73,16 @@ function NavContent({
   collapsed?: boolean;
   onItemClick?: () => void;
   canAccessSeeker?: boolean;
+  tourLock?: boolean;
 }) {
   return (
     <>
-      <nav className="flex-1 space-y-0.5 overflow-y-auto px-3 py-4">
+      <nav
+        className={cn(
+          "flex-1 space-y-0.5 overflow-y-auto px-3 py-4",
+          tourLock && "pointer-events-none select-none"
+        )}
+      >
         <Link
           href="/"
           onClick={onItemClick}
@@ -89,7 +96,7 @@ function NavContent({
           <ArrowLeft className="h-5 w-5 shrink-0" />
           {!collapsed && <span className="flex-1 truncate">Revenir à l&apos;accueil</span>}
         </Link>
-        {canAccessSeeker && <SwitchToSeekerView collapsed={collapsed} />}
+        {canAccessSeeker && !tourLock && <SwitchToSeekerView collapsed={collapsed} />}
         <div className="my-2 border-t border-slate-100" />
         {navItems.map((item) => {
           const isActive = pathname === item.href;
@@ -98,6 +105,7 @@ function NavContent({
             <Link
               key={item.href}
               href={item.href}
+              data-tour-nav={item.href}
               onClick={onItemClick}
               className={cn(
                 "relative flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors",
@@ -238,36 +246,38 @@ function NavContent({
           );
         })}
       </nav>
-      <div className="border-t border-slate-200 p-4">
-        <div
-          className={cn(
-            "flex items-center gap-3 rounded-lg bg-slate-50 p-3",
-            collapsed && "justify-center px-0"
-          )}
-        >
-          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#213398] text-white">
-            <User className="h-5 w-5" />
-          </div>
-          {!collapsed && (
-            <div className="min-w-0 flex-1">
-              <p className="truncate text-sm font-medium text-black">{displayName}</p>
-              <p className="truncate text-xs text-slate-500">{userEmail}</p>
-            </div>
-          )}
-        </div>
-        <form action={signOutAction} className="mt-3">
-          <button
-            type="submit"
+      {!tourLock && (
+        <div className="border-t border-slate-200 p-4">
+          <div
             className={cn(
-              "flex w-full items-center gap-2 text-left text-sm font-medium text-slate-600 hover:text-black",
+              "flex items-center gap-3 rounded-lg bg-slate-50 p-3",
               collapsed && "justify-center px-0"
             )}
           >
-            <LogOut className="h-4 w-4 shrink-0" />
-            {!collapsed && <span>Déconnexion</span>}
-          </button>
-        </form>
-      </div>
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#213398] text-white">
+              <User className="h-5 w-5" />
+            </div>
+            {!collapsed && (
+              <div className="min-w-0 flex-1">
+                <p className="truncate text-sm font-medium text-black">{displayName}</p>
+                <p className="truncate text-xs text-slate-500">{userEmail}</p>
+              </div>
+            )}
+          </div>
+          <form action={signOutAction} className="mt-3">
+            <button
+              type="submit"
+              className={cn(
+                "flex w-full items-center gap-2 text-left text-sm font-medium text-slate-600 hover:text-black",
+                collapsed && "justify-center px-0"
+              )}
+            >
+              <LogOut className="h-4 w-4 shrink-0" />
+              {!collapsed && <span>Déconnexion</span>}
+            </button>
+          </form>
+        </div>
+      )}
     </>
   );
 }
@@ -298,10 +308,37 @@ export function OwnerSidebar({
   const pathname = usePathname();
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [tourLock, setTourLock] = useState(false);
   const [isHydrated, setIsHydrated] = useState(false);
   const displayName = user.displayName ?? "Utilisateur";
   useEffect(() => {
     setIsHydrated(true);
+  }, []);
+
+  useEffect(() => {
+    const onTourSidebarToggle = (event: Event) => {
+      const customEvent = event as CustomEvent<{ dashboard?: "seeker" | "owner"; open?: boolean }>;
+      if (customEvent.detail?.dashboard !== "owner") return;
+      if (typeof customEvent.detail?.open === "boolean") {
+        setTourLock(customEvent.detail.open);
+        setMobileOpen(customEvent.detail.open);
+      }
+    };
+    window.addEventListener("tour:sidebar-toggle", onTourSidebarToggle as EventListener);
+    return () => window.removeEventListener("tour:sidebar-toggle", onTourSidebarToggle as EventListener);
+  }, []);
+
+  useEffect(() => {
+    if (typeof document === "undefined") return;
+    const syncFromBody = () => {
+      const active = document.body.getAttribute("data-onboarding-tour-active") === "1";
+      setTourLock(active);
+      if (active) setMobileOpen(true);
+    };
+    syncFromBody();
+    const observer = new MutationObserver(syncFromBody);
+    observer.observe(document.body, { attributes: true, attributeFilter: ["data-onboarding-tour-active"] });
+    return () => observer.disconnect();
   }, []);
 
   return (
@@ -324,8 +361,36 @@ export function OwnerSidebar({
       </header>
 
       {/* Mobile: drawer */}
-      <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
-        <SheetContent side="left" className="flex w-72 max-w-[85vw] flex-col p-0">
+      <Sheet
+        open={mobileOpen}
+        onOpenChange={(open) => {
+          const isTourActive =
+            typeof document !== "undefined" &&
+            document.body.getAttribute("data-onboarding-tour-active") === "1";
+          if (!open && (tourLock || isTourActive)) {
+            setMobileOpen(true);
+            return;
+          }
+          setMobileOpen(open);
+        }}
+      >
+        <SheetContent
+          side="left"
+          data-tour-sidebar-mobile="owner"
+          className="flex w-72 max-w-[85vw] flex-col p-0"
+          onPointerDownOutside={(event) => {
+            if (tourLock) event.preventDefault();
+          }}
+          onInteractOutside={(event) => {
+            if (tourLock) event.preventDefault();
+          }}
+          onFocusOutside={(event) => {
+            if (tourLock) event.preventDefault();
+          }}
+          onEscapeKeyDown={(event) => {
+            if (tourLock) event.preventDefault();
+          }}
+        >
           <div className="flex h-14 items-center border-b border-slate-200 px-4">
             <Link
               href="/proprietaire"
@@ -350,12 +415,14 @@ export function OwnerSidebar({
             contractCount={contractCount}
             onItemClick={() => setMobileOpen(false)}
             canAccessSeeker={canAccessSeeker}
+            tourLock={tourLock}
           />
         </SheetContent>
       </Sheet>
 
       {/* Desktop: sidebar avec collapse */}
       <aside
+        data-tour-sidebar-desktop="owner"
         className={cn(
           "hidden shrink-0 flex-col border-r border-slate-200 bg-white transition-all duration-200 lg:flex",
           collapsed ? "h-screen w-20" : "h-screen w-64"
@@ -396,6 +463,7 @@ export function OwnerSidebar({
           contractCount={contractCount}
           collapsed={collapsed}
           canAccessSeeker={canAccessSeeker}
+          tourLock={false}
         />
       </aside>
     </>
