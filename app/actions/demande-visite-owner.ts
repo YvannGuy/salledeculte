@@ -12,6 +12,7 @@ import {
   sendVisiteRefusedNotification,
   sendVisiteRescheduleNotification,
 } from "@/lib/email";
+import { sendUserNotification } from "@/lib/user-notifications";
 
 const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "https://salledeculte.com";
 
@@ -67,14 +68,25 @@ export async function accepterDemandeVisite(demandeVisiteId: string) {
   const { data: seekerUser } = await admin.auth.admin.getUserById(dvRow.seeker_id);
   const seekerEmail = seekerUser?.user?.email;
   if (seekerEmail) {
-    sendVisiteAcceptedNotification(
-      seekerEmail,
-      salleRow.name,
-      salleRow.address ?? "",
-      dateStr,
-      horairesStr,
-      messagerieUrl
-    ).catch((e) => console.error("[accepterDemandeVisite] email:", e));
+    sendUserNotification({
+      userId: dvRow.seeker_id,
+      telegramText: [
+        "Visite acceptee.",
+        `Salle: ${salleRow.name}`,
+        `Date: ${dateStr}`,
+        `Horaire: ${horairesStr}`,
+        messagerieUrl,
+      ].join("\n"),
+      sendEmail: () =>
+        sendVisiteAcceptedNotification(
+          seekerEmail,
+          salleRow.name,
+          salleRow.address ?? "",
+          dateStr,
+          horairesStr,
+          messagerieUrl
+        ),
+    }).catch((e) => console.error("[accepterDemandeVisite] notification:", e));
   }
 
   revalidatePath("/proprietaire/visites");
@@ -114,11 +126,21 @@ export async function refuserDemandeVisite(demandeVisiteId: string) {
     const { data: seekerUser } = await admin.auth.admin.getUserById(dvRow.seeker_id);
     const seekerEmail = seekerUser?.user?.email;
     if (seekerEmail) {
-      await sendVisiteRefusedNotification(
-        seekerEmail,
-        salleRow.name ?? "la salle",
-        `${siteUrl}/dashboard/demandes/visite/${demandeVisiteId}`
-      );
+      const demandeUrl = `${siteUrl}/dashboard/demandes/visite/${demandeVisiteId}`;
+      await sendUserNotification({
+        userId: dvRow.seeker_id,
+        telegramText: [
+          "Visite refusee.",
+          `Salle: ${salleRow.name ?? "la salle"}`,
+          demandeUrl,
+        ].join("\n"),
+        sendEmail: () =>
+          sendVisiteRefusedNotification(
+            seekerEmail,
+            salleRow.name ?? "la salle",
+            demandeUrl
+          ),
+      });
     }
   } catch (e) {
     console.error("[refuserDemandeVisite] email:", e);
@@ -181,13 +203,25 @@ export async function proposerAutreCreneauVisite(
     const { data: seekerUser } = await admin.auth.admin.getUserById(dvRow.seeker_id);
     const seekerEmail = seekerUser?.user?.email;
     if (seekerEmail) {
-      await sendVisiteRescheduleNotification(
-        seekerEmail,
-        salleRow.name ?? "la salle",
-        dateStr,
-        horairesStr,
-        `${siteUrl}/dashboard/demandes/visite/${demandeVisiteId}`
-      );
+      const demandeUrl = `${siteUrl}/dashboard/demandes/visite/${demandeVisiteId}`;
+      await sendUserNotification({
+        userId: dvRow.seeker_id,
+        telegramText: [
+          "Nouveau creneau de visite propose.",
+          `Salle: ${salleRow.name ?? "la salle"}`,
+          `Date: ${dateStr}`,
+          `Horaire: ${horairesStr}`,
+          demandeUrl,
+        ].join("\n"),
+        sendEmail: () =>
+          sendVisiteRescheduleNotification(
+            seekerEmail,
+            salleRow.name ?? "la salle",
+            dateStr,
+            horairesStr,
+            demandeUrl
+          ),
+      });
     }
   } catch (e) {
     console.error("[proposerAutreCreneauVisite] email:", e);

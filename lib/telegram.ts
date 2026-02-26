@@ -1,4 +1,5 @@
 const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "https://salledeculte.com";
+export type NotificationChannel = "email" | "telegram" | "both";
 
 function getTelegramConfig() {
   const botToken = process.env.TELEGRAM_BOT_TOKEN?.trim();
@@ -8,6 +9,10 @@ function getTelegramConfig() {
     .filter(Boolean);
 
   return { botToken, chatIds };
+}
+
+export function getTelegramBotUsername() {
+  return process.env.TELEGRAM_BOT_USERNAME?.trim() ?? "";
 }
 
 export async function sendAdminPendingSalleTelegramNotification(
@@ -43,7 +48,7 @@ export async function sendAdminPaymentTelegramNotification(params: {
   productType: string;
   offerId?: string | null;
   userId?: string | null;
-  source: "checkout_session_completed" | "invoice_paid";
+  source: "checkout_session_completed" | "invoice_paid" | "payment_intent_failed";
 }) {
   const { botToken, chatIds } = getTelegramConfig();
   if (!botToken || chatIds.length === 0) {
@@ -71,6 +76,45 @@ export async function sendAdminPaymentTelegramNotification(params: {
   const results = await sendTelegramToAdminChats(endpoint, chatIds, message);
   const hasSuccess = results.some((r) => r.ok);
   return { success: hasSuccess, results };
+}
+
+export async function sendTelegramMessageToChat(chatId: string, message: string) {
+  const { botToken } = getTelegramConfig();
+  if (!botToken || !chatId) {
+    return { success: false, skipped: true as const };
+  }
+  const endpoint = `https://api.telegram.org/bot${botToken}/sendMessage`;
+  const body = new URLSearchParams({
+    chat_id: chatId,
+    text: message,
+    disable_web_page_preview: "true",
+  });
+
+  try {
+    const res = await fetch(endpoint, {
+      method: "POST",
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      body: body.toString(),
+    });
+    if (!res.ok) {
+      const text = await res.text().catch(() => "");
+      return { success: false, error: `HTTP ${res.status} ${text}` };
+    }
+    return { success: true };
+  } catch (error) {
+    return { success: false, error: String(error) };
+  }
+}
+
+export async function sendTelegramLinkSuccessMessage(chatId: string) {
+  return sendTelegramMessageToChat(
+    chatId,
+    [
+      "Telegram connecte avec succes.",
+      "Vous pouvez maintenant choisir vos notifications Telegram dans Parametres.",
+      `${siteUrl}/dashboard/parametres`,
+    ].join("\n")
+  );
 }
 
 async function sendTelegramToAdminChats(

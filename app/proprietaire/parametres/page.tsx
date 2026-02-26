@@ -11,7 +11,7 @@ export default async function ParametresPage() {
 
   const { data: profile } = await supabase
     .from("profiles")
-    .select("first_name, last_name, full_name, email, phone, last_password_change, stripe_account_id")
+    .select("first_name, last_name, full_name, email, phone, last_password_change, stripe_account_id, telegram_chat_id, notification_channel")
     .eq("id", user.id)
     .maybeSingle();
 
@@ -34,6 +34,8 @@ export default async function ParametresPage() {
           email: profile?.email ?? user.email ?? null,
           phone: profile?.phone ?? null,
           last_password_change: profile?.last_password_change ?? null,
+          telegram_chat_id: (profile as { telegram_chat_id?: string | null } | null)?.telegram_chat_id ?? null,
+          notification_channel: (profile as { notification_channel?: string | null } | null)?.notification_channel ?? "email",
         }}
         deleteDataLabel="annonces, demandes et messages"
         hasStripeConnect={!!(profile as { stripe_account_id?: string } | null)?.stripe_account_id}

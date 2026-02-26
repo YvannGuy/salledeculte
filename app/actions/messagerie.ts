@@ -5,6 +5,7 @@ import { createClient } from "@/lib/supabase/server";
 import { randomUUID } from "crypto";
 
 import { sendNewMessageNotification } from "@/lib/email";
+import { sendUserNotification } from "@/lib/user-notifications";
 
 const BUCKET_MESSAGE_ATTACHMENTS = "message-attachments";
 const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10 MB
@@ -390,12 +391,22 @@ async function sendNewMessageNotificationEmail(
   const recipientEmail = recipientUser?.user?.email;
   if (!recipientEmail) return;
 
-  await sendNewMessageNotification(
-    recipientEmail,
-    senderName,
-    preview,
-    messagerieUrl
-  );
+  await sendUserNotification({
+    userId: recipientId,
+    telegramText: [
+      "Nouveau message recu.",
+      `De: ${senderName}`,
+      preview,
+      messagerieUrl,
+    ].join("\n"),
+    sendEmail: () =>
+      sendNewMessageNotification(
+        recipientEmail,
+        senderName,
+        preview,
+        messagerieUrl
+      ),
+  });
 }
 
 export async function getAttachmentSignedUrl(storagePath: string): Promise<string | null> {

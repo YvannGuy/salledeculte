@@ -388,6 +388,101 @@ export async function sendNewSallePendingAdminNotification(
   return { success: !error, error: error?.message };
 }
 
+export async function sendReservationConfirmedSeekerEmail(
+  to: string,
+  salleName: string,
+  amountEur: string,
+  reservationsUrl: string
+) {
+  if (!process.env.RESEND_API_KEY) return { success: false };
+  const { error } = await resend.emails.send({
+    from,
+    to,
+    subject: `Reservation confirmee pour ${salleName}`,
+    html: renderEmailLayout({
+      title: "Votre reservation est confirmee",
+      intro: `Votre paiement pour <strong>${escapeHtml(salleName)}</strong> a ete valide.`,
+      sections: [
+        `<p class="tip"><strong>Montant paye :</strong> ${escapeHtml(amountEur)} EUR</p>`,
+        "<p>Vous pouvez consulter les details de votre reservation dans votre espace.</p>",
+      ],
+      ctaLabel: "Voir ma reservation",
+      ctaUrl: reservationsUrl,
+    }),
+  });
+  return { success: !error, error: error?.message };
+}
+
+export async function sendReservationConfirmedOwnerEmail(
+  to: string,
+  salleName: string,
+  amountEur: string,
+  ownerReservationsUrl: string
+) {
+  if (!process.env.RESEND_API_KEY) return { success: false };
+  const { error } = await resend.emails.send({
+    from,
+    to,
+    subject: `Reservation confirmee pour ${salleName}`,
+    html: renderEmailLayout({
+      title: "Une reservation vient d'etre confirmee",
+      intro: `Le paiement de la reservation pour <strong>${escapeHtml(salleName)}</strong> est confirme.`,
+      sections: [
+        `<p class="tip"><strong>Montant paye :</strong> ${escapeHtml(amountEur)} EUR</p>`,
+      ],
+      ctaLabel: "Voir mes reservations",
+      ctaUrl: ownerReservationsUrl,
+    }),
+  });
+  return { success: !error, error: error?.message };
+}
+
+export async function sendPaymentFailedSeekerEmail(
+  to: string,
+  salleName: string,
+  paymentUrl: string
+) {
+  if (!process.env.RESEND_API_KEY) return { success: false };
+  const { error } = await resend.emails.send({
+    from,
+    to,
+    subject: `Paiement echoue pour ${salleName}`,
+    html: renderEmailLayout({
+      title: "Paiement non finalise",
+      intro: `Le paiement pour <strong>${escapeHtml(salleName)}</strong> n'a pas pu aboutir.`,
+      sections: [
+        "<p>Verifiez votre moyen de paiement puis relancez l'operation depuis votre espace.</p>",
+      ],
+      ctaLabel: "Reessayer le paiement",
+      ctaUrl: paymentUrl,
+    }),
+  });
+  return { success: !error, error: error?.message };
+}
+
+export async function sendPaymentFailedOwnerEmail(
+  to: string,
+  salleName: string,
+  ownerReservationsUrl: string
+) {
+  if (!process.env.RESEND_API_KEY) return { success: false };
+  const { error } = await resend.emails.send({
+    from,
+    to,
+    subject: `Paiement echoue pour ${salleName}`,
+    html: renderEmailLayout({
+      title: "Echec de paiement sur une reservation",
+      intro: `Le paiement de la reservation pour <strong>${escapeHtml(salleName)}</strong> a echoue.`,
+      sections: [
+        "<p>Vous pouvez suivre la reservation et reprendre l'echange depuis votre espace proprietaire.</p>",
+      ],
+      ctaLabel: "Voir mes reservations",
+      ctaUrl: ownerReservationsUrl,
+    }),
+  });
+  return { success: !error, error: error?.message };
+}
+
 function escapeHtml(s: string): string {
   return s
     .replace(/&/g, "&amp;")

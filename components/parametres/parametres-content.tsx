@@ -5,7 +5,11 @@ import { useTransition, useState } from "react";
 import { Lock, Trash2, User } from "lucide-react";
 
 import {
+  createTelegramLinkAction,
   deleteAccountAction,
+  disconnectTelegramAction,
+  sendTelegramTestAction,
+  updateNotificationPreferencesAction,
   updatePasswordAction,
   updateProfileAction,
   type ParametresState,
@@ -41,6 +45,8 @@ type ParametresContentProps = {
     email: string | null;
     phone: string | null;
     last_password_change: string | null;
+    telegram_chat_id?: string | null;
+    notification_channel?: string | null;
   };
   /** Texte pour la section suppression (seeker vs owner) */
   deleteDataLabel?: string;
@@ -55,12 +61,24 @@ export function ParametresContent({
 }: ParametresContentProps) {
   const [profileState, profileAction] = useActionState(updateProfileAction, initialState);
   const [passwordState, passwordAction] = useActionState(updatePasswordAction, initialState);
+  const [notificationState, notificationAction] = useActionState(
+    updateNotificationPreferencesAction,
+    initialState
+  );
   const [profilePending, startProfileTransition] = useTransition();
   const [passwordPending, startPasswordTransition] = useTransition();
+  const [notificationPending, startNotificationTransition] = useTransition();
   const [deleteOpen, setDeleteOpen] = useState(false);
+  const [telegramPending, setTelegramPending] = useState<
+    null | "connect" | "test" | "disconnect"
+  >(null);
+  const [telegramFeedback, setTelegramFeedback] = useState<string | null>(null);
+  const [telegramError, setTelegramError] = useState<string | null>(null);
 
   const firstName = profile.first_name ?? "";
   const lastName = profile.last_name ?? "";
+  const notificationChannel = profile.notification_channel ?? "email";
+  const telegramConnected = !!profile.telegram_chat_id;
   const lastPwdDate = profile.last_password_change
     ? new Date(profile.last_password_change)
     : null;
@@ -203,6 +221,150 @@ export function ParametresContent({
               Modifier le mot de passe
             </Button>
           </form>
+        </CardContent>
+      </Card>
+
+      {/* Notifications */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Notifications</CardTitle>
+          <CardDescription>
+            Choisissez comment vous souhaitez recevoir vos alertes.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <form
+            action={(fd) =>
+              startNotificationTransition(() => notificationAction(fd))
+            }
+            className="space-y-3"
+          >
+            <div className="space-y-2">
+              <label
+                htmlFor="notificationChannel"
+                className="text-sm font-medium text-slate-700"
+              >
+                Canal préféré
+              </label>
+              <select
+                id="notificationChannel"
+                name="notificationChannel"
+                defaultValue={notificationChannel}
+                className="h-10 w-full rounded-md border border-slate-300 bg-white px-3 text-sm"
+              >
+                <option value="email">Email</option>
+                <option value="telegram">Telegram</option>
+                <option value="both">Les deux</option>
+              </select>
+            </div>
+
+            {notificationState.error && (
+              <p className="text-sm text-red-600">{notificationState.error}</p>
+            )}
+            {notificationState.success && (
+              <p className="text-sm text-emerald-600">
+                {notificationState.success}
+              </p>
+            )}
+            <Button type="submit" disabled={notificationPending}>
+              {notificationPending
+                ? "Enregistrement..."
+                : "Enregistrer mes préférences"}
+            </Button>
+          </form>
+
+          <div className="rounded-lg border border-slate-200 bg-slate-50 p-3 text-sm">
+            <p className="font-medium text-slate-700">
+              Telegram : {telegramConnected ? "Connecté" : "Non connecté"}
+            </p>
+            {telegramConnected && (
+              <p className="mt-1 text-xs text-slate-500">
+                Chat ID lié : {profile.telegram_chat_id}
+              </p>
+            )}
+            {!telegramConnected && (
+              <p className="mt-1 text-xs text-slate-500">
+                Connectez Telegram pour recevoir les alertes instantanées.
+              </p>
+            )}
+            <div className="mt-3 flex flex-wrap gap-2">
+              <Button
+                type="button"
+                variant="outline"
+                disabled={telegramPending !== null}
+                onClick={async () => {
+                  setTelegramError(null);
+                  setTelegramFeedback(null);
+                  setTelegramPending("connect");
+                  const res = await createTelegramLinkAction();
+                  if (!res.success || !res.url) {
+                    setTelegramError(
+                      res.error ?? "Impossible de générer le lien Telegram."
+                    );
+                    setTelegramPending(null);
+                    return;
+                  }
+                  if (typeof window !== "undefined") {
+                    window.open(res.url, "_blank", "noopener,noreferrer");
+                  }
+                  setTelegramFeedback(
+                    "Lien Telegram ouvert. Cliquez sur Start dans le bot puis rafraîchissez la page."
+                  );
+                  setTelegramPending(null);
+                }}
+              >
+                {telegramPending === "connect"
+                  ? "Ouverture..."
+                  : telegramConnected
+                    ? "Reconnecter Telegram"
+                    : "Connecter Telegram"}
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                disabled={telegramPending !== null || !telegramConnected}
+                onClick={async () => {
+                  setTelegramError(null);
+                  setTelegramFeedback(null);
+                  setTelegramPending("test");
+                  const res = await sendTelegramTestAction();
+                  if (res.error) setTelegramError(res.error);
+                  if (res.success) setTelegramFeedback(res.success);
+                  setTelegramPending(null);
+                }}
+              >
+                {telegramPending === "test"
+                  ? "Test..."
+                  : "Tester Telegram"}
+              </Button>
+              {telegramConnected && (
+                <Button
+                  type="button"
+                  variant="destructive"
+                  disabled={telegramPending !== null}
+                  onClick={async () => {
+                    setTelegramError(null);
+                    setTelegramFeedback(null);
+                    setTelegramPending("disconnect");
+                    const res = await disconnectTelegramAction();
+                    if (res.error) setTelegramError(res.error);
+                    if (res.success) setTelegramFeedback(res.success);
+                    setTelegramPending(null);
+                  }}
+                >
+                  {telegramPending === "disconnect"
+                    ? "Déconnexion..."
+                    : "Déconnecter"}
+                </Button>
+              )}
+            </div>
+            {telegramError && (
+              <p className="mt-2 text-sm text-red-600">{telegramError}</p>
+            )}
+            {telegramFeedback && (
+              <p className="mt-2 text-sm text-emerald-600">{telegramFeedback}</p>
+            )}
+          </div>
         </CardContent>
       </Card>
 
