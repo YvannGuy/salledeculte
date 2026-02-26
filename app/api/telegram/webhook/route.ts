@@ -13,6 +13,10 @@ type TelegramUpdate = {
 
 export async function POST(request: Request) {
   const secret = process.env.TELEGRAM_WEBHOOK_SECRET?.trim();
+  if (!secret && process.env.NODE_ENV === "production") {
+    return NextResponse.json({ error: "Webhook secret manquant" }, { status: 500 });
+  }
+
   if (secret) {
     const headerSecret = request.headers.get("x-telegram-bot-api-secret-token");
     if (headerSecret !== secret) {
@@ -75,6 +79,26 @@ export async function POST(request: Request) {
     }
 
     const now = new Date().toISOString();
+    const { data: consumeRow } = await admin
+      .from("telegram_link_tokens")
+      .update({
+        used_at: now,
+        telegram_chat_id: chatId,
+      })
+      .eq("token", token)
+      .is("used_at", null)
+      .gt("expires_at", now)
+      .select("user_id")
+      .maybeSingle();
+
+    if (!consumeRow) {
+      await sendTelegramMessageToChat(
+        chatId,
+        "Ce lien a déjà été utilisé ou a expiré. Relancez la connexion depuis vos paramètres."
+      );
+      return NextResponse.json({ received: true });
+    }
+
     await admin
       .from("profiles")
       .update({
@@ -83,15 +107,7 @@ export async function POST(request: Request) {
         telegram_connected_at: now,
         updated_at: now,
       })
-      .eq("id", row.user_id);
-
-    await admin
-      .from("telegram_link_tokens")
-      .update({
-        used_at: now,
-        telegram_chat_id: chatId,
-      })
-      .eq("token", token);
+      .eq("id", (consumeRow as { user_id: string }).user_id);
 
     await sendTelegramLinkSuccessMessage(chatId);
     return NextResponse.json({ received: true });

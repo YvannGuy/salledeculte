@@ -245,5 +245,8 @@ export async function POST(request: Request) {
 }
 
 export async function GET(request: Request) {
-  return POST(request);
+  if (request.method === "GET") {
+    return NextResponse.json({ error: "Method Not Allowed" }, { status: 405 });
+  }
+  return NextResponse.json({ error: "Method Not Allowed" }, { status: 405 });
 }

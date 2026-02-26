@@ -9,7 +9,34 @@ import { rowToSalle } from "@/lib/types/salle";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 
+async function requireAdmin() {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { ok: false as const, error: "Accès refusé" };
+
+  const adminEmails = (process.env.ADMIN_EMAILS ?? "")
+    .split(",")
+    .map((e) => e.trim().toLowerCase())
+    .filter(Boolean);
+  const isAdminByEnv =
+    adminEmails.length > 0 && adminEmails.includes(user.email?.toLowerCase() ?? "");
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("user_type")
+    .eq("id", user.id)
+    .maybeSingle();
+  const isAdminByProfile = profile?.user_type === "admin";
+
+  if (!isAdminByEnv && !isAdminByProfile) return { ok: false as const, error: "Accès refusé" };
+  return { ok: true as const };
+}
+
 export async function validateSalleAction(formData: FormData) {
+  const auth = await requireAdmin();
+  if (!auth.ok) return { error: auth.error };
+
   const salleIds = formData.getAll("salleIds").map(String).filter(Boolean);
   const salleId = String(formData.get("salleId") ?? "");
   const status = (formData.get("status") ?? "approved") as "approved" | "rejected";
@@ -40,6 +67,9 @@ export async function validateSalleFormAction(formData: FormData): Promise<void>
 }
 
 export async function getSalleForAdminAction(id: string): Promise<{ error?: string; salle?: Salle }> {
+  const auth = await requireAdmin();
+  if (!auth.ok) return { error: auth.error };
+
   const supabase = createAdminClient();
   const { data, error } = await supabase
     .from("salles")
@@ -52,6 +82,9 @@ export async function getSalleForAdminAction(id: string): Promise<{ error?: stri
 }
 
 export async function updateSalleAction(formData: FormData) {
+  const auth = await requireAdmin();
+  if (!auth.ok) return { error: auth.error };
+
   const id = String(formData.get("id") ?? "");
   if (!id) return { error: "ID manquant" };
 
@@ -93,6 +126,9 @@ export async function updateSalleAction(formData: FormData) {
 }
 
 export async function deleteSalleAction(id: string) {
+  const auth = await requireAdmin();
+  if (!auth.ok) return { error: auth.error };
+
   if (!id) return { error: "ID manquant" };
 
   const supabase = createAdminClient();

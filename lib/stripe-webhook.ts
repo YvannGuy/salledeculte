@@ -13,12 +13,29 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { sendAdminPaymentTelegramNotification } from "@/lib/telegram";
 import { sendUserNotification } from "@/lib/user-notifications";
 
+async function paymentAlreadyRecorded(
+  supabase: ReturnType<typeof createAdminClient>,
+  stripeSessionId: string,
+  productType: "reservation" | "pass_24h" | "pass_48h" | "abonnement"
+): Promise<boolean> {
+  const { data } = await supabase
+    .from("payments")
+    .select("id")
+    .eq("stripe_session_id", stripeSessionId)
+    .eq("product_type", productType)
+    .limit(1)
+    .maybeSingle();
+  return !!data;
+}
+
 export async function handleStripeWebhook(event: Stripe.Event) {
   switch (event.type) {
     case "checkout.session.completed": {
       const session = event.data.object as Stripe.Checkout.Session;
       const metadata = session.metadata as Record<string, string> | null;
       const productType = metadata?.product_type;
+      let reservationJustProcessed = false;
+      let shouldSendAdminPaymentTelegram = false;
 
       if (!productType || (productType !== "reservation" && !["pass_24h", "pass_48h", "abonnement"].includes(productType))) {
         console.log("[webhook] checkout.session.completed ignoré (metadata):", { productType, offer_id: metadata?.offer_id, user_id: metadata?.user_id });
@@ -74,6 +91,8 @@ export async function handleStripeWebhook(event: Stripe.Event) {
         if (updateError || !updatedOffer) {
           console.warn("[webhook] Offre déjà traitée ou introuvable:", offerId, updateError?.message ?? "0 rows");
         } else {
+          reservationJustProcessed = true;
+          shouldSendAdminPaymentTelegram = true;
           console.log("[webhook] Début traitement caution:", {
             offerId,
             depositAmountCents,
@@ -349,15 +368,23 @@ export async function handleStripeWebhook(event: Stripe.Event) {
         const isSubscription = session.mode === "subscription" && session.subscription;
         const supabase = createAdminClient();
 
-        await supabase.from("payments").insert({
-          user_id: metadata.user_id,
-          stripe_session_id: session.id,
-          amount,
-          currency: session.currency ?? "eur",
-          product_type: productType,
-          status: isSubscription ? "active" : "paid",
-          subscription_id: isSubscription ? session.subscription : null,
-        });
+        const alreadyRecorded = await paymentAlreadyRecorded(
+          supabase,
+          session.id,
+          productType as "pass_24h" | "pass_48h" | "abonnement"
+        );
+        if (!alreadyRecorded) {
+          await supabase.from("payments").insert({
+            user_id: metadata.user_id,
+            stripe_session_id: session.id,
+            amount,
+            currency: session.currency ?? "eur",
+            product_type: productType,
+            status: isSubscription ? "active" : "paid",
+            subscription_id: isSubscription ? session.subscription : null,
+          });
+          shouldSendAdminPaymentTelegram = true;
+        }
 
         const updates: Record<string, unknown> = {};
         const customerId = session.customer as string | null;
@@ -369,7 +396,12 @@ export async function handleStripeWebhook(event: Stripe.Event) {
         }
       }
 
-      if (productType === "reservation" && metadata?.offer_id && metadata?.user_id) {
+      if (
+        reservationJustProcessed &&
+        productType === "reservation" &&
+        metadata?.offer_id &&
+        metadata?.user_id
+      ) {
         const supabase = createAdminClient();
         const offerId = metadata.offer_id;
         const seekerId = metadata.user_id;
@@ -434,7 +466,7 @@ export async function handleStripeWebhook(event: Stripe.Event) {
         }
       }
 
-      if (productType) {
+      if (productType && shouldSendAdminPaymentTelegram) {
         const telegramAmountCents = session.amount_total ?? Number(metadata?.amount_cents ?? "0");
         sendAdminPaymentTelegramNotification({
           amountCents: telegramAmountCents,
@@ -481,24 +513,30 @@ export async function handleStripeWebhook(event: Stripe.Event) {
           .eq("stripe_customer_id", customerId)
           .single();
         if (profile?.id) {
-          await supabase.from("payments").insert({
-            user_id: profile.id,
-            stripe_session_id: invoice.id,
-            amount: invoice.amount_paid ?? 0,
-            currency: invoice.currency ?? "eur",
-            product_type: "abonnement",
-            status: "paid",
-            subscription_id: subscriptionId,
-          });
-
-          sendAdminPaymentTelegramNotification({
-            amountCents: invoice.amount_paid ?? 0,
-            currency: invoice.currency ?? "eur",
-            productType: "abonnement",
-            offerId: null,
-            userId: profile.id,
-            source: "invoice_paid",
-          }).catch((e) => console.error("[webhook] notification telegram invoice paid:", e));
+          const alreadyRecorded = await paymentAlreadyRecorded(
+            supabase,
+            invoice.id,
+            "abonnement"
+          );
+          if (!alreadyRecorded) {
+            await supabase.from("payments").insert({
+              user_id: profile.id,
+              stripe_session_id: invoice.id,
+              amount: invoice.amount_paid ?? 0,
+              currency: invoice.currency ?? "eur",
+              product_type: "abonnement",
+              status: "paid",
+              subscription_id: subscriptionId,
+            });
+            sendAdminPaymentTelegramNotification({
+              amountCents: invoice.amount_paid ?? 0,
+              currency: invoice.currency ?? "eur",
+              productType: "abonnement",
+              offerId: null,
+              userId: profile.id,
+              source: "invoice_paid",
+            }).catch((e) => console.error("[webhook] notification telegram invoice paid:", e));
+          }
         }
       }
       return { type: event.type, invoiceId: invoice.id };

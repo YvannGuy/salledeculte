@@ -13,6 +13,11 @@ export type PaymentMethodInfo = {
 
 export async function getPaymentMethods(userId: string): Promise<PaymentMethodInfo[]> {
   const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user || user.id !== userId) return [];
+
   const { data: profile } = await supabase
     .from("profiles")
     .select("stripe_customer_id")
@@ -44,6 +49,11 @@ export async function getPaymentMethods(userId: string): Promise<PaymentMethodIn
 
 export async function getStripeCustomerId(userId: string): Promise<string | null> {
   const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user || user.id !== userId) return null;
+
   const { data: profile } = await supabase
     .from("profiles")
     .select("stripe_customer_id")

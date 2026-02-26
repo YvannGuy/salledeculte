@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 
 import { createAdminClient } from "@/lib/supabase/admin";
+import { createClient } from "@/lib/supabase/server";
 
 const DEFAULT_SETTINGS = {
   pass: {
@@ -27,6 +28,32 @@ const DEFAULT_SETTINGS = {
 
 export type PlatformSettings = typeof DEFAULT_SETTINGS;
 
+async function requireAdmin() {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { ok: false as const, error: "Accès refusé." };
+
+  const adminEmails = (process.env.ADMIN_EMAILS ?? "")
+    .split(",")
+    .map((e) => e.trim().toLowerCase())
+    .filter(Boolean);
+  const isAdminByEnv =
+    adminEmails.length > 0 && adminEmails.includes(user.email?.toLowerCase() ?? "");
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("user_type")
+    .eq("id", user.id)
+    .maybeSingle();
+  const isAdminByProfile = profile?.user_type === "admin";
+
+  if (!isAdminByEnv && !isAdminByProfile) {
+    return { ok: false as const, error: "Accès refusé." };
+  }
+  return { ok: true as const };
+}
+
 export async function getPlatformSettings(): Promise<PlatformSettings> {
   try {
     const supabase = createAdminClient();
@@ -49,6 +76,8 @@ export async function getPlatformSettings(): Promise<PlatformSettings> {
 }
 
 export async function savePlatformSettingsAction(formData: FormData) {
+  const auth = await requireAdmin();
+  if (!auth.ok) return { error: auth.error };
   const supabase = createAdminClient();
 
   const pass = {
@@ -96,6 +125,8 @@ export async function savePlatformSettingsAction(formData: FormData) {
 }
 
 export async function addAdminAction(userId: string) {
+  const auth = await requireAdmin();
+  if (!auth.ok) return { error: auth.error };
   const supabase = createAdminClient();
 
   const { error } = await supabase
@@ -109,6 +140,8 @@ export async function addAdminAction(userId: string) {
 }
 
 export async function removeAdminAction(userId: string) {
+  const auth = await requireAdmin();
+  if (!auth.ok) return { error: auth.error };
   const supabase = createAdminClient();
   const { error } = await supabase
     .from("profiles")
@@ -121,6 +154,8 @@ export async function removeAdminAction(userId: string) {
 }
 
 export async function deleteAllSallesAction() {
+  const auth = await requireAdmin();
+  if (!auth.ok) return { error: auth.error };
   const supabase = createAdminClient();
   const { data: ids } = await supabase.from("salles").select("id");
   if (ids && ids.length > 0) {

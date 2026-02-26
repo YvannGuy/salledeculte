@@ -6,6 +6,11 @@ import { createClient } from "@/lib/supabase/server";
 const MAX_SIZE = 2 * 1024 * 1024; // 2 Mo
 const PATH_PREFIX = "salles";
 
+function isPdfBuffer(buffer: Buffer): boolean {
+  // PDF files always start with "%PDF-"
+  return buffer.length >= 5 && buffer.subarray(0, 5).toString("ascii") === "%PDF-";
+}
+
 export async function POST(request: Request) {
   try {
     const supabase = await createClient();
@@ -29,7 +34,7 @@ export async function POST(request: Request) {
     }
 
     if (file.size > MAX_SIZE) {
-      return NextResponse.json({ error: "Fichier trop volumineux (max 5 Mo)" }, { status: 400 });
+      return NextResponse.json({ error: "Fichier trop volumineux (max 2 Mo)" }, { status: 400 });
     }
 
     const adminSupabase = createAdminClient();
@@ -45,6 +50,9 @@ export async function POST(request: Request) {
 
     const path = `${PATH_PREFIX}/${salleId}/modele.pdf`;
     const buffer = Buffer.from(await file.arrayBuffer());
+    if (!isPdfBuffer(buffer)) {
+      return NextResponse.json({ error: "Fichier PDF invalide" }, { status: 400 });
+    }
 
     const { error: uploadError } = await adminSupabase.storage
       .from("contrats")
