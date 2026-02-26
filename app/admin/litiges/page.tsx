@@ -1,7 +1,7 @@
 import Link from "next/link";
 
-import { AdminEdlPhotoViewer } from "@/components/etats-des-lieux/admin-edl-photo-viewer";
 import { AdminEvidenceViewer } from "@/components/etats-des-lieux/admin-evidence-viewer";
+import { AdminLitigeDecisionActions } from "@/components/etats-des-lieux/admin-litige-decision-actions";
 import { Card, CardContent } from "@/components/ui/card";
 import { createAdminClient } from "@/lib/supabase/admin";
 
@@ -11,24 +11,12 @@ type OfferRow = {
   owner_id: string;
   seeker_id: string;
   amount_cents: number;
+  deposit_amount_cents: number | null;
+  deposit_hold_status: string | null;
+  deposit_claim_amount_cents: number | null;
+  deposit_claim_reason: string | null;
+  deposit_claim_requested_at: string | null;
   created_at: string;
-};
-
-type EDLRow = {
-  id: string;
-  offer_id: string;
-  role: "owner" | "seeker";
-  phase: "before" | "after";
-  notes: string | null;
-  submitted_at: string;
-};
-
-type PhotoRow = {
-  id: string;
-  etat_des_lieux_id: string;
-  offer_id: string;
-  storage_path: string;
-  created_at: string | null;
 };
 
 type CaseRow = {
@@ -42,15 +30,17 @@ type CaseRow = {
   created_at: string;
 };
 
+type LegacyClaimRow = {
+  offer_id: string;
+  amount_cents: number;
+  reason: string | null;
+  requested_at: string | null;
+};
+
 type EvidenceRow = {
   id: string;
   case_id: string;
   storage_path: string;
-};
-
-const PHASE_LABEL: Record<"before" | "after", string> = {
-  before: "Avant événement (entrée)",
-  after: "Après événement (sortie)",
 };
 
 const CASE_LABEL: Record<string, string> = {
@@ -64,9 +54,10 @@ export const dynamic = "force-dynamic";
 export default async function AdminLitigesPage({
   searchParams,
 }: {
-  searchParams: Promise<{ status?: string; sort?: string }>;
+  searchParams: Promise<{ status?: string; sort?: string; offerId?: string }>;
 }) {
   const resolvedSearchParams = await searchParams;
+  const focusOfferId = resolvedSearchParams.offerId ?? null;
   const selectedStatus =
     resolvedSearchParams.status === "open" ||
     resolvedSearchParams.status === "resolved" ||
@@ -88,27 +79,30 @@ export default async function AdminLitigesPage({
 
   const disputeRows = (disputes ?? []) as CaseRow[];
   const offerIds = [...new Set(disputeRows.map((d) => d.offer_id).filter(Boolean) as string[])];
+  const { data: legacyClaims } = await admin
+    .from("offers")
+    .select("id, deposit_claim_amount_cents, deposit_claim_reason, deposit_claim_requested_at")
+    .eq("deposit_hold_status", "claim_requested")
+    .not("deposit_claim_requested_at", "is", null)
+    .order("deposit_claim_requested_at", { ascending: false })
+    .limit(300);
+  const legacyRows = (legacyClaims ?? []).map((row) => ({
+    offer_id: (row as { id: string }).id,
+    amount_cents: (row as { deposit_claim_amount_cents?: number | null }).deposit_claim_amount_cents ?? 0,
+    reason: (row as { deposit_claim_reason?: string | null }).deposit_claim_reason ?? null,
+    requested_at:
+      (row as { deposit_claim_requested_at?: string | null }).deposit_claim_requested_at ?? null,
+  })) as LegacyClaimRow[];
+  const allOfferIds = [...new Set([...offerIds, ...legacyRows.map((r) => r.offer_id)])];
 
-  const [{ data: offers }, { data: edl }, { data: photos }, { data: evidences }] =
+  const [{ data: offers }, { data: evidences }] =
     await Promise.all([
-      offerIds.length > 0
+      allOfferIds.length > 0
         ? admin
             .from("offers")
-            .select("id, salle_id, owner_id, seeker_id, amount_cents, created_at")
-            .in("id", offerIds)
+            .select("id, salle_id, owner_id, seeker_id, amount_cents, deposit_amount_cents, deposit_hold_status, deposit_claim_amount_cents, deposit_claim_reason, deposit_claim_requested_at, created_at")
+            .in("id", allOfferIds)
         : Promise.resolve({ data: [] as OfferRow[] }),
-      offerIds.length > 0
-        ? admin
-            .from("etat_des_lieux")
-            .select("id, offer_id, role, phase, notes, submitted_at")
-            .in("offer_id", offerIds)
-        : Promise.resolve({ data: [] as EDLRow[] }),
-      offerIds.length > 0
-        ? admin
-            .from("etat_des_lieux_photos")
-            .select("id, etat_des_lieux_id, offer_id, storage_path, created_at")
-            .in("offer_id", offerIds)
-        : Promise.resolve({ data: [] as PhotoRow[] }),
       disputeRows.length > 0
         ? admin
             .from("refund_case_evidences")
@@ -118,12 +112,10 @@ export default async function AdminLitigesPage({
     ]);
 
   const offerRows = (offers ?? []) as OfferRow[];
-  const edlRows = (edl ?? []) as EDLRow[];
-  const photoRows = (photos ?? []) as PhotoRow[];
   const evidenceRows = (evidences ?? []) as EvidenceRow[];
 
   const salleIds = [...new Set(offerRows.map((o) => o.salle_id))];
-  const profileIds = [...new Set(offerRows.flatMap((o) => [o.owner_id, o.seeker_id]))];
+  const profileIds = [...new Set(offerRows.map((o) => o.owner_id))];
   const [{ data: salles }, { data: profiles }] = await Promise.all([
     salleIds.length > 0
       ? admin.from("salles").select("id, name").in("id", salleIds)
@@ -134,10 +126,6 @@ export default async function AdminLitigesPage({
   ]);
 
   const fileUrlMap = new Map<string, string>();
-  for (const row of photoRows) {
-    const { data } = await admin.storage.from("etat-des-lieux").createSignedUrl(row.storage_path, 60 * 60);
-    if (data?.signedUrl) fileUrlMap.set(row.id, data.signedUrl);
-  }
   for (const row of evidenceRows) {
     const { data } = await admin.storage.from("etat-des-lieux").createSignedUrl(row.storage_path, 60 * 60);
     if (data?.signedUrl) fileUrlMap.set(row.id, data.signedUrl);
@@ -146,19 +134,6 @@ export default async function AdminLitigesPage({
   const offerMap = new Map(offerRows.map((o) => [o.id, o]));
   const salleMap = new Map((salles ?? []).map((s) => [s.id, s.name]));
   const profileMap = new Map((profiles ?? []).map((p) => [p.id, p.full_name || p.email || "Utilisateur"]));
-
-  const edlByOffer = new Map<string, EDLRow[]>();
-  for (const row of edlRows) {
-    const list = edlByOffer.get(row.offer_id) ?? [];
-    list.push(row);
-    edlByOffer.set(row.offer_id, list);
-  }
-  const photosByEdl = new Map<string, PhotoRow[]>();
-  for (const row of photoRows) {
-    const list = photosByEdl.get(row.etat_des_lieux_id) ?? [];
-    list.push(row);
-    photosByEdl.set(row.etat_des_lieux_id, list);
-  }
   const evidencesByCase = new Map<string, EvidenceRow[]>();
   for (const row of evidenceRows) {
     const list = evidencesByCase.get(row.case_id) ?? [];
@@ -173,6 +148,22 @@ export default async function AdminLitigesPage({
     list.push(dispute);
     groupedByOffer.set(dispute.offer_id, list);
   }
+  for (const legacy of legacyRows) {
+    const existing = groupedByOffer.get(legacy.offer_id) ?? [];
+    if (existing.length > 0) continue;
+    groupedByOffer.set(legacy.offer_id, [
+      {
+        id: `legacy-${legacy.offer_id}`,
+        offer_id: legacy.offer_id,
+        case_type: "dispute",
+        status: "open",
+        side: "owner",
+        reason: legacy.reason,
+        amount_cents: legacy.amount_cents,
+        created_at: legacy.requested_at ?? new Date().toISOString(),
+      },
+    ]);
+  }
 
   const offerDisputeRows = [...groupedByOffer.entries()]
     .map(([offerId, cases]) => ({
@@ -183,6 +174,7 @@ export default async function AdminLitigesPage({
       totalAmount: cases.reduce((acc, c) => acc + (c.amount_cents ?? 0), 0),
     }))
     .filter((row) => row.offer)
+    .filter((row) => (focusOfferId ? row.offerId === focusOfferId : true))
     .filter((row) => {
       if (selectedStatus === "all") return true;
       if (selectedStatus === "open") return row.cases.some((c) => c.status === "open");
@@ -288,7 +280,6 @@ export default async function AdminLitigesPage({
         ) : (
           offerDisputeRows.map((row, index) => {
             const offer = row.offer!;
-            const offerEdl = edlByOffer.get(offer.id) ?? [];
             return (
               <details key={offer.id} open={index === 0} className="rounded-xl border border-slate-200 bg-white p-4 md:p-5">
                 <summary className="cursor-pointer list-none">
@@ -298,58 +289,13 @@ export default async function AdminLitigesPage({
                         {salleMap.get(offer.salle_id) ?? "Salle"} • {(offer.amount_cents / 100).toFixed(2)} €
                       </p>
                       <p className="mt-1 text-xs text-slate-500 md:text-sm">
-                        Propriétaire : {profileMap.get(offer.owner_id) ?? "—"} • Locataire : {profileMap.get(offer.seeker_id) ?? "—"}
+                        Propriétaire : {profileMap.get(offer.owner_id) ?? "—"}
                       </p>
-                    </div>
-                    <div className="flex flex-wrap gap-2">
-                      <span className="inline-flex items-center rounded-full bg-amber-100 px-2.5 py-1 text-xs font-medium text-amber-800">
-                        Ouverts: {row.openCount}
-                      </span>
-                      <span className="inline-flex items-center rounded-full bg-slate-100 px-2.5 py-1 text-xs font-medium text-slate-700">
-                        Dossiers: {row.cases.length}
-                      </span>
                     </div>
                   </div>
                 </summary>
 
                 <div className="mt-4 space-y-4">
-                  <AdminEdlPhotoViewer
-                    phases={(["before", "after"] as const).map((phase) => {
-                      const ownerEdl = offerEdl.find((r) => r.role === "owner" && r.phase === phase);
-                      const seekerEdl = offerEdl.find((r) => r.role === "seeker" && r.phase === phase);
-                      return {
-                        phase,
-                        label: PHASE_LABEL[phase],
-                        owner: ownerEdl
-                          ? {
-                              notes: ownerEdl.notes,
-                              submittedAt: ownerEdl.submitted_at,
-                              photos: (photosByEdl.get(ownerEdl.id) ?? [])
-                                .map((photo) => ({
-                                  id: photo.id,
-                                  url: fileUrlMap.get(photo.id) ?? "",
-                                  uploadedAt: photo.created_at,
-                                }))
-                                .filter((photo) => !!photo.url),
-                            }
-                          : null,
-                        seeker: seekerEdl
-                          ? {
-                              notes: seekerEdl.notes,
-                              submittedAt: seekerEdl.submitted_at,
-                              photos: (photosByEdl.get(seekerEdl.id) ?? [])
-                                .map((photo) => ({
-                                  id: photo.id,
-                                  url: fileUrlMap.get(photo.id) ?? "",
-                                  uploadedAt: photo.created_at,
-                                }))
-                                .filter((photo) => !!photo.url),
-                            }
-                          : null,
-                      };
-                    })}
-                  />
-
                   <div className="rounded-lg border border-amber-200 bg-amber-50/50 p-3 md:p-4">
                     <h3 className="text-sm font-semibold text-amber-900 md:text-base">Dossiers litige</h3>
                     <div className="mt-3 grid gap-3 md:grid-cols-2">
@@ -361,6 +307,12 @@ export default async function AdminLitigesPage({
                           </p>
                           <p className="text-xs text-slate-500">Partie: {c.side}</p>
                           {c.reason && <p className="mt-1 text-xs">{c.reason}</p>}
+                          <AdminLitigeDecisionActions
+                            offerId={offer.id}
+                            holdStatus={offer.deposit_hold_status}
+                            maxDepositAmountCents={Math.max(0, offer.deposit_amount_cents ?? 0)}
+                            disabled={c.status !== "open"}
+                          />
                           <div className="mt-2">
                             <AdminEvidenceViewer
                               label="Voir preuves"

@@ -2,30 +2,9 @@ import { format } from "date-fns";
 import { fr } from "date-fns/locale";
 import { Shield } from "lucide-react";
 
-import { DepositHoldActions } from "@/components/paiement/deposit-hold-actions";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
-
-const DEPOSIT_STATUS_LABEL: Record<string, string> = {
-  none: "Aucune caution",
-  authorized: "Empreinte active",
-  claim_requested: "Demande de retenue en revue",
-  released: "Empreinte libérée",
-  captured: "Caution capturée",
-  failed: "Empreinte échouée",
-  expired: "Empreinte expirée",
-};
-
-const DEPOSIT_STATUS_BADGE: Record<string, string> = {
-  none: "bg-slate-100 text-slate-600",
-  authorized: "bg-emerald-100 text-emerald-700",
-  claim_requested: "bg-amber-100 text-amber-700",
-  released: "bg-slate-100 text-slate-600",
-  captured: "bg-red-100 text-red-700",
-  failed: "bg-red-100 text-red-700",
-  expired: "bg-slate-100 text-slate-600",
-};
 
 export const dynamic = "force-dynamic";
 
@@ -70,7 +49,7 @@ export default async function ProprietaireCautionsPage() {
     <div className="p-4 sm:p-6 lg:p-8">
       <h1 className="text-2xl font-bold text-black">Cautions</h1>
       <p className="mt-2 text-slate-500">
-        Gérez les empreintes de caution de vos réservations payées.
+        Suivi informatif des cautions: l&apos;arbitrage se fait uniquement via les litiges.
       </p>
 
       <Card className="mt-8 border-0 shadow-sm">
@@ -80,7 +59,7 @@ export default async function ProprietaireCautionsPage() {
             Gestion des cautions
           </CardTitle>
           <CardDescription>
-            Déclarez un dommage (demande de retenue) ou libérez l&apos;empreinte.
+            Suivi des empreintes et décisions d&apos;arbitrage. Les retenues se traitent via les litiges.
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -98,7 +77,6 @@ export default async function ProprietaireCautionsPage() {
                     seeker_id: string;
                     salle_id: string;
                     deposit_amount_cents: number;
-                    deposit_hold_status: string;
                   };
                   return (
                     <article key={row.id} className="rounded-xl border border-slate-200 p-4">
@@ -111,13 +89,6 @@ export default async function ProprietaireCautionsPage() {
                             {seekerMap.get(row.seeker_id) ?? "Locataire"}
                           </p>
                         </div>
-                        <span
-                          className={`inline-flex rounded-full px-2.5 py-1 text-xs font-medium ${
-                            DEPOSIT_STATUS_BADGE[row.deposit_hold_status] ?? "bg-slate-100 text-slate-600"
-                          }`}
-                        >
-                          {DEPOSIT_STATUS_LABEL[row.deposit_hold_status] ?? row.deposit_hold_status}
-                        </span>
                       </div>
                       <div className="mt-2 flex items-center justify-between text-sm">
                         <span className="text-slate-500">
@@ -125,13 +96,9 @@ export default async function ProprietaireCautionsPage() {
                         </span>
                         <span className="font-semibold text-black">{(row.deposit_amount_cents / 100).toFixed(2)} €</span>
                       </div>
-                      <div className="mt-3">
-                        <DepositHoldActions
-                          offerId={row.id}
-                          holdStatus={row.deposit_hold_status}
-                          depositAmountCents={row.deposit_amount_cents}
-                        />
-                      </div>
+                      <p className="mt-3 text-xs text-slate-500">
+                        Suivi informatif : en cas de désaccord, ouvrez un litige depuis l&apos;état des lieux.
+                      </p>
                     </article>
                   );
                 })}
@@ -144,8 +111,7 @@ export default async function ProprietaireCautionsPage() {
                     <th className="pb-3 pr-3">Salle</th>
                     <th className="pb-3 pr-3">Locataire</th>
                     <th className="pb-3 pr-3">Caution</th>
-                    <th className="pb-3 pr-3">Statut</th>
-                    <th className="pb-3">Action</th>
+                    <th className="pb-3">Info</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
@@ -156,7 +122,6 @@ export default async function ProprietaireCautionsPage() {
                       seeker_id: string;
                       salle_id: string;
                       deposit_amount_cents: number;
-                      deposit_hold_status: string;
                     };
                     return (
                       <tr key={row.id}>
@@ -172,15 +137,8 @@ export default async function ProprietaireCautionsPage() {
                         <td className="py-3 pr-3 text-sm text-slate-600">
                           {(row.deposit_amount_cents / 100).toFixed(2)} €
                         </td>
-                        <td className="py-3 pr-3 text-sm text-slate-600">
-                          {DEPOSIT_STATUS_LABEL[row.deposit_hold_status] ?? row.deposit_hold_status}
-                        </td>
-                        <td className="py-3">
-                          <DepositHoldActions
-                            offerId={row.id}
-                            holdStatus={row.deposit_hold_status}
-                            depositAmountCents={row.deposit_amount_cents}
-                          />
+                        <td className="py-3 text-sm text-slate-500">
+                          Ouvrir un litige depuis l&apos;état des lieux si nécessaire.
                         </td>
                       </tr>
                     );

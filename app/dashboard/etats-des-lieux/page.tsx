@@ -293,9 +293,16 @@ export default async function SeekerEtatsDesLieuxPage() {
                 open={offerIndex === 0}
                 className="group rounded-xl border border-slate-200 bg-white p-4 md:p-5"
               >
-                <summary className="cursor-pointer">
+                <summary
+                  className="cursor-pointer list-none [&::-webkit-details-marker]:hidden [&::marker]:hidden"
+                  style={{ listStyle: "none" }}
+                >
                   <div className="flex flex-col gap-2 md:flex-row md:items-start md:justify-between">
                     <div className="min-w-0">
+                      <span className="mb-1 inline-flex items-center gap-1 rounded-full border border-slate-200 bg-white px-2.5 py-1 text-xs font-medium text-slate-700">
+                        <ChevronDown className="h-3.5 w-3.5 shrink-0 text-black transition-transform duration-200 group-open:rotate-180" />
+                        <span className="whitespace-nowrap">Replier / Déplier</span>
+                      </span>
                       <p className="text-base font-semibold text-black md:text-lg">
                         {salleMap.get(offer.salle_id) ?? "Salle"} • {(offer.amount_cents / 100).toFixed(2)} €
                       </p>
@@ -304,13 +311,8 @@ export default async function SeekerEtatsDesLieuxPage() {
                       </p>
                     </div>
                     <div className="flex shrink-0 items-center">
-                      <span className="inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-white px-2.5 py-1 text-xs font-medium text-slate-700">
-                        <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-semibold text-slate-700">
-                          {doneCount}/2 phases déposées
-                        </span>
-                        <span className="mx-0.5 h-3.5 w-px bg-slate-200" aria-hidden="true" />
-                        <ChevronDown className="h-3.5 w-3.5 shrink-0 text-black transition-transform duration-200 group-open:rotate-180" />
-                        <span className="whitespace-nowrap">Replier / Déplier</span>
+                      <span className="inline-flex items-center rounded-full bg-slate-100 px-2.5 py-1 text-xs font-medium text-slate-700">
+                        {doneCount}/2 phases déposées
                       </span>
                     </div>
                   </div>

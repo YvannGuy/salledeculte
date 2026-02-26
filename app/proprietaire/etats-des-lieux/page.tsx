@@ -1,5 +1,3 @@
-import { ChevronDown } from "lucide-react";
-
 import { EdlMiniWizard } from "@/components/etats-des-lieux/edl-mini-wizard";
 import { EdlPhotoViewer } from "@/components/etats-des-lieux/edl-photo-viewer";
 import { Card, CardContent } from "@/components/ui/card";
@@ -293,9 +291,15 @@ export default async function OwnerEtatsDesLieuxPage() {
                 open={offerIndex === 0}
                 className="group rounded-xl border border-slate-200 bg-white p-4 md:p-5"
               >
-                <summary className="cursor-pointer list-none">
+                <summary
+                  className="cursor-pointer list-none [&::-webkit-details-marker]:hidden [&::marker]:hidden"
+                  style={{ listStyle: "none" }}
+                >
                   <div className="flex flex-col gap-2 md:flex-row md:items-start md:justify-between">
                     <div>
+                      <span className="mb-1 inline-flex items-center rounded-full border border-slate-200 bg-white px-2.5 py-1 text-xs font-medium text-slate-700">
+                        Replier / Déplier
+                      </span>
                       <p className="text-base font-semibold text-black md:text-lg">
                         {salleMap.get(offer.salle_id) ?? "Salle"} • {(offer.amount_cents / 100).toFixed(2)} €
                       </p>
@@ -306,10 +310,6 @@ export default async function OwnerEtatsDesLieuxPage() {
                     <div className="flex items-center gap-2">
                       <span className="inline-flex w-fit items-center rounded-full bg-slate-100 px-2.5 py-1 text-xs font-medium text-slate-700">
                         {doneCount}/2 phases déposées
-                      </span>
-                      <span className="inline-flex items-center gap-1 rounded-full border border-slate-200 bg-white px-2.5 py-1 text-xs font-medium text-slate-600">
-                        Replier / Déplier
-                        <ChevronDown className="h-3.5 w-3.5 transition-transform duration-200 group-open:rotate-180" />
                       </span>
                     </div>
                   </div>
