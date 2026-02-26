@@ -108,33 +108,44 @@ function getInitials(fullName: string): string {
   return (parts[0].charAt(0) + parts[parts.length - 1].charAt(0)).toUpperCase();
 }
 
-/** Affiche un temps relatif sans erreur d'hydratation (calcul uniquement côté client après mount). */
-function RelativeTime({ dateStr }: { dateStr: string | null }) {
-  const [display, setDisplay] = useState<string>("");
+/** V1 ultra simple: statut de présence basé sur la dernière activité (10 min). */
+function PresenceStatus({ dateStr }: { dateStr: string | null }) {
+  const [isOnline, setIsOnline] = useState(false);
 
   useEffect(() => {
     if (!dateStr) {
-      setDisplay("");
+      setIsOnline(false);
       return;
     }
-    const d = new Date(dateStr);
-    const diffMs = Date.now() - d.getTime();
-    if (Number.isNaN(diffMs) || diffMs < 0) {
-      setDisplay("");
-      return;
-    }
-    const diffMins = Math.floor(diffMs / 60000);
-    const diffHours = Math.floor(diffMs / 3600000);
-    const diffDays = Math.floor(diffMs / 86400000);
-    if (diffMins < 60) setDisplay(`Il y a ${diffMins}min`);
-    else if (diffHours < 24) setDisplay(`Il y a ${diffHours}h`);
-    else if (diffDays === 1) setDisplay("Hier");
-    else if (diffDays < 7) setDisplay(`${diffDays} jours`);
-    else if (diffDays < 14) setDisplay("1 sem");
-    else setDisplay(`${Math.floor(diffDays / 7)} sem`);
+    const compute = () => {
+      const d = new Date(dateStr);
+      const diffMs = Date.now() - d.getTime();
+      if (Number.isNaN(diffMs) || diffMs < 0) {
+        setIsOnline(false);
+        return;
+      }
+      setIsOnline(diffMs <= 10 * 60 * 1000);
+    };
+
+    compute();
+    const timer = window.setInterval(compute, 60 * 1000);
+    return () => window.clearInterval(timer);
   }, [dateStr]);
 
-  return <span>{display}</span>;
+  return (
+    <span
+      className={`inline-flex items-center gap-1 text-xs font-medium ${
+        isOnline ? "text-emerald-700" : "text-slate-500"
+      }`}
+    >
+      <span
+        className={`h-1.5 w-1.5 rounded-full ${
+          isOnline ? "bg-emerald-500" : "bg-slate-300"
+        }`}
+      />
+      {isOnline ? "En ligne" : "Hors ligne"}
+    </span>
+  );
 }
 
 type Props = {
@@ -812,7 +823,7 @@ export function MessagerieClient({
                             {t.unreadCount > 99 ? "99+" : t.unreadCount}
                           </span>
                         )}
-                        <span className="text-xs text-slate-500"><RelativeTime dateStr={t.lastMessageAt ?? t.createdAt ?? null} /></span>
+                        <PresenceStatus dateStr={t.lastMessageAt ?? t.createdAt ?? null} />
                       </div>
                     </div>
                     <p className="mt-0.5 truncate text-sm text-slate-600">
