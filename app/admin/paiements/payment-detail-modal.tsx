@@ -87,38 +87,43 @@ export function PaymentDetailModal({ transaction, open, onOpenChange }: Props) {
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-md" showClose>
+      <DialogContent
+        className="w-[calc(100vw-1rem)] max-w-[760px] max-h-[90vh] overflow-y-auto p-4 sm:p-6"
+        showClose
+      >
         <DialogHeader>
           <DialogTitle>Détail de la transaction</DialogTitle>
         </DialogHeader>
         <div className="space-y-4">
-          <div>
-            <p className="text-sm font-medium text-slate-500">Utilisateur</p>
-            <p className="font-medium text-black">{transaction.user_name || "—"}</p>
-            <p className="text-sm text-slate-600">{transaction.user_email}</p>
-          </div>
-          <div>
-            <p className="text-sm font-medium text-slate-500">Produit</p>
-            <p className="text-black">{formatProduct(transaction.product_type)}</p>
-          </div>
-          <div>
-            <p className="text-sm font-medium text-slate-500">Montant</p>
-            <p className="text-lg font-semibold text-black">
-              {(transaction.amount / 100).toFixed(2)} €
-            </p>
-          </div>
-          <div>
-            <p className="text-sm font-medium text-slate-500">Statut</p>
-            <p className="text-black">{formatStatus(transaction.status)}</p>
-          </div>
-          <div>
-            <p className="text-sm font-medium text-slate-500">Date</p>
-            <p className="text-black">{formatDate(transaction.created_at)}</p>
+          <div className="grid gap-3 sm:grid-cols-2">
+            <div className="sm:col-span-2">
+              <p className="text-sm font-medium text-slate-500">Utilisateur</p>
+              <p className="font-medium text-black">{transaction.user_name || "—"}</p>
+              <p className="text-sm text-slate-600 break-all">{transaction.user_email}</p>
+            </div>
+            <div>
+              <p className="text-sm font-medium text-slate-500">Produit</p>
+              <p className="text-black">{formatProduct(transaction.product_type)}</p>
+            </div>
+            <div>
+              <p className="text-sm font-medium text-slate-500">Montant</p>
+              <p className="text-lg font-semibold text-black">
+                {(transaction.amount / 100).toFixed(2)} €
+              </p>
+            </div>
+            <div>
+              <p className="text-sm font-medium text-slate-500">Statut</p>
+              <p className="text-black">{formatStatus(transaction.status)}</p>
+            </div>
+            <div>
+              <p className="text-sm font-medium text-slate-500">Date</p>
+              <p className="text-black">{formatDate(transaction.created_at)}</p>
+            </div>
           </div>
           {transaction.reference && (
             <div>
               <p className="text-sm font-medium text-slate-500">Référence</p>
-              <p className="font-mono text-xs text-slate-700 truncate">
+              <p className="font-mono text-xs text-slate-700 break-all">
                 {transaction.reference}
               </p>
             </div>
