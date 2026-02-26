@@ -10,7 +10,6 @@ import {
   Phone,
   Car,
   CookingPot,
-  HelpCircle,
   Piano,
   Shield,
   Tv,
@@ -36,7 +35,7 @@ import { getBlockedLocationDatesForSalle } from "@/lib/location-disponibilite";
 import { createClient } from "@/lib/supabase/server";
 import { buildCanonical, defaultMetadata } from "@/lib/seo";
 import { getSalleBySlug, getSallesByCity } from "@/lib/salles";
-import { formatSalleTarifs, getSallePriceFrom, getSalleTarifParts } from "@/lib/types/salle";
+import { getSallePriceFrom, getSalleTarifParts } from "@/lib/types/salle";
 import { siteConfig } from "@/config/site";
 
 const iconMap: Record<string, React.ComponentType<{ className?: string }>> = {
@@ -121,17 +120,25 @@ export default async function SalleDetailPage({
     getBlockedLocationDatesForSalle(salle.id),
   ]);
   const isOwnSalle = salle.ownerId === user?.id;
+  const isLoggedIn = !!user;
 
   recordSalleView(salle.id, user?.id ?? null);
 
   const nearbySalles = await getSallesByCity(salle.city, slug);
   const tarifParts = getSalleTarifParts(salle);
+  const priceFrom = getSallePriceFrom(salle);
+  const decisionRapideSortedTarifs = [...tarifParts].sort((a, b) => b.value - a.value);
+  const decisionRapideTopTarif = decisionRapideSortedTarifs[0] ?? null;
+  const decisionRapideTarifs = decisionRapideSortedTarifs
+    .slice(1)
+    .map((p) => `${p.value} € ${p.label}`)
+    .join(" · ");
 
   return (
     <div className="min-h-screen bg-white">
       <SiteHeader />
 
-      <main className="container max-w-[1120px] py-8">
+      <main className="container max-w-[1120px] py-8 pb-28 lg:pb-8">
         <div className="grid gap-8 lg:grid-cols-[1fr_340px]">
           <div>
             <SalleGallery images={salle.images} name={salle.name} slug={slug} />
@@ -156,8 +163,117 @@ export default async function SalleDetailPage({
                     <Users className="h-4 w-4" />
                     Jusqu&apos;à {salle.capacity} personnes
                   </span>
+                  <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-100 px-3 py-1 text-[13px] font-medium text-emerald-700">
+                    <CheckCircle2 className="h-4 w-4" />
+                    Annonce vérifiée
+                  </span>
                 </div>
               </div>
+
+              <section className="rounded-xl border border-slate-200 bg-slate-50/60 p-5">
+                <div className="grid gap-4 sm:grid-cols-[1fr_auto] sm:items-start">
+                  <div>
+                    <p className="text-xs font-medium uppercase tracking-wide text-slate-500">
+                      Décision rapide
+                    </p>
+                    <p className="mt-1 text-2xl font-bold text-[#213398]">
+                      {decisionRapideTopTarif
+                        ? `${decisionRapideTopTarif.value} € ${decisionRapideTopTarif.label}`
+                        : "Tarifs sur demande"}
+                    </p>
+                    {decisionRapideTarifs && (
+                      <p className="mt-1 text-sm text-slate-600">{decisionRapideTarifs}</p>
+                    )}
+                    <div className="mt-3 flex flex-wrap gap-2">
+                      <span className="inline-flex items-center gap-1.5 rounded-full bg-white px-3 py-1 text-xs font-medium text-slate-700">
+                        <Clock className="h-3.5 w-3.5 text-slate-400" />
+                        Réponse rapide des propriétaires
+                      </span>
+                      <span className="inline-flex items-center gap-1.5 rounded-full bg-white px-3 py-1 text-xs font-medium text-slate-700">
+                        <Lock className="h-3.5 w-3.5 text-slate-400" />
+                        Adresse précise communiquée avant réservation
+                      </span>
+                    </div>
+                  </div>
+                  <div className="w-full sm:w-[240px]">
+                    {isOwnSalle ? (
+                      <Link href="/proprietaire/annonces">
+                        <Button className="h-11 w-full rounded-lg bg-[#213398] font-semibold hover:bg-[#1a2980]">
+                          Gérer mon annonce
+                        </Button>
+                      </Link>
+                    ) : canContact ? (
+                      <>
+                        <Link href={`/salles/${salle.slug}/disponibilite`}>
+                          <Button className="h-11 w-full rounded-lg bg-[#213398] font-semibold hover:bg-[#1a2980]">
+                            Organiser une visite
+                          </Button>
+                        </Link>
+                        {salle.displayContactPhone !== false && salle.contactPhone && canContact && (
+                          <a
+                            href={`tel:${salle.contactPhone.replace(/\s/g, "")}`}
+                            className="mt-2 inline-flex w-full items-center justify-center gap-2 rounded-lg border border-slate-300 px-4 py-2.5 text-sm font-medium text-slate-700 hover:bg-white"
+                          >
+                            <Phone className="h-4 w-4" />
+                            Contacter le propriétaire
+                          </a>
+                        )}
+                      </>
+                    ) : !isLoggedIn ? (
+                      <>
+                        <Link href={`/salles/${salle.slug}/disponibilite`}>
+                          <Button className="h-11 w-full rounded-lg bg-[#213398] font-semibold hover:bg-[#1a2980]">
+                            Voir les disponibilités
+                          </Button>
+                        </Link>
+                      </>
+                    ) : (
+                      <Link href="/pricing">
+                        <Button className="h-11 w-full rounded-lg bg-[#213398] font-semibold hover:bg-[#1a2980]">
+                          Débloquer l&apos;accès
+                        </Button>
+                      </Link>
+                    )}
+                  </div>
+                </div>
+              </section>
+
+              <section>
+                <h2 className="mb-3 text-lg font-semibold text-black">Tarification</h2>
+                <div className="rounded-xl border border-slate-200 bg-slate-50/50 p-6">
+                  <div className="flex flex-col gap-3">
+                    {decisionRapideSortedTarifs.length > 0 ? (
+                      decisionRapideSortedTarifs.map((p, index) => (
+                        <p
+                          key={p.label}
+                          className={
+                            index === 0
+                              ? "text-xl font-bold text-[#213398]"
+                              : "text-lg font-medium text-slate-700"
+                          }
+                        >
+                          {p.value} € {p.label}
+                        </p>
+                      ))
+                    ) : (
+                      <p className="text-xl font-bold text-[#213398]">Sur demande</p>
+                    )}
+                  </div>
+                  {salle.pricingInclusions.length > 0 && (
+                    <>
+                      <p className="mt-5 text-sm font-medium text-slate-600">Ce tarif comprend</p>
+                      <ul className="mt-2 space-y-2.5">
+                        {salle.pricingInclusions.map((inc, i) => (
+                          <li key={i} className="flex items-center gap-3 text-sm text-slate-700">
+                            <CheckCircle2 className="h-4 w-4 shrink-0 text-[#213398]" />
+                            {inc}
+                          </li>
+                        ))}
+                      </ul>
+                    </>
+                  )}
+                </div>
+              </section>
 
               <section>
                 <h2 className="mb-3 text-lg font-semibold text-black">Description</h2>
@@ -187,9 +303,9 @@ export default async function SalleDetailPage({
 
               <section>
                 <h2 className="mb-3 text-lg font-semibold text-black">Conditions d&apos;accueil</h2>
-                <ul className="space-y-3">
+                <ul className="space-y-2.5">
                   {salle.cautionRequise && (
-                    <li className="flex items-start gap-3 text-sm text-slate-700">
+                    <li className="flex items-start gap-3 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm text-slate-700">
                       <Shield className="mt-0.5 h-4 w-4 shrink-0 text-slate-500" />
                       Caution demandée
                     </li>
@@ -197,43 +313,13 @@ export default async function SalleDetailPage({
                   {salle.conditions.map((c, i) => {
                     const Icon = iconMap[c.icon] ?? Clock;
                     return (
-                      <li key={i} className="flex items-start gap-3 text-sm text-slate-700">
+                      <li key={i} className="flex items-start gap-3 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm text-slate-700">
                         <Icon className="mt-0.5 h-4 w-4 shrink-0 text-slate-500" />
                         {c.label}
                       </li>
                     );
                   })}
                 </ul>
-              </section>
-
-              <section>
-                <h2 className="mb-3 text-lg font-semibold text-black">Tarification</h2>
-                <div className="rounded-xl border border-slate-200 bg-slate-50/50 p-6">
-                  <div className="flex flex-col gap-3">
-                    {tarifParts.length > 0 ? (
-                      tarifParts.map((p) => (
-                        <p key={p.label} className="text-xl font-bold text-[#213398]">
-                          {p.value} € {p.label}
-                        </p>
-                      ))
-                    ) : (
-                      <p className="text-xl font-bold text-[#213398]">Sur demande</p>
-                    )}
-                  </div>
-                  {salle.pricingInclusions.length > 0 && (
-                    <>
-                      <p className="mt-5 text-sm font-medium text-slate-600">Ce tarif comprend</p>
-                      <ul className="mt-2 space-y-2.5">
-                        {salle.pricingInclusions.map((inc, i) => (
-                          <li key={i} className="flex items-center gap-3 text-sm text-slate-700">
-                            <CheckCircle2 className="h-4 w-4 shrink-0 text-[#213398]" />
-                            {inc}
-                          </li>
-                        ))}
-                      </ul>
-                    </>
-                  )}
-                </div>
               </section>
 
               <section>
@@ -327,6 +413,25 @@ export default async function SalleDetailPage({
                   </p>
                 )}
               </div>
+            ) : !isLoggedIn ? (
+              <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
+                <div className="flex justify-center">
+                  <div className="flex h-12 w-12 items-center justify-center rounded-full bg-[#213398]/10">
+                    <Lock className="h-6 w-6 text-[#213398]" />
+                  </div>
+                </div>
+                <h3 className="mt-4 text-center text-lg font-semibold text-black">
+                  Consultez les disponibilités
+                </h3>
+                <p className="mt-2 text-center text-[14px] text-slate-600">
+                  Choisissez un créneau libre. Connexion demandée uniquement à l&apos;envoi.
+                </p>
+                <Link href={`/salles/${salle.slug}/disponibilite`}>
+                  <Button className="mt-4 h-12 w-full rounded-lg bg-[#213398] font-semibold hover:bg-[#1a2980]">
+                    Voir les disponibilités
+                  </Button>
+                </Link>
+              </div>
             ) : (
               <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
                 <div className="flex justify-center">
@@ -334,9 +439,11 @@ export default async function SalleDetailPage({
                     <Lock className="h-6 w-6 text-[#213398]" />
                   </div>
                 </div>
-                <h3 className="mt-4 text-center text-lg font-semibold text-black">Connectez-vous</h3>
+                <h3 className="mt-4 text-center text-lg font-semibold text-black">
+                  Débloquez le contact propriétaire
+                </h3>
                 <p className="mt-2 text-center text-[14px] text-slate-600">
-                  Connectez-vous pour contacter le propriétaire et vérifier la disponibilité.
+                  Activez votre accès pour contacter le propriétaire et envoyer une demande de visite.
                 </p>
                 <div className="mt-6">
                   <UnlockAccessBloc
@@ -355,6 +462,35 @@ export default async function SalleDetailPage({
           </aside>
         </div>
       </main>
+
+      {!isOwnSalle && (canContact || !isLoggedIn) && (
+        <div className="fixed inset-x-0 bottom-0 z-40 border-t border-slate-200 bg-white/95 backdrop-blur lg:hidden">
+          <div className="container max-w-[1120px] px-4 py-3">
+            <div className="flex items-center justify-between gap-3">
+              <div className="min-w-0">
+                <p className="truncate text-sm font-semibold text-black">
+                  {priceFrom ? `À partir de ${priceFrom.value} € ${priceFrom.label}` : "Tarifs sur demande"}
+                </p>
+                <p className="text-[11px] text-slate-500">
+                  {canContact
+                    ? "Visite sans engagement"
+                    : "Choisissez une date, connexion demandée à l&apos;envoi"}
+                </p>
+              </div>
+              <Link href={`/salles/${salle.slug}/disponibilite`} className="shrink-0">
+                <Button className="h-10 rounded-lg bg-[#213398] px-4 font-semibold hover:bg-[#1a2980]">
+                  {canContact ? "Organiser une visite" : "Voir les disponibilités"}
+                </Button>
+              </Link>
+            </div>
+            <p className="mt-2 text-[11px] text-slate-500">
+              {canContact
+                ? "Vous confirmez seulement après échange avec le propriétaire."
+                : "Vous pourrez explorer les créneaux avant de créer un compte."}
+            </p>
+          </div>
+        </div>
+      )}
 
       <SiteFooter />
     </div>
