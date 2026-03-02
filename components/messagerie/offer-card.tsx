@@ -154,9 +154,31 @@ export function OfferCard({
   const depositCents = offer.deposit_amount_cents ?? 0;
   const serviceFeeCents = offer.service_fee_cents ?? 1500;
   const totalToPayNowEur = ((upfrontCents + serviceFeeCents) / 100).toFixed(2);
-  const balanceDueLabel = offer.balance_due_at
-    ? format(new Date(offer.balance_due_at), "d MMM yyyy", { locale: fr })
+  const balanceDueDate = offer.balance_due_at ? new Date(offer.balance_due_at) : null;
+  const balanceDueLabel = balanceDueDate
+    ? format(balanceDueDate, "d MMM yyyy", { locale: fr })
     : null;
+  const isBalanceDuePast = balanceDueDate ? balanceDueDate.getTime() < Date.now() : false;
+  const isBalanceAlreadyPaid =
+    offer.payment_plan_status === "fully_paid" || offer.payment_plan_status === "balance_paid";
+  const balanceScheduleLabel = (() => {
+    if (!balanceDueLabel) return "prélèvement prévu J-7";
+    if (isBalanceAlreadyPaid) return `solde déjà prélevé (date cible J-7 : ${balanceDueLabel})`;
+    if (isBalanceDuePast) {
+      return `date cible J-7 dépassée (${balanceDueLabel}) - prélèvement automatique en attente`;
+    }
+    return `date cible J-7 : ${balanceDueLabel}`;
+  })();
+  const balanceStatusLabel =
+    offer.payment_plan_status === "fully_paid" || offer.payment_plan_status === "balance_paid"
+      ? "Payé"
+      : offer.payment_plan_status === "balance_failed"
+        ? "Échec de prélèvement"
+        : offer.payment_plan_status === "balance_scheduled" || offer.payment_plan_status === "deposit_paid"
+          ? isBalanceDuePast
+            ? "Planifié (date cible dépassée)"
+            : "Planifié (J-7)"
+          : "En attente";
   const expiresFormatted = format(new Date(offer.expires_at), "d MMM yyyy", { locale: fr });
   const hasDateRange = offer.date_debut && offer.date_fin;
   const dateRangeFormatted =
@@ -217,18 +239,11 @@ export function OfferCard({
               </p>
               <p className="text-slate-600">
                 Solde : <span className="tabular-nums">{(balanceCents / 100).toFixed(2)} €</span>
-                {balanceDueLabel ? ` (prélèvement prévu le ${balanceDueLabel})` : " (prélèvement prévu J-7)"}
+                {` (${balanceScheduleLabel})`}
               </p>
               {offer.status === "paid" && (
                 <p className="text-xs text-slate-500">
-                  Statut solde :{" "}
-                  {offer.payment_plan_status === "fully_paid"
-                    ? "Payé"
-                    : offer.payment_plan_status === "balance_failed"
-                      ? "Échec de prélèvement"
-                      : offer.payment_plan_status === "balance_scheduled" || offer.payment_plan_status === "deposit_paid"
-                        ? "Planifié (J-7)"
-                        : "En attente"}
+                  Statut solde : {balanceStatusLabel}
                 </p>
               )}
             </>

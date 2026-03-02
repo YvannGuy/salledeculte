@@ -67,17 +67,7 @@ async function processBalances() {
     }
 
     try {
-      const [{ data: ownerProfile }, initialPi] = await Promise.all([
-        admin
-          .from("profiles")
-          .select("stripe_account_id")
-          .eq("id", offer.owner_id)
-          .single(),
-        stripe.paymentIntents.retrieve(offer.stripe_payment_intent_id),
-      ]);
-
-      const stripeAccountId =
-        (ownerProfile as { stripe_account_id?: string | null } | null)?.stripe_account_id ?? null;
+      const initialPi = await stripe.paymentIntents.retrieve(offer.stripe_payment_intent_id);
       const customerId =
         typeof initialPi.customer === "string" ? initialPi.customer : initialPi.customer?.id ?? null;
       const paymentMethodId =
@@ -85,8 +75,8 @@ async function processBalances() {
           ? initialPi.payment_method
           : initialPi.payment_method?.id ?? null;
 
-      if (!stripeAccountId || !customerId || !paymentMethodId) {
-        throw new Error("Compte Stripe, customer ou moyen de paiement introuvable.");
+      if (!customerId || !paymentMethodId) {
+        throw new Error("Customer ou moyen de paiement introuvable.");
       }
 
       const balancePi = await stripe.paymentIntents.create({
@@ -96,7 +86,6 @@ async function processBalances() {
         payment_method: paymentMethodId,
         confirm: true,
         off_session: true,
-        transfer_data: { destination: stripeAccountId },
         metadata: {
           offer_id: offer.id,
           seeker_id: offer.seeker_id,

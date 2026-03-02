@@ -81,14 +81,15 @@ export function CreateOfferModal({
     e.preventDefault();
     setError(null);
     const amt = parseFloat(amount.replace(",", "."));
-    const upfront = paymentMode === "split"
+    const effectivePaymentMode = eventType === "mensuel" ? "full" : paymentMode;
+    const upfront = effectivePaymentMode === "split"
       ? parseFloat(upfrontAmount.replace(",", "."))
       : amt;
     if (!Number.isFinite(upfront) || upfront <= 0) {
       setError("Montant d'acompte invalide.");
       return;
     }
-    if (paymentMode === "split" && upfront >= amt) {
+    if (effectivePaymentMode === "split" && upfront >= amt) {
       setError("L'acompte doit être inférieur au montant total.");
       return;
     }
@@ -119,7 +120,7 @@ export function CreateOfferModal({
     formData.set("salleId", salleId);
     formData.set("seekerId", seekerId);
     formData.set("amount", String(amt));
-    formData.set("paymentMode", paymentMode);
+    formData.set("paymentMode", effectivePaymentMode);
     formData.set("upfrontAmount", String(upfront));
     formData.set("depositAmount", String(deposit));
     formData.set("eventType", eventType);
@@ -217,33 +218,35 @@ export function CreateOfferModal({
             />
             <p className="mt-1 text-xs text-slate-500">Prix proposé pour cette réservation</p>
           </div>
-          <div>
-            <label className="text-sm font-medium text-black">Mode de paiement</label>
-            <div className="mt-1.5 flex gap-4">
-              <label className="flex cursor-pointer items-center gap-2">
-                <input
-                  type="radio"
-                  name="paymentMode"
-                  value="full"
-                  checked={paymentMode === "full"}
-                  onChange={() => setPaymentMode("full")}
-                  className="h-4 w-4"
-                />
-                <span className="text-sm">Paiement en 1 fois</span>
-              </label>
-              <label className="flex cursor-pointer items-center gap-2">
-                <input
-                  type="radio"
-                  name="paymentMode"
-                  value="split"
-                  checked={paymentMode === "split"}
-                  onChange={() => setPaymentMode("split")}
-                  className="h-4 w-4"
-                />
-                <span className="text-sm">Acompte + solde J-7</span>
-              </label>
+          {eventType !== "mensuel" && (
+            <div>
+              <label className="text-sm font-medium text-black">Mode de paiement</label>
+              <div className="mt-1.5 flex gap-4">
+                <label className="flex cursor-pointer items-center gap-2">
+                  <input
+                    type="radio"
+                    name="paymentMode"
+                    value="full"
+                    checked={paymentMode === "full"}
+                    onChange={() => setPaymentMode("full")}
+                    className="h-4 w-4"
+                  />
+                  <span className="text-sm">Paiement en 1 fois</span>
+                </label>
+                <label className="flex cursor-pointer items-center gap-2">
+                  <input
+                    type="radio"
+                    name="paymentMode"
+                    value="split"
+                    checked={paymentMode === "split"}
+                    onChange={() => setPaymentMode("split")}
+                    className="h-4 w-4"
+                  />
+                  <span className="text-sm">Acompte + solde J-7</span>
+                </label>
+              </div>
             </div>
-          </div>
+          )}
           <div>
             <label className="text-sm font-medium text-black">Politique d&apos;annulation</label>
             <div className="mt-1.5 flex flex-wrap gap-4">
@@ -294,7 +297,7 @@ export function CreateOfferModal({
               Cette politique servira au calcul automatique de remboursement en cas d&apos;annulation.
             </p>
           </div>
-          {paymentMode === "split" && (
+          {eventType !== "mensuel" && paymentMode === "split" && (
             <div>
               <label htmlFor="offer-upfront" className="text-sm font-medium text-black">
                 Acompte à payer maintenant (€)

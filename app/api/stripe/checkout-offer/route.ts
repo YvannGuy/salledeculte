@@ -201,7 +201,6 @@ export async function POST(request: Request) {
         .update({ service_fee_cents: serviceFeeCents, updated_at: new Date().toISOString() })
         .eq("id", offerId);
     }
-    const applicationFeeCents = serviceFeeCents;
     const checkoutTotalCents = chargeNowCents + serviceFeeCents;
     let demandeParam = offerRow.demande_id;
     if (!demandeParam) {
@@ -259,8 +258,6 @@ export async function POST(request: Request) {
     const sessionConfig: Stripe.Checkout.SessionCreateParams = {
       mode: "payment",
       payment_intent_data: {
-        ...(applicationFeeCents > 0 ? { application_fee_amount: applicationFeeCents } : {}),
-        transfer_data: { destination: stripeAccountId },
         setup_future_usage: "off_session",
         metadata: {
           offer_id: offerId,

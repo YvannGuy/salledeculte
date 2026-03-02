@@ -78,7 +78,12 @@ export async function createOfferAction(formData: FormData): Promise<{ success: 
   if (amountCents <= 0 || !Number.isFinite(amountCents)) {
     return { success: false, error: "Montant invalide." };
   }
-  const paymentMode = paymentModeRaw === "split" ? "split" : "full";
+  const paymentMode =
+    validEventType === "mensuel"
+      ? "full"
+      : paymentModeRaw === "split"
+        ? "split"
+        : "full";
   const upfrontAmountCents = Math.round(
     parseFloat((upfrontAmountStr || amountStr).replace(",", ".")) * 100
   );
