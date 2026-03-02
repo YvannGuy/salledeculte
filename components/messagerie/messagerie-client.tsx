@@ -454,6 +454,16 @@ export function MessagerieClient({
     if (input.trim()) return;
     setInput(initialComposerText.trim());
     prefillAppliedRef.current = true;
+    // Le texte "compose" est un préremplissage one-shot: on retire le paramètre URL
+    // pour éviter qu'il réapparaisse après refresh/remount de la messagerie.
+    if (typeof window !== "undefined") {
+      const url = new URL(window.location.href);
+      if (url.searchParams.has("compose")) {
+        url.searchParams.delete("compose");
+        const next = `${url.pathname}${url.search}${url.hash}`;
+        router.replace(next, { scroll: false });
+      }
+    }
   }, [initialComposerText, selected?.demandeId, input]);
 
   useEffect(() => {
