@@ -27,6 +27,19 @@ export default function BlogPage() {
         <p className="mt-2 text-[16px] text-slate-600">
           Conseils et guides pour organiser vos événements cultuels
         </p>
+        <div className="mt-6 max-w-3xl text-[15px] leading-relaxed text-slate-700">
+          <p>
+            Vous organisez un culte, un baptême, une conférence ou une célébration ? Ce blog rassemble des articles pratiques
+            pour vous aider à choisir une salle, comprendre les normes (ERP, sécurité, assurance), comparer les options de
+            réservation et bien préparer votre événement. Que vous soyez responsable d&apos;une communauté, coordinateur ou
+            bénévole, vous y trouverez des check-lists, des repères juridiques et des bonnes pratiques pour réserver en toute
+            sérénité en Île-de-France. Pour des questions plus précises, consultez aussi notre{" "}
+            <Link href="/centre-aide" className="font-medium text-[#213398] hover:underline">
+              centre d&apos;aide
+            </Link>
+            .
+          </p>
+        </div>
         <div className="mt-8 grid grid-cols-1 gap-4 sm:grid-cols-2">
           {BLOG_POSTS.map((post) => (
             <Link key={post.slug} href={`/blog/${post.slug}`} className="block h-full">

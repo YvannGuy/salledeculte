@@ -23,6 +23,11 @@ export default function PricingPage() {
           sont fixés par les propriétaires ; une fois votre réservation confirmée, des frais de service fixes de 15 €
           s&apos;ajoutent au moment du paiement pour couvrir la sécurisation des transactions et le support de la plateforme.
         </p>
+        <p className="mt-3 text-slate-600">
+          Que vous cherchiez une salle pour un culte régulier, un baptême, une conférence ou une retraite spirituelle en Île-de-France,
+          vous pouvez comparer les offres, envoyer autant de demandes que nécessaire et ne payer qu&apos;une fois la réservation acceptée.
+          Les propriétaires fixent leurs prix à la journée ou à la demi-journée ; le forfait de 15 € est identique quelle que soit la durée.
+        </p>
       </div>
 
       <section className="mx-auto mt-12 max-w-md">
@@ -78,6 +83,13 @@ export default function PricingPage() {
             <p className="mt-1">
               La mise en ligne d&apos;une annonce est gratuite. Les propriétaires peuvent souscrire à des packs
               optionnels pour augmenter la visibilité de leurs annonces (voir l&apos;espace propriétaire).
+            </p>
+          </li>
+          <li>
+            <strong className="text-slate-800">Puis-je annuler une réservation ?</strong>
+            <p className="mt-1">
+              Les conditions d&apos;annulation dépendent du propriétaire et sont indiquées sur chaque annonce. En cas de litige,
+              la plateforme peut vous accompagner. Consultez nos CGV pour les détails.
             </p>
           </li>
         </ul>
