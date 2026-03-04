@@ -28,6 +28,33 @@ const navItems = [
   { href: "/dashboard/parametres", label: "Paramètres", icon: Settings },
 ];
 
+const navSections: { title: string; itemHrefs: string[] }[] = [
+  {
+    title: "Vue d'ensemble",
+    itemHrefs: ["/dashboard"],
+  },
+  {
+    title: "Recherche",
+    itemHrefs: ["/dashboard/rechercher"],
+  },
+  {
+    title: "Mes demandes & réservations",
+    itemHrefs: ["/dashboard/demandes", "/dashboard/reservations", "/dashboard/etats-des-lieux", "/dashboard/litiges", "/dashboard/favoris"],
+  },
+  {
+    title: "Finances & documents",
+    itemHrefs: ["/dashboard/paiement", "/dashboard/contrat"],
+  },
+  {
+    title: "Communication",
+    itemHrefs: ["/dashboard/messagerie"],
+  },
+  {
+    title: "Compte",
+    itemHrefs: ["/dashboard/parametres"],
+  },
+];
+
 const SEEKER_BADGE_STORAGE_KEY = "seeker_nav_seen_badges_v1";
 
 function NavContent({
@@ -144,7 +171,17 @@ function NavContent({
           </Link>
         )}
         <div className="my-2 border-t border-slate-100" />
-        {navItems.map((item) => {
+        {navSections.map((section) => {
+          const sectionItems = navItems.filter((item) => section.itemHrefs.includes(item.href));
+          if (sectionItems.length === 0) return null;
+          return (
+            <div key={section.title} className="mt-1 first:mt-0">
+              {!collapsed && (
+                <p className="px-3 pb-1 text-[11px] font-semibold uppercase tracking-wide text-slate-400">
+                  {section.title}
+                </p>
+              )}
+              {sectionItems.map((item) => {
           const isActive = pathname === item.href && !(item as { opensSearchModal?: boolean }).opensSearchModal;
           const Icon = item.icon;
           const badgeVal = item.badgeKey ? unreadFor(item.badgeKey) : null;
@@ -200,37 +237,40 @@ function NavContent({
               )}
             </>
           );
-          if (opensSearchModal && setSearchModalOpen) {
-            return (
-              <button
-                key={item.href}
-                type="button"
-                data-tour-nav={item.href}
-                onClick={() => {
-                  if (item.badgeKey) markSeen(item.badgeKey, rawByKey[item.badgeKey] ?? 0);
-                  setSearchModalOpen(true);
-                }}
-                className={navClassName}
-                title={collapsed ? item.label : undefined}
-              >
-                {content}
-              </button>
-            );
-          }
-          return (
-            <Link
-              key={item.href}
-              href={item.href}
-              data-tour-nav={item.href}
-              onClick={() => {
-                if (item.badgeKey) markSeen(item.badgeKey, rawByKey[item.badgeKey] ?? 0);
-                onItemClick?.();
-              }}
-              className={navClassName}
-              title={collapsed ? item.label : undefined}
-            >
-              {content}
-            </Link>
+                if (opensSearchModal && setSearchModalOpen) {
+                  return (
+                    <button
+                      key={item.href}
+                      type="button"
+                      data-tour-nav={item.href}
+                      onClick={() => {
+                        if (item.badgeKey) markSeen(item.badgeKey, rawByKey[item.badgeKey] ?? 0);
+                        setSearchModalOpen(true);
+                      }}
+                      className={navClassName}
+                      title={collapsed ? item.label : undefined}
+                    >
+                      {content}
+                    </button>
+                  );
+                }
+                return (
+                  <Link
+                    key={item.href}
+                    href={item.href}
+                    data-tour-nav={item.href}
+                    onClick={() => {
+                      if (item.badgeKey) markSeen(item.badgeKey, rawByKey[item.badgeKey] ?? 0);
+                      onItemClick?.();
+                    }}
+                    className={navClassName}
+                    title={collapsed ? item.label : undefined}
+                  >
+                    {content}
+                  </Link>
+                );
+              })}
+            </div>
           );
         })}
       </nav>

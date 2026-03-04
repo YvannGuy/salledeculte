@@ -44,6 +44,33 @@ const navItems = [
   { href: "/proprietaire/parametres", label: "Paramètres", icon: Settings },
 ];
 
+const navSections: { title: string; itemHrefs: string[] }[] = [
+  {
+    title: "Vue d'ensemble",
+    itemHrefs: ["/proprietaire", "/proprietaire/annonces"],
+  },
+  {
+    title: "Demandes & planning",
+    itemHrefs: ["/proprietaire/visites", "/proprietaire/reservations"],
+  },
+  {
+    title: "Suivi & sécurité",
+    itemHrefs: ["/proprietaire/etats-des-lieux", "/proprietaire/cautions", "/proprietaire/litiges"],
+  },
+  {
+    title: "Communication",
+    itemHrefs: ["/proprietaire/messagerie"],
+  },
+  {
+    title: "Finances & documents",
+    itemHrefs: ["/proprietaire/paiement", "/proprietaire/contrat"],
+  },
+  {
+    title: "Compte",
+    itemHrefs: ["/proprietaire/parametres"],
+  },
+];
+
 const OWNER_BADGE_STORAGE_KEY = "owner_nav_seen_badges_v1";
 
 function NavContent({
@@ -164,52 +191,62 @@ function NavContent({
         </Link>
         {canAccessSeeker && !tourLock && <SwitchToSeekerView collapsed={collapsed} />}
         <div className="my-2 border-t border-slate-100" />
-        {navItems.map((item) => {
-          const isActive = pathname === item.href;
-          const Icon = item.icon;
+        {navSections.map((section) => {
+          const sectionItems = navItems.filter((item) => section.itemHrefs.includes(item.href));
+          if (sectionItems.length === 0) return null;
           return (
-            <Link
-              key={item.href}
-              href={item.href}
-              data-tour-nav={item.href}
-              onClick={() => {
-                if (item.badgeKey) {
-                  const rawValue =
-                    item.badgeKey === "demandes"
-                      ? demandeCount
-                      : item.badgeKey === "visites"
-                        ? visiteCount
-                        : item.badgeKey === "reservations"
-                          ? reservationCount
-                          : item.badgeKey === "messagerie"
-                            ? messageCount
-                            : item.badgeKey === "paiement"
-                              ? paymentCount
-                              : item.badgeKey === "etats"
-                                ? edlCount
-                                : item.badgeKey === "cautions"
-                                  ? cautionCount
-                                  : item.badgeKey === "contrat"
-                                    ? contractCount
-                                    : 0;
-                  markSeen(item.badgeKey, rawValue);
-                }
-                onItemClick?.();
-              }}
-              className={cn(
-                "relative flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors",
-                collapsed ? "justify-center px-2" : "",
-                isActive
-                  ? "bg-[#213398] text-white"
-                  : "text-slate-600 hover:bg-slate-100 hover:text-black"
-              )}
-              title={collapsed ? item.label : undefined}
-            >
-              <Icon className="h-5 w-5 shrink-0" />
+            <div key={section.title} className="mt-1 first:mt-0">
               {!collapsed && (
-                <>
-                  <span className="flex-1 truncate">{item.label}</span>
-                  {item.badgeKey === "demandes" && unreadDemandeCount > 0 && (
+                <p className="px-3 pb-1 text-[11px] font-semibold uppercase tracking-wide text-slate-400">
+                  {section.title}
+                </p>
+              )}
+              {sectionItems.map((item) => {
+                const isActive = pathname === item.href;
+                const Icon = item.icon;
+                return (
+                  <Link
+                    key={item.href}
+                    href={item.href}
+                    data-tour-nav={item.href}
+                    onClick={() => {
+                      if (item.badgeKey) {
+                        const rawValue =
+                          item.badgeKey === "demandes"
+                            ? demandeCount
+                            : item.badgeKey === "visites"
+                              ? visiteCount
+                              : item.badgeKey === "reservations"
+                                ? reservationCount
+                                : item.badgeKey === "messagerie"
+                                  ? messageCount
+                                  : item.badgeKey === "paiement"
+                                    ? paymentCount
+                                    : item.badgeKey === "etats"
+                                      ? edlCount
+                                      : item.badgeKey === "cautions"
+                                        ? cautionCount
+                                        : item.badgeKey === "contrat"
+                                          ? contractCount
+                                          : 0;
+                        markSeen(item.badgeKey, rawValue);
+                      }
+                      onItemClick?.();
+                    }}
+                    className={cn(
+                      "relative flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors",
+                      collapsed ? "justify-center px-2" : "",
+                      isActive
+                        ? "bg-[#213398] text-white"
+                        : "text-slate-600 hover:bg-slate-100 hover:text-black"
+                    )}
+                    title={collapsed ? item.label : undefined}
+                  >
+                    <Icon className="h-5 w-5 shrink-0" />
+                    {!collapsed && (
+                      <>
+                        <span className="flex-1 truncate">{item.label}</span>
+                        {item.badgeKey === "demandes" && unreadDemandeCount > 0 && (
                     <span
                       className={cn(
                         "flex h-5 min-w-[20px] items-center justify-center rounded-full px-1.5 text-xs font-semibold",
@@ -218,8 +255,8 @@ function NavContent({
                     >
                       {unreadDemandeCount > 99 ? "99+" : unreadDemandeCount}
                     </span>
-                  )}
-                  {item.badgeKey === "visites" && unreadVisiteCount > 0 && (
+                        )}
+                        {item.badgeKey === "visites" && unreadVisiteCount > 0 && (
                     <span
                       className={cn(
                         "flex h-5 min-w-[20px] items-center justify-center rounded-full px-1.5 text-xs font-semibold",
@@ -228,8 +265,8 @@ function NavContent({
                     >
                       {unreadVisiteCount > 99 ? "99+" : unreadVisiteCount}
                     </span>
-                  )}
-                  {item.badgeKey === "reservations" && unreadReservationCount > 0 && (
+                        )}
+                        {item.badgeKey === "reservations" && unreadReservationCount > 0 && (
                     <span
                       className={cn(
                         "flex h-5 min-w-[20px] items-center justify-center rounded-full px-1.5 text-xs font-semibold",
@@ -238,8 +275,8 @@ function NavContent({
                     >
                       {unreadReservationCount > 99 ? "99+" : unreadReservationCount}
                     </span>
-                  )}
-                  {item.badgeKey === "messagerie" && unreadMessageCount > 0 && (
+                        )}
+                        {item.badgeKey === "messagerie" && unreadMessageCount > 0 && (
                     <span
                       className={cn(
                         "flex h-5 min-w-[20px] items-center justify-center rounded-full px-1.5 text-xs font-semibold",
@@ -248,8 +285,8 @@ function NavContent({
                     >
                       {unreadMessageCount > 99 ? "99+" : unreadMessageCount}
                     </span>
-                  )}
-                  {item.badgeKey === "paiement" && unreadPaymentCount > 0 && (
+                        )}
+                        {item.badgeKey === "paiement" && unreadPaymentCount > 0 && (
                     <span
                       className={cn(
                         "flex h-5 min-w-[20px] items-center justify-center rounded-full px-1.5 text-xs font-semibold",
@@ -258,8 +295,8 @@ function NavContent({
                     >
                       {unreadPaymentCount > 99 ? "99+" : unreadPaymentCount}
                     </span>
-                  )}
-                  {item.badgeKey === "etats" && unreadEdlCount > 0 && (
+                        )}
+                        {item.badgeKey === "etats" && unreadEdlCount > 0 && (
                     <span
                       className={cn(
                         "flex h-5 min-w-[20px] items-center justify-center rounded-full px-1.5 text-xs font-semibold",
@@ -268,8 +305,8 @@ function NavContent({
                     >
                       {unreadEdlCount > 99 ? "99+" : unreadEdlCount}
                     </span>
-                  )}
-                  {item.badgeKey === "cautions" && unreadCautionCount > 0 && (
+                        )}
+                        {item.badgeKey === "cautions" && unreadCautionCount > 0 && (
                     <span
                       className={cn(
                         "flex h-5 min-w-[20px] items-center justify-center rounded-full px-1.5 text-xs font-semibold",
@@ -278,8 +315,8 @@ function NavContent({
                     >
                       {unreadCautionCount > 99 ? "99+" : unreadCautionCount}
                     </span>
-                  )}
-                  {item.badgeKey === "contrat" && unreadContractCount > 0 && (
+                        )}
+                        {item.badgeKey === "contrat" && unreadContractCount > 0 && (
                     <span
                       className={cn(
                         "flex h-5 min-w-[20px] items-center justify-center rounded-full px-1.5 text-xs font-semibold",
@@ -288,50 +325,53 @@ function NavContent({
                     >
                       {unreadContractCount > 99 ? "99+" : unreadContractCount}
                     </span>
-                  )}
-                </>
-              )}
-              {collapsed && item.badgeKey === "demandes" && unreadDemandeCount > 0 && (
+                        )}
+                      </>
+                    )}
+                    {collapsed && item.badgeKey === "demandes" && unreadDemandeCount > 0 && (
                 <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-emerald-500 px-1 text-[10px] font-semibold text-white">
                   {unreadDemandeCount > 99 ? "99+" : unreadDemandeCount}
                 </span>
-              )}
-              {collapsed && item.badgeKey === "visites" && unreadVisiteCount > 0 && (
+                    )}
+                    {collapsed && item.badgeKey === "visites" && unreadVisiteCount > 0 && (
                 <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-emerald-500 px-1 text-[10px] font-semibold text-white">
                   {unreadVisiteCount > 99 ? "99+" : unreadVisiteCount}
                 </span>
-              )}
-              {collapsed && item.badgeKey === "messagerie" && unreadMessageCount > 0 && (
+                    )}
+                    {collapsed && item.badgeKey === "messagerie" && unreadMessageCount > 0 && (
                 <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-blue-600 px-1 text-[10px] font-semibold text-white">
                   {unreadMessageCount > 99 ? "99+" : unreadMessageCount}
                 </span>
-              )}
-              {collapsed && item.badgeKey === "paiement" && unreadPaymentCount > 0 && (
+                    )}
+                    {collapsed && item.badgeKey === "paiement" && unreadPaymentCount > 0 && (
                 <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-amber-500 px-1 text-[10px] font-semibold text-white">
                   {unreadPaymentCount > 99 ? "99+" : unreadPaymentCount}
                 </span>
-              )}
-              {collapsed && item.badgeKey === "reservations" && unreadReservationCount > 0 && (
+                    )}
+                    {collapsed && item.badgeKey === "reservations" && unreadReservationCount > 0 && (
                 <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-violet-500 px-1 text-[10px] font-semibold text-white">
                   {unreadReservationCount > 99 ? "99+" : unreadReservationCount}
                 </span>
-              )}
-              {collapsed && item.badgeKey === "etats" && unreadEdlCount > 0 && (
+                    )}
+                    {collapsed && item.badgeKey === "etats" && unreadEdlCount > 0 && (
                 <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-indigo-500 px-1 text-[10px] font-semibold text-white">
                   {unreadEdlCount > 99 ? "99+" : unreadEdlCount}
                 </span>
-              )}
-              {collapsed && item.badgeKey === "cautions" && unreadCautionCount > 0 && (
+                    )}
+                    {collapsed && item.badgeKey === "cautions" && unreadCautionCount > 0 && (
                 <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-rose-500 px-1 text-[10px] font-semibold text-white">
                   {unreadCautionCount > 99 ? "99+" : unreadCautionCount}
                 </span>
-              )}
-              {collapsed && item.badgeKey === "contrat" && unreadContractCount > 0 && (
+                    )}
+                    {collapsed && item.badgeKey === "contrat" && unreadContractCount > 0 && (
                 <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-orange-500 px-1 text-[10px] font-semibold text-white">
                   {unreadContractCount > 99 ? "99+" : unreadContractCount}
                 </span>
-              )}
-            </Link>
+                    )}
+                  </Link>
+                );
+              })}
+            </div>
           );
         })}
       </nav>
