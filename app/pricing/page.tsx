@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 
 export const metadata: Metadata = {
-  title: "Tarifs",
+  title: "Tarifs et consultation gratuite",
   description:
     "salledeculte.com propose une consultation gratuite. Les frais de service sont appliqués uniquement lors d'une réservation payée.",
   alternates: { canonical: buildCanonical("/pricing") },
@@ -17,9 +17,11 @@ export default function PricingPage() {
   return (
     <main className="container py-16">
       <div className="mx-auto max-w-3xl text-center">
-        <h1 className="text-4xl font-semibold tracking-tight text-black">Consultation gratuite</h1>
+        <h1 className="text-4xl font-semibold tracking-tight text-black">Tarifs et consultation gratuite</h1>
         <p className="mt-4 text-slate-600">
-          Parcourez les annonces librement et échangez avec les propriétaires sans frais.
+          Parcourez les annonces librement et échangez avec les propriétaires sans frais. Les tarifs des locations
+          sont fixés par les propriétaires ; une fois votre réservation confirmée, des frais de service fixes de 15 €
+          s&apos;ajoutent au moment du paiement pour couvrir la sécurisation des transactions et le support de la plateforme.
         </p>
       </div>
 
@@ -54,10 +56,32 @@ export default function PricingPage() {
         </Card>
       </section>
 
-      <p className="mt-8 text-center text-sm text-slate-500">
-        Les tarifs des locations sont fixés par les propriétaires. Des frais de service fixes de 15 € s&apos;ajoutent
-        au moment du paiement d&apos;une réservation.
-      </p>
+      <section className="mx-auto mt-12 max-w-2xl">
+        <h2 className="text-xl font-semibold text-black">Questions fréquentes sur les tarifs</h2>
+        <ul className="mt-4 space-y-4 text-sm text-slate-600">
+          <li>
+            <strong className="text-slate-800">Combien coûte la consultation ?</strong>
+            <p className="mt-1">
+              La consultation des annonces, l&apos;envoi de demandes et la messagerie avec les propriétaires sont
+              entièrement gratuits. Vous ne payez qu&apos;au moment de confirmer une réservation.
+            </p>
+          </li>
+          <li>
+            <strong className="text-slate-800">Quels frais s&apos;appliquent à la réservation ?</strong>
+            <p className="mt-1">
+              Un forfait de 15 € de frais de service est ajouté au moment du paiement de la réservation. Le prix
+              de la location est fixé par le propriétaire et indiqué sur chaque annonce.
+            </p>
+          </li>
+          <li>
+            <strong className="text-slate-800">Les propriétaires paient-ils pour publier leur salle ?</strong>
+            <p className="mt-1">
+              La mise en ligne d&apos;une annonce est gratuite. Les propriétaires peuvent souscrire à des packs
+              optionnels pour augmenter la visibilité de leurs annonces (voir l&apos;espace propriétaire).
+            </p>
+          </li>
+        </ul>
+      </section>
     </main>
   );
 }

@@ -33,7 +33,13 @@ Horaires d’ouverture, durée minimale ou maximale, préparation en amont… Cl
 ## Stationnement
 Où se garer ? Parking privé, places de rue, transports en commun ? Ces détails comptent pour vos participants.
 
-En utilisant une plateforme comme salledeculte.com, vous avez accès à des annonces détaillées et vérifiées pour faire le bon choix.
+## Ambiance et usage
+Certaines salles sont dédiées au culte (églises, temples), d&apos;autres sont des salles polyvalentes. Vérifiez les conditions d&apos;usage : musique live, enregistrement, décoration, horaires de fin. Un échange avec le propriétaire permet de valider que votre événement correspond au lieu.
+
+## Réservation et contrat
+Une fois la salle choisie, la réservation se fait via la plateforme : vous payez en ligne, vous recevez un contrat et les coordonnées du propriétaire. Conservez une trace écrite des horaires, du matériel fourni et des consignes particulières (chauffage, clés, rangement).
+
+En utilisant une plateforme comme salledeculte.com, vous avez accès à des annonces détaillées et vérifiées pour faire le bon choix. N&apos;hésitez pas à poser vos questions avant de confirmer.
 `,
   },
   {
@@ -58,6 +64,12 @@ Vérifiez que votre assurance couvre l’événement. Certains propriétaires ex
 
 ## Capacité légale
 La capacité indiquée sur l’annonce doit correspondre à la capacité légale autorisée (affichée dans l’établissement). Ne la dépassez pas.
+
+## Vérification des annonces
+Sur salledeculte.com, les annonces sont contrôlées : les propriétaires renseignent la capacité, les équipements et les conditions. En cas de doute, le support peut vous aider à confirmer qu'un lieu est bien conforme avant votre réservation.
+
+## En cas d'incident
+En cas de non-conformité ou de problème de sécurité, signalez-le à la plateforme et au propriétaire. Conservez les échanges et les photos si besoin. Une plateforme sérieuse prend en compte les signalements et peut suspendre une annonce en cas de manquement.
 
 En privilégiant des plateformes qui vérifient les annonces, vous limitez les risques et organisez en toute sérénité.
 `,
@@ -85,7 +97,11 @@ Ville, date, nombre de personnes, type d’événement… Les filtres vous font 
 ## Rapidité de contact
 Les propriétaires sur plateforme sont habitués aux demandes d’organisateurs. Les réponses sont en général plus rapides et plus ciblées.
 
-Pour un événement cultuel, une plateforme spécialisée comme salledeculte.com vous fait gagner du temps et limite les mauvaises surprises.
+## Sécurité des paiements
+Sur une plateforme, le paiement est sécurisé : vous payez en ligne, la somme est versée au propriétaire après l'événement (ou selon les conditions du contrat). En cas de litige, la plateforme peut intervenir. Avec un particulier hors plateforme, les garanties sont souvent limitées.
+
+## Résumé
+Pour un événement cultuel, une plateforme spécialisée comme salledeculte.com vous fait gagner du temps et limite les mauvaises surprises. Vous bénéficiez d'annonces structurées, de filtres adaptés et d'un cadre de réservation clair.
 `,
   },
   {
@@ -125,7 +141,11 @@ Organiser un culte, un baptême ou une conférence demande de l’anticipation. 
 - Remerciements au propriétaire
 - Retour d’expérience pour les prochaines fois
 
-Avec une plateforme dédiée, la recherche de salle et la mise en relation sont simplifiées, vous pouvez vous concentrer sur l’essentiel : votre événement.
+## Outils pour gagner du temps
+Utilisez une plateforme dédiée aux événements cultuels pour centraliser la recherche, les demandes et les réservations. Vous gardez un historique de vos locations, vous pouvez réserver le même lieu pour un culte régulier et vous concentrer sur l’organisation du programme plutôt que sur la logistique de la salle.
+
+## En résumé
+Avec une plateforme dédiée, la recherche de salle et la mise en relation sont simplifiées. Anticipez, vérifiez les conditions et gardez les contacts à jour : vous pourrez vous concentrer sur l’essentiel, votre événement.
 `,
   },
 ];
