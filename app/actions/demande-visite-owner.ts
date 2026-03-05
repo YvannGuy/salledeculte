@@ -68,7 +68,7 @@ export async function accepterDemandeVisite(demandeVisiteId: string) {
   const { data: seekerUser } = await admin.auth.admin.getUserById(dvRow.seeker_id);
   const seekerEmail = seekerUser?.user?.email;
   if (seekerEmail) {
-    sendUserNotification({
+    await sendUserNotification({
       userId: dvRow.seeker_id,
       telegramText: [
         "Visite acceptee.",

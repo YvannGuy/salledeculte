@@ -235,7 +235,7 @@ export async function sendMessage(
     })
     .eq("id", conversationId);
 
-  sendNewMessageNotificationEmail(conversationId, user.id, preview).catch(
+  await sendNewMessageNotificationEmail(conversationId, user.id, preview).catch(
     (e) => console.error("[messagerie] notification email:", e)
   );
 
@@ -344,7 +344,7 @@ export async function sendMessageWithAttachments(formData: FormData): Promise<{
     })
     .eq("id", conversationId);
 
-  sendNewMessageNotificationEmail(conversationId, user.id, preview).catch(
+  await sendNewMessageNotificationEmail(conversationId, user.id, preview).catch(
     (e) => console.error("[messagerie] notification email:", e)
   );
 

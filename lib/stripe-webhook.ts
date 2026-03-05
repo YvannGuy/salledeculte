@@ -407,52 +407,64 @@ export async function handleStripeWebhook(event: Stripe.Event) {
 
         const { data: seekerUser } = await supabase.auth.admin.getUserById(seekerId);
         const seekerEmail = seekerUser?.user?.email ?? null;
+        const notifPromises: Promise<unknown>[] = [];
         if (seekerEmail) {
-          sendUserNotification({
-            userId: seekerId,
-            telegramText: [
-              "Reservation confirmee.",
-              `Salle: ${salleName}`,
-              `Montant: ${amountForEmail} EUR`,
-              `${siteUrl}/dashboard/reservations`,
-            ].join("\n"),
-            sendEmail: () =>
-              sendReservationConfirmedSeekerEmail(
-                seekerEmail,
-                salleName,
-                amountForEmail,
-                `${siteUrl}/dashboard/reservations`
-              ),
-          }).catch((e) => console.error("[webhook] notif seeker reservation:", e));
+          notifPromises.push(
+            sendUserNotification({
+              userId: seekerId,
+              telegramText: [
+                "Reservation confirmee.",
+                `Salle: ${salleName}`,
+                `Montant: ${amountForEmail} EUR`,
+                `${siteUrl}/dashboard/reservations`,
+              ].join("\n"),
+              sendEmail: () =>
+                sendReservationConfirmedSeekerEmail(
+                  seekerEmail,
+                  salleName,
+                  amountForEmail,
+                  `${siteUrl}/dashboard/reservations`
+                ),
+            })
+          );
         }
-
         if (ownerId) {
           const { data: ownerUser } = await supabase.auth.admin.getUserById(ownerId);
           const ownerEmail = ownerUser?.user?.email ?? null;
           if (ownerEmail) {
-            sendUserNotification({
-              userId: ownerId,
-              telegramText: [
-                "Reservation confirmee sur votre annonce.",
-                `Salle: ${salleName}`,
-                `Montant: ${amountForEmail} EUR`,
-                `${siteUrl}/proprietaire/reservations`,
-              ].join("\n"),
-              sendEmail: () =>
-                sendReservationConfirmedOwnerEmail(
-                  ownerEmail,
-                  salleName,
-                  amountForEmail,
-                  `${siteUrl}/proprietaire/reservations`
-                ),
-            }).catch((e) => console.error("[webhook] notif owner reservation:", e));
+            notifPromises.push(
+              sendUserNotification({
+                userId: ownerId,
+                telegramText: [
+                  "Reservation confirmee sur votre annonce.",
+                  `Salle: ${salleName}`,
+                  `Montant: ${amountForEmail} EUR`,
+                  `${siteUrl}/proprietaire/reservations`,
+                ].join("\n"),
+                sendEmail: () =>
+                  sendReservationConfirmedOwnerEmail(
+                    ownerEmail,
+                    salleName,
+                    amountForEmail,
+                    `${siteUrl}/proprietaire/reservations`
+                  ),
+              })
+            );
           }
+        }
+        if (notifPromises.length > 0) {
+          await Promise.allSettled(notifPromises).then((results) =>
+            results.forEach((r, i) => {
+              if (r.status === "rejected")
+                console.error("[webhook] notif reservation:", i, r.reason);
+            })
+          );
         }
       }
 
       if (productType && shouldSendAdminPaymentTelegram) {
         const telegramAmountCents = session.amount_total ?? Number(metadata?.amount_cents ?? "0");
-        sendAdminPaymentTelegramNotification({
+        await sendAdminPaymentTelegramNotification({
           amountCents: telegramAmountCents,
           currency: session.currency ?? "eur",
           productType,
@@ -491,58 +503,69 @@ export async function handleStripeWebhook(event: Stripe.Event) {
           : { data: null };
         const salleName = (salleRow as { name?: string | null } | null)?.name ?? "la salle";
 
+        const paymentFailedPromises: Promise<unknown>[] = [];
         if (seekerId) {
           const { data: seekerUser } = await supabase.auth.admin.getUserById(seekerId);
           const seekerEmail = seekerUser?.user?.email ?? null;
           if (seekerEmail) {
-            sendUserNotification({
-              userId: seekerId,
-              telegramText: [
-                "Paiement echoue.",
-                `Salle: ${salleName}`,
-                `Montant: ${amountForText} EUR`,
-                `${siteUrl}/dashboard/paiement`,
-              ].join("\n"),
-              sendEmail: () =>
-                sendPaymentFailedSeekerEmail(
-                  seekerEmail,
-                  salleName,
-                  `${siteUrl}/dashboard/paiement`
-                ),
-            }).catch((e) => console.error("[webhook] notif seeker payment failed:", e));
+            paymentFailedPromises.push(
+              sendUserNotification({
+                userId: seekerId,
+                telegramText: [
+                  "Paiement echoue.",
+                  `Salle: ${salleName}`,
+                  `Montant: ${amountForText} EUR`,
+                  `${siteUrl}/dashboard/paiement`,
+                ].join("\n"),
+                sendEmail: () =>
+                  sendPaymentFailedSeekerEmail(
+                    seekerEmail,
+                    salleName,
+                    `${siteUrl}/dashboard/paiement`
+                  ),
+              })
+            );
           }
         }
-
         if (ownerId) {
           const { data: ownerUser } = await supabase.auth.admin.getUserById(ownerId);
           const ownerEmail = ownerUser?.user?.email ?? null;
           if (ownerEmail) {
-            sendUserNotification({
-              userId: ownerId,
-              telegramText: [
-                "Paiement echoue sur une reservation.",
-                `Salle: ${salleName}`,
-                `Montant: ${amountForText} EUR`,
-                `${siteUrl}/proprietaire/reservations`,
-              ].join("\n"),
-              sendEmail: () =>
-                sendPaymentFailedOwnerEmail(
-                  ownerEmail,
-                  salleName,
-                  `${siteUrl}/proprietaire/reservations`
-                ),
-            }).catch((e) => console.error("[webhook] notif owner payment failed:", e));
+            paymentFailedPromises.push(
+              sendUserNotification({
+                userId: ownerId,
+                telegramText: [
+                  "Paiement echoue sur une reservation.",
+                  `Salle: ${salleName}`,
+                  `Montant: ${amountForText} EUR`,
+                  `${siteUrl}/proprietaire/reservations`,
+                ].join("\n"),
+                sendEmail: () =>
+                  sendPaymentFailedOwnerEmail(
+                    ownerEmail,
+                    salleName,
+                    `${siteUrl}/proprietaire/reservations`
+                  ),
+              })
+            );
           }
         }
-
-        sendAdminPaymentTelegramNotification({
-          amountCents: pi.amount ?? 0,
-          currency: pi.currency ?? "eur",
-          productType: "reservation",
-          offerId,
-          userId: seekerId || null,
-          source: "payment_intent_failed",
-        }).catch((e) => console.error("[webhook] notification telegram payment failed:", e));
+        paymentFailedPromises.push(
+          sendAdminPaymentTelegramNotification({
+            amountCents: pi.amount ?? 0,
+            currency: pi.currency ?? "eur",
+            productType: "reservation",
+            offerId,
+            userId: seekerId || null,
+            source: "payment_intent_failed",
+          })
+        );
+        await Promise.allSettled(paymentFailedPromises).then((results) =>
+          results.forEach((r, i) => {
+            if (r.status === "rejected")
+              console.error("[webhook] payment failed notif:", i, r.reason);
+          })
+        );
       }
       return { type: event.type, paymentIntentId: pi.id };
     }

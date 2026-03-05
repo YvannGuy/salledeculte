@@ -284,29 +284,51 @@ export async function createSalleFromOnboarding(formData: FormData): Promise<Cre
 
   if (adminEmails.length > 0) {
     if (status === "pending") {
-      sendNewSallePendingAdminNotification(
-        adminEmails,
-        salleName,
-        salleCity,
-        validationUrl
-      ).catch((e) => console.error("[createSalle] admin notification email (pending):", e));
-      sendAdminPendingSalleTelegramNotification(
-        salleName,
-        salleCity,
-        validationUrl
-      ).catch((e) => console.error("[createSalle] admin notification telegram (pending):", e));
+      await Promise.allSettled([
+        sendNewSallePendingAdminNotification(
+          adminEmails,
+          salleName,
+          salleCity,
+          validationUrl
+        ),
+        sendAdminPendingSalleTelegramNotification(
+          salleName,
+          salleCity,
+          validationUrl
+        ),
+      ]).then((results) =>
+        results.forEach((r, i) => {
+          if (r.status === "rejected")
+            console.error(
+              "[createSalle] admin notification (pending):",
+              i === 0 ? "email" : "telegram",
+              r.reason
+            );
+        })
+      );
     } else {
-      sendNewSallePublishedAdminNotification(
-        adminEmails,
-        salleName,
-        salleCity,
-        validationUrl
-      ).catch((e) => console.error("[createSalle] admin notification email (published):", e));
-      sendAdminPublishedSalleTelegramNotification(
-        salleName,
-        salleCity,
-        validationUrl
-      ).catch((e) => console.error("[createSalle] admin notification telegram (published):", e));
+      await Promise.allSettled([
+        sendNewSallePublishedAdminNotification(
+          adminEmails,
+          salleName,
+          salleCity,
+          validationUrl
+        ),
+        sendAdminPublishedSalleTelegramNotification(
+          salleName,
+          salleCity,
+          validationUrl
+        ),
+      ]).then((results) =>
+        results.forEach((r, i) => {
+          if (r.status === "rejected")
+            console.error(
+              "[createSalle] admin notification (published):",
+              i === 0 ? "email" : "telegram",
+              r.reason
+            );
+        })
+      );
     }
   }
 

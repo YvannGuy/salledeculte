@@ -166,14 +166,8 @@ export function AdminSidebar({ badgeCounts, userEmail }: AdminSidebarProps) {
     });
   };
 
-  const unreadFor = (badgeKey: string | undefined, rawValue: number | undefined) => {
-    if (!badgeKey || !rawValue) return 0;
-    const seen = seenByKey[badgeKey] ?? 0;
-    return Math.max(rawValue - seen, 0);
-  };
-
-  const displayBadge = (item: { badgeKey?: string; badge?: number }) =>
-    unreadFor(item.badgeKey, item.badge);
+  /** Admin : on affiche toujours le compteur réel (actions à faire), pas un "non lu" qui tombe à 0 après visite. */
+  const displayBadge = (item: { badgeKey?: string; badge?: number }) => item.badge ?? 0;
 
   useEffect(() => {
     const activeItem = items.find((item) => item.href === pathname && item.badgeKey);
