@@ -214,7 +214,7 @@ export async function sendNewDemandeNotification(
   demandeUrl: string
 ) {
   if (!process.env.RESEND_API_KEY) {
-    console.warn("[email] RESEND_API_KEY non configuré, email non envoyé");
+    console.warn("[email] RESEND_API_KEY non configuré, notification nouvelle demande non envoyée");
     return { success: false };
   }
   const { error } = await resend.emails.send({
@@ -243,6 +243,7 @@ export async function sendNewVisiteRequestNotification(
   demandesUrl: string
 ) {
   if (!process.env.RESEND_API_KEY) {
+    console.warn("[email] RESEND_API_KEY non configuré, notification demande de visite non envoyée");
     return { success: false };
   }
   const { error } = await resend.emails.send({
@@ -354,7 +355,11 @@ export async function sendNewSallePendingAdminNotification(
   salleCity: string,
   validationUrl: string
 ) {
-  if (!process.env.RESEND_API_KEY || adminEmails.length === 0) {
+  if (!process.env.RESEND_API_KEY) {
+    console.warn("[email] RESEND_API_KEY non configuré, notification nouvelle salle (à valider) non envoyée");
+    return { success: false };
+  }
+  if (adminEmails.length === 0) {
     return { success: false };
   }
   const to = adminEmails;
@@ -371,6 +376,39 @@ export async function sendNewSallePendingAdminNotification(
       ],
       ctaLabel: "Voir et valider l'annonce",
       ctaUrl: validationUrl,
+    }),
+  });
+  return { success: !error, error: error?.message };
+}
+
+/** Notifie les admins quand une nouvelle annonce est publiée automatiquement (sans validation) */
+export async function sendNewSallePublishedAdminNotification(
+  adminEmails: string[],
+  salleName: string,
+  salleCity: string,
+  annoncesUrl: string
+) {
+  if (!process.env.RESEND_API_KEY) {
+    console.warn("[email] RESEND_API_KEY non configuré, notification nouvelle salle (publiée) non envoyée");
+    return { success: false };
+  }
+  if (adminEmails.length === 0) {
+    return { success: false };
+  }
+  const to = adminEmails;
+  const { error } = await resend.emails.send({
+    from,
+    to,
+    subject: `[salledeculte.com] Nouvelle annonce publiée : ${salleName}`,
+    html: renderEmailLayout({
+      title: "Nouvelle annonce publiée",
+      intro:
+        "Une nouvelle annonce a été publiée automatiquement (mode publication auto).",
+      sections: [
+        `<p><strong>${escapeHtml(salleName)}</strong> — ${escapeHtml(salleCity)}</p>`,
+      ],
+      ctaLabel: "Voir les annonces",
+      ctaUrl: annoncesUrl,
     }),
   });
   return { success: !error, error: error?.message };

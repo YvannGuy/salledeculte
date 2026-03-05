@@ -7,6 +7,9 @@ export const metadata: Metadata = {
   title: "Administration",
   robots: { index: false, follow: false },
 };
+/** Rafraîchit les compteurs de badges à chaque requête (pas de cache layout). */
+export const dynamic = "force-dynamic";
+
 import { AdminSidebar } from "@/components/dashboard/admin-sidebar";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getUserOrNull } from "@/lib/supabase/server";

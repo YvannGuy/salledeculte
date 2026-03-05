@@ -11,6 +11,8 @@ export const metadata: Metadata = {
   title: "Tableau de bord",
   robots: { index: false, follow: false },
 };
+/** Rafraîchit les compteurs de badges à chaque requête (pas de cache layout). */
+export const dynamic = "force-dynamic";
 
 export default async function DashboardLayout({
   children,

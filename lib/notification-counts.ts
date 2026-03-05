@@ -176,6 +176,20 @@ export async function getOwnerBadgeCounts(
     (o) => o.deposit_hold_status === "claim_requested"
   ).length;
 
+  let demandeCount = 0;
+  if (salleIds.length > 0) {
+    try {
+      const { count } = await supabase
+        .from("demandes")
+        .select("id", { count: "exact", head: true })
+        .in("salle_id", salleIds)
+        .in("status", ["sent", "viewed"]);
+      demandeCount = count ?? 0;
+    } catch {
+      demandeCount = 0;
+    }
+  }
+
   let visiteCount = 0;
   if (salleIds.length > 0) {
     try {
@@ -265,7 +279,7 @@ export async function getOwnerBadgeCounts(
   }
 
   return {
-    demandeCount: 0,
+    demandeCount,
     visiteCount,
     messageCount,
     paymentCount,

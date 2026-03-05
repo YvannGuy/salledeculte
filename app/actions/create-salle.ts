@@ -1,8 +1,14 @@
 "use server";
 
 import { getPlatformSettings } from "@/app/actions/admin-settings";
-import { sendNewSallePendingAdminNotification } from "@/lib/email";
-import { sendAdminPendingSalleTelegramNotification } from "@/lib/telegram";
+import {
+  sendNewSallePendingAdminNotification,
+  sendNewSallePublishedAdminNotification,
+} from "@/lib/email";
+import {
+  sendAdminPendingSalleTelegramNotification,
+  sendAdminPublishedSalleTelegramNotification,
+} from "@/lib/telegram";
 import { mapOnboardingToSalle } from "@/lib/onboarding-to-salle";
 import { createClient } from "@/lib/supabase/server";
 
@@ -266,28 +272,41 @@ export async function createSalleFromOnboarding(formData: FormData): Promise<Cre
     };
   }
 
-  // Notification admin si annonce en attente de validation (non bloquant)
-  if (status === "pending") {
-    const adminEmails = (process.env.ADMIN_EMAILS ?? "")
-      .split(",")
-      .map((e) => e.trim().toLowerCase())
-      .filter(Boolean);
-    if (adminEmails.length > 0) {
-      const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "https://salledeculte.com";
-      const validationUrl = `${siteUrl}/admin/annonces-a-valider`;
-      const salleName = (mapped.name ?? nom) || "Ma salle";
-      const salleCity = mapped.city ?? ville;
+  // Notification admin à chaque nouvelle annonce (pending = à valider, approved = publiée)
+  const adminEmails = (process.env.ADMIN_EMAILS ?? "")
+    .split(",")
+    .map((e) => e.trim().toLowerCase())
+    .filter(Boolean);
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "https://salledeculte.com";
+  const validationUrl = `${siteUrl}/admin/annonces-a-valider`;
+  const salleName = (mapped.name ?? nom) || "Ma salle";
+  const salleCity = mapped.city ?? ville;
+
+  if (adminEmails.length > 0) {
+    if (status === "pending") {
       sendNewSallePendingAdminNotification(
         adminEmails,
         salleName,
         salleCity,
         validationUrl
-      ).catch((e) => console.error("[createSalle] admin notification email:", e));
+      ).catch((e) => console.error("[createSalle] admin notification email (pending):", e));
       sendAdminPendingSalleTelegramNotification(
         salleName,
         salleCity,
         validationUrl
-      ).catch((e) => console.error("[createSalle] admin notification telegram:", e));
+      ).catch((e) => console.error("[createSalle] admin notification telegram (pending):", e));
+    } else {
+      sendNewSallePublishedAdminNotification(
+        adminEmails,
+        salleName,
+        salleCity,
+        validationUrl
+      ).catch((e) => console.error("[createSalle] admin notification email (published):", e));
+      sendAdminPublishedSalleTelegramNotification(
+        salleName,
+        salleCity,
+        validationUrl
+      ).catch((e) => console.error("[createSalle] admin notification telegram (published):", e));
     }
   }
 

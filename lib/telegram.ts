@@ -42,6 +42,31 @@ export async function sendAdminPendingSalleTelegramNotification(
   return { success: hasSuccess, results };
 }
 
+export async function sendAdminPublishedSalleTelegramNotification(
+  salleName: string,
+  salleCity: string,
+  annoncesUrl: string
+) {
+  const { botToken, chatIds } = getTelegramConfig();
+  if (!botToken || chatIds.length === 0) {
+    return { success: false, skipped: true as const };
+  }
+
+  const safeSalleName = salleName || "Ma salle";
+  const safeSalleCity = salleCity || "Ville non renseignée";
+  const message = [
+    "Nouvelle annonce publiée (auto)",
+    `Salle: ${safeSalleName}`,
+    `Ville: ${safeSalleCity}`,
+    `Voir: ${annoncesUrl}`,
+  ].join("\n");
+
+  const endpoint = `https://api.telegram.org/bot${botToken}/sendMessage`;
+  const results = await sendTelegramToAdminChats(endpoint, chatIds, message);
+  const hasSuccess = results.some((r) => r.ok);
+  return { success: hasSuccess, results };
+}
+
 export async function sendAdminPaymentTelegramNotification(params: {
   amountCents: number;
   currency?: string | null;

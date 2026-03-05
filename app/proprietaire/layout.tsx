@@ -10,6 +10,8 @@ export const metadata: Metadata = {
   title: "Espace propriétaire",
   robots: { index: false, follow: false },
 };
+/** Rafraîchit les compteurs de badges à chaque requête (pas de cache layout). */
+export const dynamic = "force-dynamic";
 
 export default async function ProprietaireLayout({
   children,
@@ -58,14 +60,14 @@ export default async function ProprietaireLayout({
     (profile as { full_name?: string | null } | null)?.full_name ??
     user.user_metadata?.full_name ??
     "Utilisateur";
-  const { visiteCount, reservationCount, messageCount, paymentCount, edlCount, cautionCount, contractCount } =
+  const { demandeCount, visiteCount, reservationCount, messageCount, paymentCount, edlCount, cautionCount, contractCount } =
     await getOwnerBadgeCounts(supabase, user.id);
 
   return (
     <div className="flex h-screen flex-col overflow-hidden bg-slate-50 lg:flex-row">
       <OwnerSidebar
         user={{ ...user, displayName }}
-        demandeCount={0}
+        demandeCount={demandeCount ?? 0}
         visiteCount={visiteCount ?? 0}
         reservationCount={reservationCount ?? 0}
         messageCount={messageCount}
