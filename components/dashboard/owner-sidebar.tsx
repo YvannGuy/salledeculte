@@ -144,6 +144,21 @@ function NavContent({
   const unreadCautionCount = unreadFor("cautions", cautionCount);
   const unreadContractCount = unreadFor("contrat", contractCount);
 
+  const getDisplayCount = (badgeKey: string | undefined, active: boolean) => {
+    if (active) return 0;
+    switch (badgeKey) {
+      case "demandes": return unreadDemandeCount;
+      case "visites": return unreadVisiteCount;
+      case "reservations": return unreadReservationCount;
+      case "messagerie": return unreadMessageCount;
+      case "paiement": return unreadPaymentCount;
+      case "etats": return unreadEdlCount;
+      case "cautions": return unreadCautionCount;
+      case "contrat": return unreadContractCount;
+      default: return 0;
+    }
+  };
+
   useEffect(() => {
     const activeItem = navItems.find((item) => item.href === pathname && item.badgeKey);
     if (!activeItem?.badgeKey) return;
@@ -204,6 +219,7 @@ function NavContent({
               {sectionItems.map((item) => {
                 const isActive = pathname === item.href;
                 const Icon = item.icon;
+                const displayCount = getDisplayCount(item.badgeKey, isActive);
                 return (
                   <Link
                     key={item.href}
@@ -246,126 +262,126 @@ function NavContent({
                     {!collapsed && (
                       <>
                         <span className="flex-1 truncate">{item.label}</span>
-                        {item.badgeKey === "demandes" && unreadDemandeCount > 0 && (
+                        {item.badgeKey === "demandes" && displayCount > 0 && (
                     <span
                       className={cn(
                         "flex h-5 min-w-[20px] items-center justify-center rounded-full px-1.5 text-xs font-semibold",
                         isActive ? "bg-white/20 text-white" : "bg-emerald-100 text-emerald-700"
                       )}
                     >
-                      {unreadDemandeCount > 99 ? "99+" : unreadDemandeCount}
+                      {displayCount > 99 ? "99+" : displayCount}
                     </span>
                         )}
-                        {item.badgeKey === "visites" && unreadVisiteCount > 0 && (
+                        {item.badgeKey === "visites" && displayCount > 0 && (
                     <span
                       className={cn(
                         "flex h-5 min-w-[20px] items-center justify-center rounded-full px-1.5 text-xs font-semibold",
                         isActive ? "bg-white/20 text-white" : "bg-emerald-100 text-emerald-700"
                       )}
                     >
-                      {unreadVisiteCount > 99 ? "99+" : unreadVisiteCount}
+                      {displayCount > 99 ? "99+" : displayCount}
                     </span>
                         )}
-                        {item.badgeKey === "reservations" && unreadReservationCount > 0 && (
+                        {item.badgeKey === "reservations" && displayCount > 0 && (
                     <span
                       className={cn(
                         "flex h-5 min-w-[20px] items-center justify-center rounded-full px-1.5 text-xs font-semibold",
                         isActive ? "bg-white/20 text-white" : "bg-violet-100 text-violet-700"
                       )}
                     >
-                      {unreadReservationCount > 99 ? "99+" : unreadReservationCount}
+                      {displayCount > 99 ? "99+" : displayCount}
                     </span>
                         )}
-                        {item.badgeKey === "messagerie" && unreadMessageCount > 0 && (
+                        {item.badgeKey === "messagerie" && displayCount > 0 && (
                     <span
                       className={cn(
                         "flex h-5 min-w-[20px] items-center justify-center rounded-full px-1.5 text-xs font-semibold",
                         isActive ? "bg-white/20 text-white" : "bg-blue-100 text-blue-700"
                       )}
                     >
-                      {unreadMessageCount > 99 ? "99+" : unreadMessageCount}
+                      {displayCount > 99 ? "99+" : displayCount}
                     </span>
                         )}
-                        {item.badgeKey === "paiement" && unreadPaymentCount > 0 && (
+                        {item.badgeKey === "paiement" && displayCount > 0 && (
                     <span
                       className={cn(
                         "flex h-5 min-w-[20px] items-center justify-center rounded-full px-1.5 text-xs font-semibold",
                         isActive ? "bg-white/20 text-white" : "bg-amber-100 text-amber-700"
                       )}
                     >
-                      {unreadPaymentCount > 99 ? "99+" : unreadPaymentCount}
+                      {displayCount > 99 ? "99+" : displayCount}
                     </span>
                         )}
-                        {item.badgeKey === "etats" && unreadEdlCount > 0 && (
+                        {item.badgeKey === "etats" && displayCount > 0 && (
                     <span
                       className={cn(
                         "flex h-5 min-w-[20px] items-center justify-center rounded-full px-1.5 text-xs font-semibold",
                         isActive ? "bg-white/20 text-white" : "bg-indigo-100 text-indigo-700"
                       )}
                     >
-                      {unreadEdlCount > 99 ? "99+" : unreadEdlCount}
+                      {displayCount > 99 ? "99+" : displayCount}
                     </span>
                         )}
-                        {item.badgeKey === "cautions" && unreadCautionCount > 0 && (
+                        {item.badgeKey === "cautions" && displayCount > 0 && (
                     <span
                       className={cn(
                         "flex h-5 min-w-[20px] items-center justify-center rounded-full px-1.5 text-xs font-semibold",
                         isActive ? "bg-white/20 text-white" : "bg-rose-100 text-rose-700"
                       )}
                     >
-                      {unreadCautionCount > 99 ? "99+" : unreadCautionCount}
+                      {displayCount > 99 ? "99+" : displayCount}
                     </span>
                         )}
-                        {item.badgeKey === "contrat" && unreadContractCount > 0 && (
+                        {item.badgeKey === "contrat" && displayCount > 0 && (
                     <span
                       className={cn(
                         "flex h-5 min-w-[20px] items-center justify-center rounded-full px-1.5 text-xs font-semibold",
                         isActive ? "bg-white/20 text-white" : "bg-orange-100 text-orange-700"
                       )}
                     >
-                      {unreadContractCount > 99 ? "99+" : unreadContractCount}
+                      {displayCount > 99 ? "99+" : displayCount}
                     </span>
                         )}
                       </>
                     )}
-                    {collapsed && item.badgeKey === "demandes" && unreadDemandeCount > 0 && (
+                    {collapsed && item.badgeKey === "demandes" && displayCount > 0 && (
                 <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-emerald-500 px-1 text-[10px] font-semibold text-white">
-                  {unreadDemandeCount > 99 ? "99+" : unreadDemandeCount}
+                  {displayCount > 99 ? "99+" : displayCount}
                 </span>
                     )}
-                    {collapsed && item.badgeKey === "visites" && unreadVisiteCount > 0 && (
+                    {collapsed && item.badgeKey === "visites" && displayCount > 0 && (
                 <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-emerald-500 px-1 text-[10px] font-semibold text-white">
-                  {unreadVisiteCount > 99 ? "99+" : unreadVisiteCount}
+                  {displayCount > 99 ? "99+" : displayCount}
                 </span>
                     )}
-                    {collapsed && item.badgeKey === "messagerie" && unreadMessageCount > 0 && (
+                    {collapsed && item.badgeKey === "messagerie" && displayCount > 0 && (
                 <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-blue-600 px-1 text-[10px] font-semibold text-white">
-                  {unreadMessageCount > 99 ? "99+" : unreadMessageCount}
+                  {displayCount > 99 ? "99+" : displayCount}
                 </span>
                     )}
-                    {collapsed && item.badgeKey === "paiement" && unreadPaymentCount > 0 && (
+                    {collapsed && item.badgeKey === "paiement" && displayCount > 0 && (
                 <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-amber-500 px-1 text-[10px] font-semibold text-white">
-                  {unreadPaymentCount > 99 ? "99+" : unreadPaymentCount}
+                  {displayCount > 99 ? "99+" : displayCount}
                 </span>
                     )}
-                    {collapsed && item.badgeKey === "reservations" && unreadReservationCount > 0 && (
+                    {collapsed && item.badgeKey === "reservations" && displayCount > 0 && (
                 <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-violet-500 px-1 text-[10px] font-semibold text-white">
-                  {unreadReservationCount > 99 ? "99+" : unreadReservationCount}
+                  {displayCount > 99 ? "99+" : displayCount}
                 </span>
                     )}
-                    {collapsed && item.badgeKey === "etats" && unreadEdlCount > 0 && (
+                    {collapsed && item.badgeKey === "etats" && displayCount > 0 && (
                 <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-indigo-500 px-1 text-[10px] font-semibold text-white">
-                  {unreadEdlCount > 99 ? "99+" : unreadEdlCount}
+                  {displayCount > 99 ? "99+" : displayCount}
                 </span>
                     )}
-                    {collapsed && item.badgeKey === "cautions" && unreadCautionCount > 0 && (
+                    {collapsed && item.badgeKey === "cautions" && displayCount > 0 && (
                 <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-rose-500 px-1 text-[10px] font-semibold text-white">
-                  {unreadCautionCount > 99 ? "99+" : unreadCautionCount}
+                  {displayCount > 99 ? "99+" : displayCount}
                 </span>
                     )}
-                    {collapsed && item.badgeKey === "contrat" && unreadContractCount > 0 && (
+                    {collapsed && item.badgeKey === "contrat" && displayCount > 0 && (
                 <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-orange-500 px-1 text-[10px] font-semibold text-white">
-                  {unreadContractCount > 99 ? "99+" : unreadContractCount}
+                  {displayCount > 99 ? "99+" : displayCount}
                 </span>
                     )}
                   </Link>

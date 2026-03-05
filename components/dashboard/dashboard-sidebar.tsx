@@ -184,7 +184,7 @@ function NavContent({
               {sectionItems.map((item) => {
           const isActive = pathname === item.href && !(item as { opensSearchModal?: boolean }).opensSearchModal;
           const Icon = item.icon;
-          const badgeVal = item.badgeKey ? unreadFor(item.badgeKey) : null;
+          const badgeVal = item.badgeKey ? (isActive ? 0 : unreadFor(item.badgeKey)) : null;
           const opensSearchModal = (item as { opensSearchModal?: boolean }).opensSearchModal;
           const navClassName = cn(
             "relative flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left text-sm font-medium transition-colors",

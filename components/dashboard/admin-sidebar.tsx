@@ -166,8 +166,14 @@ export function AdminSidebar({ badgeCounts, userEmail }: AdminSidebarProps) {
     });
   };
 
-  /** Admin : on affiche toujours le compteur réel (actions à faire), pas un "non lu" qui tombe à 0 après visite. */
-  const displayBadge = (item: { badgeKey?: string; badge?: number }) => item.badge ?? 0;
+  /** Affiche un compteur "non lu" qui reste à 0 après consultation, jusqu'à nouvel élément. */
+  const displayBadge = (item: { badgeKey?: string }, isActive: boolean) => {
+    if (isActive) return 0;
+    if (!item.badgeKey) return 0;
+    const raw = rawByKey[item.badgeKey] ?? 0;
+    const seen = seenByKey[item.badgeKey] ?? 0;
+    return Math.max(raw - seen, 0);
+  };
 
   useEffect(() => {
     const activeItem = items.find((item) => item.href === pathname && item.badgeKey);
@@ -206,7 +212,7 @@ export function AdminSidebar({ badgeCounts, userEmail }: AdminSidebarProps) {
         {items.map((item) => {
           const isActive = pathname === item.href;
           const Icon = item.icon;
-          const badge = displayBadge(item);
+          const badge = displayBadge(item, isActive);
           return (
             <Link
               key={item.href}
@@ -340,7 +346,7 @@ export function AdminSidebar({ badgeCounts, userEmail }: AdminSidebarProps) {
           {items.map((item) => {
             const isActive = pathname === item.href;
             const Icon = item.icon;
-            const badge = displayBadge(item);
+            const badge = displayBadge(item, isActive);
             return (
               <Link
                 key={item.href}
